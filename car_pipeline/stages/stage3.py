@@ -31,6 +31,7 @@ from car_pipeline.data.singlecell import (
     ENDOTHELIAL,
     FIBROBLAST,
     IMMUNE,
+    JOIN_ENSEMBL_BRIDGE as CELL_JOIN_ENSEMBL_BRIDGE,
     MALIGNANT,
 )
 from car_pipeline.data.tcga import PRIMARY_TUMOUR, SOLID_NORMAL
@@ -421,7 +422,13 @@ def _score_c5(
     an unannotated ectodomain is unmeasured, never imputed: a protein nobody
     annotated must not outrank one measured and found small.
     """
-    if lipid_anchored:
+    # The anchor special case exists because that class has no transmembrane
+    # segment to annotate topological domains around, so it reports zero
+    # residues by construction. That reasoning only holds while there is no
+    # annotation. A handful of proteins carry both an anchor and a segment, and
+    # for those the ectodomain really was measured — discarding it in favour of
+    # a class default would throw away the better evidence of the two.
+    if lipid_anchored and residues is None:
         return Component(1.0 if at_plasma_membrane else 0.6, None, "anchor class")
     if residues is None:
         if at_plasma_membrane:
@@ -590,9 +597,12 @@ def rank(
         gene = row.gene
 
         # cell atlas
-        ci = cell_index.get(row.accession)
+        cell_hit = cell_index.get(row.accession)
         malignant = stromal_peak = None
-        if ci is not None:
+        cell_bridged = False
+        if cell_hit is not None:
+            ci, cell_route = cell_hit
+            cell_bridged = cell_route == CELL_JOIN_ENSEMBL_BRIDGE
             malignant = cell_atlas.compartment_value(MALIGNANT, ci)
             peaks = [cell_atlas.compartment_value(c, ci) for c in STROMAL_COMPARTMENTS]
             peaks = [p for p in peaks if not math.isnan(p)]
@@ -685,7 +695,11 @@ def rank(
                 sources_disagree=False,  # set in the second pass, below
                 fold_baseline=fold_b,
                 fold_cohort=fold_c,
-                bridged=row.bridged,
+                # Any source reached only after its symbol failed counts, the
+                # cell atlas included. Its join feeds the two heaviest
+                # components, so leaving it out of the audit would exempt the
+                # most consequential bridge from the criterion that polices them.
+                bridged=row.bridged or cell_bridged,
             )
         )
 

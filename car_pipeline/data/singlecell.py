@@ -122,7 +122,15 @@ class SingleCellSource(DataSource):
             CacheEntry(
                 key="group_means",
                 filename="group_means.npz",
-                fingerprint={**fp, "epsilon": DROPOUT_EPSILON},
+                fingerprint={
+                    **fp,
+                    "epsilon": DROPOUT_EPSILON,
+                    # Bumped when the derivation changes in a way that alters
+                    # what is stored. Version 2 decodes the identifier column
+                    # through its category table; version 1 stored the raw
+                    # codes, which no lookup could ever match.
+                    "derived_version": 2,
+                },
             ),
         ]
 
@@ -189,9 +197,31 @@ class SingleCellSource(DataSource):
         node = obs[name]
         if isinstance(node, h5py.Group) and "categories" in node:
             return node["codes"][:], cls._decode(node["categories"][:])
-        codes = node[:]
-        cats = cls._decode(obs["__categories"][name][:])
-        return codes, cats
+        if "__categories" in obs and name in obs["__categories"]:
+            return node[:], cls._decode(obs["__categories"][name][:])
+        # Stored plainly, with no table behind it.
+        return node[:], None
+
+    @classmethod
+    def _read_column(cls, group: h5py.Group, name: str) -> np.ndarray | None:
+        """Decode a column that may be stored as codes into a shared table.
+
+        Reading such a column raw yields the integer codes rendered as text,
+        which look like perfectly good values and match nothing. That failure is
+        entirely silent: every lookup against them simply misses, and a missed
+        lookup is indistinguishable from a value the source never carried.
+        """
+        if name not in group:
+            return None
+        codes, cats = cls._read_categorical(group, name)
+        if cats is None:
+            return cls._decode(codes)
+        # Built as text rather than as objects: an object array cannot be
+        # reloaded from the cache without allowing arbitrary deserialisation,
+        # which is not a thing a data cache should ever need.
+        return np.asarray(
+            [cats[c] if c >= 0 else "" for c in codes], dtype=str
+        )
 
     @classmethod
     def _read_index(cls, group: h5py.Group) -> np.ndarray:
@@ -209,11 +239,19 @@ class SingleCellSource(DataSource):
             with h5py.File(self.matrix_path(), "r") as fh:
                 obs = fh["obs"]
                 genes = self._read_index(fh["var"])
-                ensembl = (
-                    self._decode(fh["var"]["ensg"][:])
-                    if "ensg" in fh["var"]
-                    else np.asarray([""] * len(genes))
-                )
+                ensembl = self._read_column(fh["var"], "ensg")
+                if ensembl is None:
+                    ensembl = np.asarray([""] * len(genes))
+                # A bridge built from values of the wrong kind matches nothing
+                # and reports every protein as absent. Checked here so the
+                # failure is loud at load rather than invisible at join.
+                recognisable = sum(1 for e in ensembl if str(e).startswith("ENSG"))
+                if recognisable < 0.5 * len(ensembl):
+                    raise ValueError(
+                        "the identifier column did not decode to identifiers "
+                        f"({recognisable:,} of {len(ensembl):,} recognisable); "
+                        f"first few read as {list(ensembl[:3])}"
+                    )
 
                 l1_codes, l1_cats = self._read_categorical(obs, LEVEL1)
                 l3_codes, l3_cats = self._read_categorical(obs, LEVEL3)
@@ -397,8 +435,19 @@ class SingleCellSource(DataSource):
         return atlas
 
 
-def match_surface(atlas: Atlas, surface, atlas_by_accession: dict) -> dict[str, int]:
-    """Symbol-first join with an identifier bridge for renamed genes."""
+JOIN_SYMBOL = "symbol"
+JOIN_ENSEMBL_BRIDGE = "ensembl_bridge"
+
+
+def match_surface(
+    atlas: Atlas, surface, atlas_by_accession: dict
+) -> dict[str, tuple[int, str]]:
+    """Symbol-first join with an identifier bridge for renamed genes.
+
+    The route is returned alongside the column so a bridged row can be counted
+    as one. An unrecorded route cannot be audited, and this join reaches the two
+    heaviest components in the score.
+    """
     by_symbol = atlas.gene_index()
     by_ensembl: dict[str, int] = {}
     if atlas.ensembl is not None:
@@ -407,14 +456,14 @@ def match_surface(atlas: Atlas, surface, atlas_by_accession: dict) -> dict[str, 
             if key:
                 by_ensembl.setdefault(key, i)
 
-    out: dict[str, int] = {}
+    out: dict[str, tuple[int, str]] = {}
     for rec in surface:
         if rec.gene and rec.gene in by_symbol:
-            out[rec.accession] = by_symbol[rec.gene]
+            out[rec.accession] = (by_symbol[rec.gene], JOIN_SYMBOL)
             continue
         entry = atlas_by_accession.get(rec.accession)
         if entry is not None and entry.ensembl in by_ensembl:
-            out[rec.accession] = by_ensembl[entry.ensembl]
+            out[rec.accession] = (by_ensembl[entry.ensembl], JOIN_ENSEMBL_BRIDGE)
     return out
 
 
@@ -523,7 +572,9 @@ if __name__ == "__main__":
     surface, _ = load_surface()
     by_acc, _ = atlas_index(HPASource().load())
     joined = match_surface(atlas, surface, by_acc)
-    peaks = np.asarray([atlas.peak_group(i) for i in joined.values()])
+    peaks = np.asarray([atlas.peak_group(i) for i, _ in joined.values()])
+    bridged = sum(1 for _, p in joined.values() if p == JOIN_ENSEMBL_BRIDGE)
+    print(f"  joined through the identifier bridge: {bridged}")
     for eps, exp in [(0.0, 267), (DROPOUT_EPSILON, 357), (0.01, 534)]:
         got = int(np.sum(peaks <= eps))
         pct = abs(got - exp) / exp * 100
