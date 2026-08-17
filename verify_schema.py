@@ -84,8 +84,25 @@ def main() -> int:
         "auto" not in [f.value for f in spec.design_constraints.allowed_car_formats],
         True,
     )
-    check("data availability score", spec.data_availability_score, 0.0)
     check("spec target_antigen", spec.inputs.target_antigen, None)
+
+    # Unresolved, every dataset is correctly unconfigured and the score is zero.
+    unresolved = build_spec(p, resolve_sources=False)
+    check("unresolved availability score", unresolved.data_availability_score, 0.0)
+
+    # Resolved, the score must equal the share of blocking datasets on disk.
+    from car_pipeline.schemas.spec import DatasetStatus
+
+    available = sum(
+        1
+        for d in blocking
+        if d.status is DatasetStatus.AVAILABLE
+    )
+    check(
+        "resolved availability score",
+        round(spec.data_availability_score, 3),
+        round(available / len(blocking), 3),
+    )
 
     # Validation mode has nothing to screen, so the screening sources drop out.
     validate = build_spec(
