@@ -231,13 +231,16 @@ def stream_to_file(
     headers: dict | None = None,
     timeout: int = 300,
     progress_label: str | None = None,
+    expected_md5: str | None = None,
 ) -> dict:
     """Stream a response to disk without holding it in memory.
 
-    Returns manifest metadata: byte count and digest.
+    Returns manifest metadata: byte count and digest. When the source publishes
+    a checksum it is verified here, before anything is moved into place.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
+    weak = hashlib.md5()
     total = 0
     started = time.time()
     with _open(
@@ -251,6 +254,7 @@ def stream_to_file(
                     break
                 fh.write(block)
                 digest.update(block)
+                weak.update(block)
                 total += len(block)
                 if progress_label and total % (64 * CHUNK) < CHUNK:
                     mb = total / 1_048_576
@@ -262,6 +266,13 @@ def stream_to_file(
         dest.unlink(missing_ok=True)
         raise IntegrityError(
             f"{url}: declared {declared_bytes} bytes, received {total}"
+        )
+
+    if expected_md5 and weak.hexdigest() != expected_md5:
+        dest.unlink(missing_ok=True)
+        raise IntegrityError(
+            f"{url}: checksum published as {expected_md5}, "
+            f"received {weak.hexdigest()}"
         )
 
     if progress_label:
