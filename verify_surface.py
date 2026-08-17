@@ -81,11 +81,19 @@ def main() -> int:
         rec = by_gene.get(gene)
         ok = rec is not None and rec.is_surface
         passed += 1 if ok else 0
-        if not ok:
-            state = "absent" if rec is None else (
-                f"attached={rec.attached} outward={rec.outward}"
+        if rec is None:
+            print(f"  FAIL  {gene:10s} absent from the proteome")
+        else:
+            ecto = (
+                "unannotated"
+                if rec.extracellular_residues is None
+                else f"{rec.extracellular_residues} aa"
             )
-            print(f"  FAIL  {gene}: {state}")
+            print(
+                f"  {'ok  ' if ok else 'FAIL'}  {gene:10s} {rec.membrane_class or '-':14s}"
+                f" tm={rec.transmem_count:<2d} anchor={'yes' if rec.gpi_anchored else 'no ':3s}"
+                f" ectodomain={ecto}"
+            )
     print(f"  {passed}/{len(KNOWN_TARGETS)} survived   expected 28")
 
     print("\nnegative controls that must not survive")
@@ -94,8 +102,19 @@ def main() -> int:
         rec = by_gene.get(gene)
         ok = rec is None or not rec.is_surface
         rejected += 1 if ok else 0
-        if not ok:
-            print(f"  FAIL  {gene} survived the filter")
+        if rec is None:
+            print(f"  ok    {gene:10s} absent from the proteome")
+        else:
+            if not rec.attached:
+                reason = "no anchor"
+            elif not rec.outward:
+                reason = "no outward face (topology)"
+            else:
+                reason = "SURVIVED"
+            print(
+                f"  {'ok  ' if ok else 'FAIL'}  {gene:10s} attached={str(rec.attached):5s}"
+                f" outward={str(rec.outward):5s}  rejected on: {reason}"
+            )
     print(f"  {rejected}/{len(NEGATIVE_CONTROLS)} rejected   expected 10")
 
     print("\nrejection reasons")

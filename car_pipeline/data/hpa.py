@@ -96,6 +96,20 @@ def _split_locations(cell: str) -> list[str]:
     return [p.strip() for p in cell.split(";") if p.strip()]
 
 
+def _columns(header: list[str], required: list[str], filename: str) -> dict[str, int]:
+    """Resolve required column positions, refusing to proceed without them.
+
+    A missing column left as an absent index produces an empty table rather than
+    an error, and an empty table is indistinguishable from a source that simply
+    has nothing to say.
+    """
+    idx = {name: i for i, name in enumerate(header)}
+    missing = [c for c in required if c not in idx]
+    if missing:
+        raise KeyError(f"{filename} is missing columns: {', '.join(missing)}")
+    return idx
+
+
 class HPASource(DataSource):
     name = "Human Protein Atlas"
     namespace = "hpa"
@@ -146,13 +160,13 @@ class HPASource(DataSource):
         # gene table: symbols and accessions
         with open(self.path_for("proteinatlas"), encoding="utf-8", newline="") as fh:
             header = fh.readline().rstrip("\r\n").split("\t")
-            idx = {name: i for i, name in enumerate(header)}
-            i_ens = idx.get("Ensembl")
-            i_sym = idx.get("Gene")
-            i_acc = idx.get("Uniprot")
+            idx = _columns(header, ["Ensembl", "Gene", "Uniprot"], "gene table")
+            i_ens = idx["Ensembl"]
+            i_sym = idx["Gene"]
+            i_acc = idx["Uniprot"]
             for line in fh:
                 row = line.rstrip("\r\n").split("\t")
-                if i_ens is None or len(row) <= i_ens:
+                if len(row) <= i_ens:
                     continue
                 ensembl = row[i_ens].strip()
                 if not ensembl:
@@ -171,15 +185,19 @@ class HPASource(DataSource):
         dropped_withdrawn = 0
         with open(self.path_for("normal_tissue"), encoding="utf-8", newline="") as fh:
             header = fh.readline().rstrip("\r\n").split("\t")
-            idx = {name: i for i, name in enumerate(header)}
-            i_ens = idx.get("Gene")
-            i_sym = idx.get("Gene name")
-            i_tis = idx.get("Tissue")
-            i_cell = idx.get("Cell type")
-            i_lvl = idx.get("Level")
+            idx = _columns(
+                header,
+                ["Gene", "Gene name", "Tissue", "Cell type", "Level"],
+                "normal tissue",
+            )
+            i_ens = idx["Gene"]
+            i_sym = idx["Gene name"]
+            i_tis = idx["Tissue"]
+            i_cell = idx["Cell type"]
+            i_lvl = idx["Level"]
             for line in fh:
                 row = line.rstrip("\r\n").split("\t")
-                if len(row) <= max(i_ens or 0, i_lvl or 0):
+                if len(row) <= max(i_ens, i_lvl, i_tis, i_cell):
                     continue
                 level_text = row[i_lvl].strip()
                 ensembl = row[i_ens].strip()
@@ -207,21 +225,25 @@ class HPASource(DataSource):
             self.path_for("subcellular_location"), encoding="utf-8", newline=""
         ) as fh:
             header = fh.readline().rstrip("\r\n").split("\t")
-            idx = {name: i for i, name in enumerate(header)}
-            i_ens = idx.get("Gene")
-            i_main = idx.get("Main location")
-            i_add = idx.get("Additional location")
+            idx = _columns(
+                header,
+                ["Gene", "Main location", "Additional location"],
+                "subcellular location",
+            )
+            i_ens = idx["Gene"]
+            i_main = idx["Main location"]
+            i_add = idx["Additional location"]
             for line in fh:
                 row = line.rstrip("\r\n").split("\t")
-                if i_ens is None or len(row) <= i_ens:
+                if len(row) <= i_ens:
                     continue
                 ensembl = row[i_ens].strip()
                 if not ensembl:
                     continue
                 g = get(ensembl)
-                if i_main is not None and len(row) > i_main:
+                if len(row) > i_main:
                     g.main_location = _split_locations(row[i_main])
-                if i_add is not None and len(row) > i_add:
+                if len(row) > i_add:
                     g.additional_location = _split_locations(row[i_add])
 
         self.dropped_placeholder_rows = dropped_placeholder

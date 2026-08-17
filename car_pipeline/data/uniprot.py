@@ -118,22 +118,27 @@ def _count_extracellular_residues(topo_field: str) -> int | None:
     scored as though it were measured and found small.
     """
     total = 0
-    seen = False
+    measured = False
     for start, end, tail in _TOPO_SEGMENT.findall(topo_field):
         note_match = _NOTE.search(tail)
         if not note_match or note_match.group(1) != _OUTWARD_NOTE:
             continue
-        seen = True
         try:
             lo = int(start.lstrip("<>?"))
             hi = int(end.lstrip("<>?"))
         except ValueError:
+            # Bounds recorded as uncertain. The segment exists but its length
+            # does not, so it contributes nothing and cannot make the total
+            # meaningful on its own.
             continue
         if hi >= lo:
             total += hi - lo + 1
-    if not seen:
-        return None
-    return total
+            measured = True
+    # A protein annotated as outward-facing but with no segment whose length
+    # could be read is not a protein measured at zero residues. Returning zero
+    # here would let it be scored as measured and tiny, which is the imputation
+    # the accessibility component is required to avoid.
+    return total if measured else None
 
 
 def names_compartment(subcellular: str) -> bool:

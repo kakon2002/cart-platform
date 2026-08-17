@@ -16,7 +16,12 @@ from typing import Iterable
 
 import numpy as np
 
-from car_pipeline.data.source import CacheEntry, DataSource, stream_to_file
+from car_pipeline.data.source import (
+    CacheEntry,
+    DataSource,
+    IntegrityError,
+    stream_to_file,
+)
 
 RELEASE_PIN = "v10"
 URL = (
@@ -89,21 +94,21 @@ class GTExSource(DataSource):
         never given a row of zeros: not measured and measured at zero are
         different findings, and only one of them is reassuring.
         """
-        by_symbol = {}
-        by_ensembl = {}
+        wanted_symbols = {rec.gene for rec in surface if rec.gene}
+        ensembl_for: dict[str, str] = {}
         for rec in surface:
-            if rec.gene:
-                by_symbol.setdefault(rec.gene, rec)
-            atlas = atlas_by_accession.get(rec.accession)
-            if atlas is not None and atlas.ensembl:
-                by_ensembl.setdefault(atlas.ensembl, rec)
+            entry = atlas_by_accession.get(rec.accession)
+            if entry is not None and entry.ensembl:
+                ensembl_for[rec.accession] = entry.ensembl
+        wanted_ensembl = set(ensembl_for.values())
 
-        profiles: dict[str, TissueProfile] = {}
+        rows_by_symbol: dict[str, tuple[np.ndarray, str]] = {}
+        rows_by_ensembl: dict[str, tuple[np.ndarray, str]] = {}
         gene_total = 0
 
         with gzip.open(self._path(), "rt", encoding="utf-8") as fh:
             fh.readline()
-            fh.readline()
+            declared = fh.readline().rstrip("\r\n").split("\t")
             header = fh.readline().rstrip("\r\n").split("\t")
             tissues = header[2:]
 
@@ -115,23 +120,64 @@ class GTExSource(DataSource):
                 ensembl = row[0].split(".")[0]
                 symbol = row[1]
 
-                rec = by_symbol.get(symbol)
-                path = JOIN_SYMBOL
-                if rec is None:
-                    rec = by_ensembl.get(ensembl)
-                    path = JOIN_ENSEMBL_BRIDGE
-                if rec is None or rec.accession in profiles:
-                    continue
+                if symbol in wanted_symbols and symbol not in rows_by_symbol:
+                    rows_by_symbol[symbol] = (
+                        np.asarray(row[2:], dtype=np.float32),
+                        ensembl,
+                    )
+                if ensembl in wanted_ensembl and ensembl not in rows_by_ensembl:
+                    rows_by_ensembl[ensembl] = (
+                        np.asarray(row[2:], dtype=np.float32),
+                        symbol,
+                    )
 
-                values = np.asarray(row[2:], dtype=np.float32)
+        # The file states its own dimensions. Checking them costs nothing and is
+        # the only thing standing between a truncated download and a gene total
+        # that looks entirely reasonable.
+        self._verify_dimensions(declared, gene_total, len(tissues))
+
+        # Resolved per protein, in the protein's own order. Driving this from
+        # the file instead would make the recorded route depend on which row
+        # happened to be reached first, and that route is what a rejection
+        # criterion later counts.
+        profiles: dict[str, TissueProfile] = {}
+        for rec in surface:
+            hit = rows_by_symbol.get(rec.gene) if rec.gene else None
+            if hit is not None:
+                values, ensembl = hit
+                profiles[rec.accession] = TissueProfile(
+                    ensembl=ensembl,
+                    symbol=rec.gene,
+                    values=values,
+                    join_path=JOIN_SYMBOL,
+                )
+                continue
+            ensembl = ensembl_for.get(rec.accession)
+            hit = rows_by_ensembl.get(ensembl) if ensembl else None
+            if hit is not None:
+                values, symbol = hit
                 profiles[rec.accession] = TissueProfile(
                     ensembl=ensembl,
                     symbol=symbol,
                     values=values,
-                    join_path=path,
+                    join_path=JOIN_ENSEMBL_BRIDGE,
                 )
 
         return profiles, tissues, gene_total
+
+    @staticmethod
+    def _verify_dimensions(declared: list[str], rows: int, cols: int) -> None:
+        try:
+            declared_rows, declared_cols = int(declared[0]), int(declared[1])
+        except (IndexError, ValueError):
+            raise IntegrityError(
+                "the baseline file does not declare its dimensions where expected"
+            ) from None
+        if declared_rows != rows or declared_cols != cols:
+            raise IntegrityError(
+                f"baseline declares {declared_rows} genes x {declared_cols} tissues, "
+                f"read {rows} x {cols}"
+            )
 
 
 if __name__ == "__main__":

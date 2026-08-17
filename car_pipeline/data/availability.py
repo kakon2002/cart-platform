@@ -20,6 +20,7 @@ from car_pipeline.data.source import DataSource
 from car_pipeline.data.tcga import TCGASource
 from car_pipeline.data.uniprot import UniProtSource
 from car_pipeline.schemas.spec import DatasetStatus, RequiredDataset
+from car_pipeline.stages.stage1 import KNOWN_DATASET_NAMES
 
 # Datasets with a connector. Anything absent from this map has none, which is a
 # different finding from a connector whose data will not read.
@@ -31,6 +32,17 @@ CONNECTORS: dict[str, type[DataSource]] = {
     SingleCellSource.name: SingleCellSource,
     GTExSource.name: GTExSource,
 }
+
+# A connector whose name does not match the dataset it is meant to serve would
+# leave that dataset reported as having no connector at all, while the connector
+# sat unused. Both halves look plausible on their own, so they are checked
+# against each other here rather than left to agree by habit.
+_ORPHANED = set(CONNECTORS) - KNOWN_DATASET_NAMES
+if _ORPHANED:
+    raise RuntimeError(
+        "connectors registered under names no stage emits: "
+        + ", ".join(sorted(_ORPHANED))
+    )
 
 
 def resolve_status(name: str) -> DatasetStatus:

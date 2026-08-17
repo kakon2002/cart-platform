@@ -20,6 +20,7 @@ a waste.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -54,15 +55,26 @@ class CoverageRow:
         return JOIN_ENSEMBL_BRIDGE in self.join_paths.values()
 
 
+# Antigen-receptor and major histocompatibility loci, matched on the actual
+# naming pattern rather than on a leading fragment. A bare prefix test is wrong
+# here in a way that is easy to miss: "TRA" also captures triadin, the
+# TRAF-interacting proteins and the arginine transporter, and "KIR" captures the
+# kirre-like family, none of which are polymorphic immune loci. The count can
+# still come out right while the test is wrong, because a miscategorised gene
+# only shows up if it happens to land in this class.
+_IMMUNE_LOCUS = re.compile(
+    r"""^(
+        HLA-.+          # histocompatibility loci
+      | KIR[23]D\w*     # killer immunoglobulin-like receptors
+      | TR[ABGD]        # antigen receptor loci, unsegmented
+      | TR[ABGD][CVDJ]\d*   # and their constant, variable, diversity, joining segments
+    )$""",
+    re.VERBOSE,
+)
+
+
 def _immune_locus(gene: str) -> bool:
-    return (
-        gene.startswith("KIR")
-        or gene.startswith("HLA-")
-        or gene.startswith("TRA")
-        or gene.startswith("TRB")
-        or gene.startswith("TRG")
-        or gene.startswith("TRD")
-    )
+    return bool(_IMMUNE_LOCUS.match(gene))
 
 
 def _endogenous_retroviral(gene: str, protein_name: str) -> bool:

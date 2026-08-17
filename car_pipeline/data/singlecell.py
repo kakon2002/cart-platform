@@ -99,7 +99,11 @@ class Atlas:
         return float(self.compartment_means[self.compartments.index(compartment)][gene_index])
 
     def peak_group(self, gene_index: int) -> float:
-        return float(self.group_means[:, gene_index].max())
+        """Highest group mean, ignoring groups that hold no cells."""
+        column = self.group_means[:, gene_index]
+        if np.all(np.isnan(column)):
+            return float("nan")
+        return float(np.nanmax(column))
 
 
 class SingleCellSource(DataSource):
@@ -314,9 +318,20 @@ class SingleCellSource(DataSource):
                 ).astype(np.float64)
 
                 def normalise(sums, counts, rows_n):
+                    """Mean per group, or not-a-number where the group is empty.
+
+                    A group with no cells has no mean. Dividing by a substituted
+                    one would report it as measured and silent, which is a
+                    different and much more reassuring statement than no cells
+                    of that type having been captured.
+                    """
                     m = sums.reshape(rows_n, n_genes)
-                    denom = np.where(counts > 0, counts, 1.0)[:, None]
-                    return (m / denom).astype(np.float32)
+                    out = np.full((rows_n, n_genes), np.nan, dtype=np.float32)
+                    present = counts > 0
+                    out[present] = (
+                        m[present] / counts[present][:, None]
+                    ).astype(np.float32)
+                    return out
 
                 means_all = normalise(sums_all, cells_all, n_types)
                 means_unt = normalise(sums_unt, cells_unt, n_types)
@@ -477,7 +492,7 @@ if __name__ == "__main__":
     # Ranked by the largest value any group reaches, not by a population mean.
     # A mean over every cell is dominated by the nuclear transcripts this assay
     # always captures, which say nothing about any cell type in particular.
-    peak_by_gene = atlas.group_means.max(axis=0)
+    peak_by_gene = np.nanmax(atlas.group_means, axis=0)
     top = np.argsort(peak_by_gene)[::-1][:6]
     print("  " + ", ".join(str(atlas.genes[i]) for i in top))
     for enzyme in ("CTRB1", "CPA1", "PRSS1"):
