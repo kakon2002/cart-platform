@@ -72,9 +72,30 @@ SATURATION: dict[str, float] = {
     "c3_baseline_floor_tpm": 0.1,
 }
 
-#: Beyond this ratio the two tumour-versus-normal denominators are treated as
-#: telling different stories, and the row says so rather than picking one.
+#: How far a protein must depart from the *systematic* offset between the two
+#: denominators before it is flagged. Not deviation from parity: the two normal
+#: tissues differ by construction, so a parity test flags everything and
+#: discriminates nothing.
 FOLD_DISAGREEMENT = 2.0
+
+#: Ratio of the two normal tissues for one protein: how much more of it sits in
+#: tumour-adjacent pancreas than in healthy population pancreas.
+#:
+#: The population baseline is pristine acinar tissue. The cohort's adjacent
+#: normal comes from a resected pancreas, which is typically inflamed and often
+#: already carries precursor lesions, so it expresses tumour antigens before any
+#: malignancy is involved. The distance between the two therefore measures how
+#: much of a target's apparent margin comes from the diseased field rather than
+#: from the tumour.
+#:
+#: That distinction is clinical, not academic: what remains in the patient after
+#: resection is field tissue, so an antigen elevated here is an antigen the
+#: therapy will meet in tissue that is staying put. Reported on every row, never
+#: scored — it describes where a margin comes from, not how large it is.
+#:
+#: Named for the magnitude rather than the association, since it is a measured
+#: ratio and the direction matters.
+FIELD_ELEVATION = "field_elevation"
 
 STROMAL_COMPARTMENTS = (FIBROBLAST, IMMUNE, ENDOTHELIAL)
 
@@ -299,6 +320,9 @@ class Ranked:
     sources_disagree: bool
     fold_baseline: float | None = None
     fold_cohort: float | None = None
+    #: How much more of this antigen sits in tumour-adjacent pancreas than in
+    #: healthy pancreas. An annotation, never a score term.
+    field_elevation: float | None = None
     bridged: bool = False
     tier_rank: int = 0
 
@@ -340,10 +364,10 @@ def _score_c3(
     baseline_pancreas: float | None,
     cohort_normal: float | None,
     sat: dict[str, float],
-) -> tuple[Component, float | None, float | None, bool]:
+) -> tuple[Component, float | None, float | None]:
     if tumour is None or baseline_pancreas is None:
         # No row on one side. Genuinely unmeasured.
-        return Component(None, None, "no row"), None, None, False
+        return Component(None, None, "no row"), None, None
 
     def _fold(normal: float | None) -> float | None:
         """Tumour over normal, with the denominator floored at detection.
@@ -366,11 +390,6 @@ def _score_c3(
     fold_cohort = _fold(cohort_normal)
     below_detection = baseline_pancreas < floor
 
-    disagree = False
-    if fold_cohort is not None and fold_baseline is not None and fold_baseline > 0:
-        spread = fold_cohort / fold_baseline
-        disagree = spread > FOLD_DISAGREEMENT or spread < 1 / FOLD_DISAGREEMENT
-
     score = (
         _clamp(math.log2(fold_baseline) / math.log2(sat["c3_fold"]))
         if fold_baseline > 0
@@ -381,7 +400,7 @@ def _score_c3(
         fold_baseline,
         "normal below detection" if below_detection else "",
     )
-    return component, fold_baseline, fold_cohort, disagree
+    return component, fold_baseline, fold_cohort
 
 
 def _score_c4(values: np.ndarray | None, threshold: float) -> Component:
@@ -601,7 +620,7 @@ def rank(
         if profile is not None:
             baseline_pancreas = _finite(float(profile.values[bulk_pancreas_col]))
 
-        c3, fold_b, fold_c, disagree = _score_c3(
+        c3, fold_b, fold_c = _score_c3(
             tumour_median, baseline_pancreas, cohort_normal_median, sat
         )
 
@@ -663,12 +682,44 @@ def rank(
                 risk_organ=organ,
                 cleared=cleared,
                 confidence=_confidence(components, row, wts),
-                sources_disagree=disagree,
+                sources_disagree=False,  # set in the second pass, below
                 fold_baseline=fold_b,
                 fold_cohort=fold_c,
                 bridged=row.bridged,
             )
         )
+
+    # -- second pass: the systematic offset, then departures from it ------
+    #
+    # The two denominators describe different tissue, so they disagree by
+    # construction and by a fairly consistent amount. Testing each protein
+    # against parity therefore flags every one of them and identifies none. The
+    # informative question is which proteins depart from the pattern, so the
+    # pattern is measured first and each protein tested against that.
+    log_ratios = [
+        math.log10(r.fold_cohort / r.fold_baseline)
+        for r in out
+        if r.fold_baseline and r.fold_cohort and r.fold_baseline > 0 and r.fold_cohort > 0
+    ]
+    offset = float(np.median(log_ratios)) if log_ratios else 0.0
+    tolerance = math.log10(FOLD_DISAGREEMENT)
+
+    for r in out:
+        if not (r.fold_baseline and r.fold_cohort):
+            continue
+        if r.fold_baseline <= 0 or r.fold_cohort <= 0:
+            continue
+        # How far the two normal tissues sit apart for this protein.
+        r.field_elevation = r.fold_baseline / r.fold_cohort
+        residual = math.log10(r.fold_cohort / r.fold_baseline) - offset
+        r.sources_disagree = abs(residual) > tolerance
+
+    stats = {
+        "field_offset_log10": offset,
+        "field_offset_fold": 10.0**-offset,
+        "proteins_with_both_folds": len(log_ratios),
+        "tolerance_fold": FOLD_DISAGREEMENT,
+    }
 
     # rank within evidence class, scored rows first
     for tier in (PROTEIN_CONFIRMED, RNA_SUPPORTED, DATA_INSUFFICIENT):
@@ -679,7 +730,7 @@ def rank(
         for i, r in enumerate(members, start=1):
             r.tier_rank = i
 
-    return out, model
+    return out, model, stats
 
 
 # --------------------------------------------------------------------------
@@ -752,6 +803,7 @@ def header(
     pins: dict,
     saturation: dict[str, float] | None = None,
     weights: dict[str, float] | None = None,
+    stats: dict | None = None,
 ) -> str:
     """Describes the run that produced the output, not the module defaults."""
     sat = SATURATION if saturation is None else saturation
@@ -777,6 +829,20 @@ def header(
         f"  configuration hash   "
         f"{configuration_hash(model.overrides, ceiling, sat, wts)}",
         f"  margin denominator   {BULK_PANCREAS_LABEL} (bulk only)",
+        f"  field offset         "
+        + (
+            f"the cohort fold runs {stats['field_offset_fold']:.1f}x below the "
+            f"baseline fold at the median, over "
+            f"{stats['proteins_with_both_folds']:,} proteins with both"
+            if stats
+            else "not measured"
+        ),
+        f"                       the two normal tissues differ by about this "
+        f"much by construction;",
+        f"                       {FIELD_ELEVATION} is each protein's own "
+        f"version of that distance,",
+        f"                       and the disagreement flag marks departures "
+        f"from the offset, not from parity",
         "  criticality tiers    [+] marks a platform addition, not from the "
         "reference table",
     ]
