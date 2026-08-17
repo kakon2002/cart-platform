@@ -100,13 +100,31 @@ happens to be in the universe on a given run.
   `clamp(log10(r) / log10(50), 0, 1)`. `NOT_MEASURED` when the protein has no
   row. Where `p` falls below the dropout epsilon the ratio is not computed from
   it — see §4.1.
-- **C3 tumour versus normal margin.** Median tumour transcript level across
-  primary tumour samples over the normal baseline's pancreas median. Score
-  `clamp(log2(fold) / log2(64), 0, 1)`. **The normal baseline is the comparator,
-  not the cohort's own normals** — that arm is n=4, and every ratio built on it
-  rests on four samples. The cohort normals are retained as a same-assay sanity
-  check and reported, never as the denominator. `NOT_MEASURED` when either side
-  is absent.
+- **C3 tumour versus normal margin.** **Both fold changes are computed and both
+  are reported.** Neither denominator is trustworthy alone:
+
+  - `fold_baseline` = median tumour level ÷ the normal baseline's pancreas
+    median. **This is the primary**, because the cohort's own normal arm is n=4
+    and every ratio built on it rests on four samples.
+  - `fold_cohort` = median tumour level ÷ the cohort's solid-normal median.
+    Same assay and same pipeline as the tumour side, so it carries no
+    cross-cohort batch effect — but almost no samples.
+
+  The two are not interchangeable: they come from different pipelines with
+  different normalisation, so the primary carries a batch effect the secondary
+  does not, and the secondary carries a sampling error the primary does not.
+  Scoring uses `fold_baseline`; `fold_cohort` is reported beside it in every row.
+
+  Score `clamp(log2(fold_baseline) / log2(64), 0, 1)`.
+
+  **Disagreement is flagged, not resolved.** Where the two folds differ by more
+  than 2× in either direction, the row carries `sources_disagree`. That flag is
+  what R11 polices — it exists to be read, not to be silently overridden by
+  whichever denominator was picked first.
+
+  `NOT_MEASURED` when the tumour side or the baseline pancreas value is absent.
+  Absence of the cohort normal alone does not block scoring; it suppresses the
+  comparison and is recorded as such.
 - **C4 patient prevalence.** Fraction of primary tumour samples at or above 10
   transcripts per million. Already `[0, 1]`. `NOT_MEASURED` when the protein has
   no column in the cohort.
@@ -205,6 +223,25 @@ organ.
 | 2 | 0.6 | gi_tract, marrow_and_blood, bladder, endocrine, muscle, nerve |
 | 3 | 0.3 | skin, adipose, breast, reproductive, salivary |
 
+**Extensions.** The table above covers seventeen organs; the two tissue
+vocabularies between them name several more. These assignments are additions
+made here, not carried from any prior run, and are flagged for review:
+
+| organ | tier | reasoning |
+| --- | --- | --- |
+| vascular (aorta, coronary, tibial artery) | 1 | on-target attack on large vessels is not survivable |
+| eye (retina) | 2 | not life-threatening, but irreversible |
+| mucosa (nasopharynx, oral) | 2 | aerodigestive lining, regenerates |
+| connective (cartilage, soft tissue) | 3 | structural, tolerant of damage |
+
+Where a label was genuinely ambiguous the higher tier was taken. Understating
+risk is the failure that costs a patient; overstating it costs a candidate.
+
+Cultured cell lines in the baseline vocabulary (cultured fibroblasts,
+transformed lymphocytes) are **excluded from the risk computation entirely**.
+They are not normal tissue and their expression says nothing about what a
+therapy would encounter. The exclusion is reported rather than silent.
+
 This indication overrides pancreas to tier 2 through the project config, with a
 required rationale. **The rationale travels into the output header**, so a reader
 sees which safety default was relaxed and why. An override without a rationale
@@ -241,6 +278,14 @@ if the mapping is written with naive substring matching.
    `sole of foot`. In the reference run 9,807 of 13,468 stained genes carried a
    Low-or-better call in at least one of them, so the fall-through was not rare.
    All six require explicit assignments.
+
+**How all three are prevented rather than patched.** Both vocabularies are
+finite and fully enumerable — 68 labels on the baseline side, 64 on the atlas
+side. Every label is therefore assigned **explicitly, by exact match**, and no
+keyword or substring test is used anywhere in the mapping. Substring matching is
+what produces all three failures above; removing it removes the class. A label
+absent from the table does not fall back to anything — it is counted as a
+fall-through and reported.
 
 **The output must report the fall-through count, and it must read 0.** A
 fail-safe that is silently doing work is a mapping bug wearing a disguise.
@@ -316,6 +361,25 @@ the result gets an explanation.
 | R9 | the top of DATA_INSUFFICIENT scores above the top of PROTEIN_CONFIRMED |
 | R10 | more than 10% of the top 100 were reached only through the identifier bridge |
 | R11 | a `sources_disagree` flag goes unread in the top 25 |
+| R12 | a 2× change in any single saturation point reshuffles more than half of the top 50 |
+
+**R12 detail.** R6 perturbs the weights, which were fixed deliberately and are
+visible as choices. The saturation points in §4 are equally free parameters and
+equally capable of driving the ordering, but they look like implementation
+detail rather than policy, so nothing would otherwise test them. Each is
+perturbed independently, both doubled and halved, holding everything else fixed:
+
+| parameter | value |
+| --- | --- |
+| C1 expression saturation | 100 transcripts per 10k |
+| C2 specificity ratio saturation | 50× |
+| C3 fold saturation | 64× |
+| C4 prevalence threshold | 10 transcripts per million |
+| C5 ectodomain saturation | 200 residues |
+| C6 gene effect saturation | 1.0 |
+
+The criterion trips if any single perturbation replaces more than half of the
+top 50. Same shape and same threshold as R6, so the two are directly comparable.
 
 **R5 detail.** Pair components **by name**, and compute the correlation **only
 over targets that measured that component**. Zero-filling unmeasured components
