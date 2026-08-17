@@ -1,7 +1,8 @@
-"""Step 2 check: the indication config parses and lands in discovery mode."""
+"""Checks for the project definition and the specification stage 1 builds."""
 
 from car_pipeline.configs.pdac import PDAC_PROJECT
 from car_pipeline.schemas.project import DiscoveryMode, ProjectInput
+from car_pipeline.stages.stage1 import build_spec
 
 CHECKS: list[tuple[str, object, object]] = []
 
@@ -66,6 +67,45 @@ def main() -> int:
         check("override without rationale rejected", True, True)
     else:
         check("override without rationale rejected", False, True)
+
+    # --- stage 1 -----------------------------------------------------------
+    spec = build_spec(p)
+    blocking = [d for d in spec.required_datasets if d.required]
+
+    check("spec discovery_mode", spec.discovery_mode.value, "B")
+    check("datasets", len(spec.required_datasets), 9)
+    check("blocking datasets", len(blocking), 7)
+    check("construct budget kb", spec.design_constraints.max_construct_kb, 3.5)
+    check("safety switch required", spec.design_constraints.require_safety_switch, True)
+    check("risk ceiling", spec.design_constraints.normal_tissue_risk_ceiling, 0.15)
+    check("allowed formats", len(spec.design_constraints.allowed_car_formats), 5)
+    check(
+        "auto excluded",
+        "auto" not in [f.value for f in spec.design_constraints.allowed_car_formats],
+        True,
+    )
+    check("data availability score", spec.data_availability_score, 0.0)
+    check("spec target_antigen", spec.inputs.target_antigen, None)
+
+    # Validation mode has nothing to screen, so the screening sources drop out.
+    validate = build_spec(
+        ProjectInput(
+            cancer_type="x", malignancy_type="solid", target_antigen="MSLN"
+        )
+    )
+    check("validation datasets", len(validate.required_datasets), 6)
+    check(
+        "validation blocking",
+        len([d for d in validate.required_datasets if d.required]),
+        4,
+    )
+
+    # The returned spec must not alias the shared indication config.
+    spec.inputs.target_antigen = "SEEDED"
+    check("input not mutated by build", PDAC_PROJECT.target_antigen, None)
+
+    # Back-to-back builds must not collide.
+    check("project id unique", build_spec(p).project_id != build_spec(p).project_id, True)
 
     failed = 0
     for label, got, expected in CHECKS:
