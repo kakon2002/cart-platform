@@ -64,6 +64,12 @@ SATURATION: dict[str, float] = {
     "c4_prevalence_tpm": 10.0,
     "c5_ectodomain_residues": 200.0,
     "c6_gene_effect": 1.0,
+    # Below this, a normal tissue reading cannot be told apart from zero. It
+    # floors the margin denominator instead of the ratio being taken as
+    # unbounded. Listed here with the other free parameters so the twelfth
+    # criterion perturbs it too: it moves the top of the ranking as hard as any
+    # saturation point does.
+    "c3_baseline_floor_tpm": 0.1,
 }
 
 #: Beyond this ratio the two tumour-versus-normal denominators are treated as
@@ -81,14 +87,19 @@ TIER_WEIGHTS = {1: 1.0, 2: 0.6, 3: 0.3}
 ORGAN_TIERS: dict[str, int] = {
     # tier 1
     "brain": 1, "heart": 1, "lung": 1, "liver": 1, "kidney": 1,
-    "pancreas": 1, "vascular": 1,
+    "pancreas": 1, "vascular": 1, "eye": 1,
     # tier 2
     "gi_tract": 2, "marrow_and_blood": 2, "bladder": 2, "endocrine": 2,
-    "muscle": 2, "nerve": 2, "eye": 2, "mucosa": 2,
+    "muscle": 2, "nerve": 2, "mucosa": 2,
     # tier 3
     "skin": 3, "adipose": 3, "breast": 3, "reproductive": 3, "salivary": 3,
     "connective": 3,
 }
+
+#: Organs not present in the reference criticality table, assigned here. Marked
+#: in the output so a reader can tell which tiers were inherited and which were
+#: supplied by the platform, rather than having to trust the whole table equally.
+PLATFORM_ADDED_ORGANS = frozenset({"vascular", "eye", "mucosa", "connective"})
 
 #: Not normal tissue. Excluded from risk rather than mapped to an organ.
 EXCLUDED_LABELS = frozenset(
@@ -240,9 +251,25 @@ ATLAS_LEVEL_SCORE = {0: 0.0, 1: 1 / 3, 2: 2 / 3, 3: 1.0}
 
 BASELINE_TPM_SATURATION = 1000.0
 
+#: The margin component's denominator, and only its denominator. The baseline
+#: names four pancreas entries; three are cell-sorted fractions and one is bulk.
+#: The tumour side of the comparison is bulk, so a median across all four mixes
+#: measurement types on one side of a ratio. The risk gate deliberately keeps
+#: reading all four and taking the worst of them: for safety the question is
+#: whether any pancreatic compartment carries the antigen, not what the organ
+#: averages.
+BULK_PANCREAS_LABEL = "Pancreas"
+
 
 def _clamp(x: float) -> float:
     return 0.0 if x < 0 else (1.0 if x > 1 else x)
+
+
+def _finite(x: float | None) -> float | None:
+    """Pass a real number through; turn anything else into an absent one."""
+    if x is None or math.isnan(x) or math.isinf(x):
+        return None
+    return x
 
 
 @dataclass
@@ -312,49 +339,49 @@ def _score_c3(
     tumour: float | None,
     baseline_pancreas: float | None,
     cohort_normal: float | None,
-    sat: float,
+    sat: dict[str, float],
 ) -> tuple[Component, float | None, float | None, bool]:
     if tumour is None or baseline_pancreas is None:
         # No row on one side. Genuinely unmeasured.
         return Component(None, None, "no row"), None, None, False
 
     def _fold(normal: float | None) -> float | None:
-        """Tumour over normal, with a measured absence handled as such.
+        """Tumour over normal, with the denominator floored at detection.
 
-        A normal value of zero is a measurement, not a gap: it says the protein
-        was looked for in normal tissue and not found, which is the single most
-        favourable thing this comparison can report. Returning unmeasured here
-        would discard the best evidence a target can have and, through the
-        evidence floor, drop it out of the ranking entirely.
+        A normal reading of zero is a measurement, not a gap — the protein was
+        looked for and not found, which is the most favourable thing this
+        comparison can say. But it cannot be treated as an unbounded ratio
+        either: dividing by it awards a perfect margin to proteins absent from
+        the tumour as well, where there is no margin because there is nothing
+        there. Flooring the denominator at the detection limit keeps the
+        favourable reading favourable while leaving the numerator to decide
+        whether anything is actually present.
         """
         if normal is None:
             return None
-        if normal > 0:
-            return tumour / normal
-        if tumour > 0:
-            return math.inf  # present in tumour, below detection in normal
-        return 0.0           # absent on both sides: no margin, still measured
+        return tumour / max(normal, floor)
 
+    floor = sat["c3_baseline_floor_tpm"]
     fold_baseline = _fold(baseline_pancreas)
     fold_cohort = _fold(cohort_normal)
+    below_detection = baseline_pancreas < floor
 
     disagree = False
-    if fold_cohort is not None and fold_baseline is not None:
-        if math.isinf(fold_baseline) != math.isinf(fold_cohort):
-            # One denominator sits below detection and the other does not, so
-            # the two are describing different normal tissue.
-            disagree = True
-        elif math.isfinite(fold_baseline) and fold_baseline > 0:
-            spread = fold_cohort / fold_baseline
-            disagree = spread > FOLD_DISAGREEMENT or spread < 1 / FOLD_DISAGREEMENT
+    if fold_cohort is not None and fold_baseline is not None and fold_baseline > 0:
+        spread = fold_cohort / fold_baseline
+        disagree = spread > FOLD_DISAGREEMENT or spread < 1 / FOLD_DISAGREEMENT
 
-    if math.isinf(fold_baseline):
-        score = 1.0
-    elif fold_baseline > 0:
-        score = _clamp(math.log2(fold_baseline) / math.log2(sat))
-    else:
-        score = 0.0
-    return Component(score, fold_baseline), fold_baseline, fold_cohort, disagree
+    score = (
+        _clamp(math.log2(fold_baseline) / math.log2(sat["c3_fold"]))
+        if fold_baseline > 0
+        else 0.0
+    )
+    component = Component(
+        score,
+        fold_baseline,
+        "normal below detection" if below_detection else "",
+    )
+    return component, fold_baseline, fold_cohort, disagree
 
 
 def _score_c4(values: np.ndarray | None, threshold: float) -> Component:
@@ -476,8 +503,13 @@ def compute_risk(
 # --------------------------------------------------------------------------
 
 
-def _confidence(components: dict[str, Component], row: CoverageRow) -> float:
-    measured = sum(WEIGHTS[k] for k, c in components.items() if c.measured)
+def _confidence(
+    components: dict[str, Component], row: CoverageRow, wts: dict[str, float]
+) -> float:
+    # Uses the weights this run actually scored with, not the module defaults,
+    # so a perturbed run cannot report a confidence describing a different
+    # weight set from its own composites.
+    measured = sum(wts[k] for k, c in components.items() if c.measured)
     tier_bonus = {
         PROTEIN_CONFIRMED: 0.3,
         RNA_SUPPORTED: 0.15,
@@ -506,11 +538,29 @@ def rank(
 ) -> tuple[list[Ranked], RiskModel]:
     sat = dict(SATURATION if saturation is None else saturation)
     wts = dict(WEIGHTS if weights is None else weights)
+
+    # An override naming an organ that does not exist would do nothing at all,
+    # while the output header went on reporting it as an applied relaxation
+    # complete with its rationale. A safety default that only appears to have
+    # been changed is worse than one that was never touched.
+    unknown = sorted(set(overrides) - set(ORGAN_TIERS))
+    if unknown:
+        raise KeyError(
+            "criticality override names organs that do not exist: "
+            + ", ".join(unknown)
+            + f"; known organs are {', '.join(sorted(ORGAN_TIERS))}"
+        )
     model = RiskModel(overrides=overrides)
 
-    pancreas_cols = [
-        i for i, t in enumerate(gtex_tissues) if BASELINE_ORGANS.get(t) == "pancreas"
-    ]
+    if BULK_PANCREAS_LABEL not in gtex_tissues:
+        # Failing here is the point. Silently having no denominator would make
+        # the margin component unmeasured for every protein at once, and the
+        # evidence floor would then quietly drop a third of the universe.
+        raise KeyError(
+            f"the baseline has no {BULK_PANCREAS_LABEL!r} column; "
+            "the margin component has no denominator"
+        )
+    bulk_pancreas_col = gtex_tissues.index(BULK_PANCREAS_LABEL)
 
     primary_mask = cohort.sample_types == PRIMARY_TUMOUR
     normal_mask = cohort.sample_types == SOLID_NORMAL
@@ -535,19 +585,24 @@ def rank(
         cj = cohort_join.get(row.accession)
         if cj is not None:
             col = cohort.values[:, cj[0]]
-            prevalence_values = col[primary_mask]
-            tumour_median = float(np.median(prevalence_values))
+            candidate = col[primary_mask]
+            # An empty group has no median, and a not-a-number median is not a
+            # measurement of zero. Either would otherwise flow into the margin
+            # as a real reading and be scored as a target with no enrichment.
+            if candidate.size:
+                prevalence_values = candidate
+                tumour_median = _finite(float(np.median(candidate)))
             if normal_mask.any():
-                cohort_normal_median = float(np.median(col[normal_mask]))
+                cohort_normal_median = _finite(float(np.median(col[normal_mask])))
 
         # baseline
         profile = gtex_profiles.get(row.accession)
         baseline_pancreas = None
-        if profile is not None and pancreas_cols:
-            baseline_pancreas = float(np.median(profile.values[pancreas_cols]))
+        if profile is not None:
+            baseline_pancreas = _finite(float(profile.values[bulk_pancreas_col]))
 
         c3, fold_b, fold_c, disagree = _score_c3(
-            tumour_median, baseline_pancreas, cohort_normal_median, sat["c3_fold"]
+            tumour_median, baseline_pancreas, cohort_normal_median, sat
         )
 
         di = dependency_index.get(gene) if gene else None
@@ -607,7 +662,7 @@ def rank(
                 risk=None if risk is None else round(risk, 4),
                 risk_organ=organ,
                 cleared=cleared,
-                confidence=_confidence(components, row),
+                confidence=_confidence(components, row, wts),
                 sources_disagree=disagree,
                 fold_baseline=fold_b,
                 fold_cohort=fold_c,
@@ -653,7 +708,12 @@ def _repo_root() -> str:
     return str(Path(__file__).resolve().parents[2])
 
 
-def configuration_hash(overrides: dict[str, int], ceiling: float) -> str:
+def configuration_hash(
+    overrides: dict[str, int],
+    ceiling: float,
+    saturation: dict[str, float] | None = None,
+    weights: dict[str, float] | None = None,
+) -> str:
     """Covers the tissue tables themselves, not only the tier assignments.
 
     Adding or moving a single label shifts thousands of risk scores. A hash that
@@ -662,11 +722,15 @@ def configuration_hash(overrides: dict[str, int], ceiling: float) -> str:
     """
     payload = {
         "weight_set_version": WEIGHT_SET_VERSION,
-        "weights": WEIGHTS,
+        "weights": WEIGHTS if weights is None else weights,
         "minimum_measured_weight": MINIMUM_MEASURED_WEIGHT,
-        "saturation": SATURATION,
+        "saturation": SATURATION if saturation is None else saturation,
         "fold_disagreement": FOLD_DISAGREEMENT,
         "dropout_epsilon": DROPOUT_EPSILON,
+        # The column the margin denominator is drawn from. Swapping it moves
+        # every fold change and therefore the whole ranking, so a hash that
+        # ignored it would let two different experiments compare as one.
+        "margin_denominator": BULK_PANCREAS_LABEL,
         "tier_weights": TIER_WEIGHTS,
         "organ_tiers": ORGAN_TIERS,
         "baseline_organs": BASELINE_ORGANS,
@@ -681,7 +745,17 @@ def configuration_hash(overrides: dict[str, int], ceiling: float) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
-def header(spec, model: RiskModel, universe: int, pins: dict) -> str:
+def header(
+    spec,
+    model: RiskModel,
+    universe: int,
+    pins: dict,
+    saturation: dict[str, float] | None = None,
+    weights: dict[str, float] | None = None,
+) -> str:
+    """Describes the run that produced the output, not the module defaults."""
+    sat = SATURATION if saturation is None else saturation
+    wts = WEIGHTS if weights is None else weights
     ceiling = spec.design_constraints.normal_tissue_risk_ceiling
     lines = [
         "=" * 72,
@@ -692,20 +766,26 @@ def header(spec, model: RiskModel, universe: int, pins: dict) -> str:
         f"  discovery mode       {spec.discovery_mode.value}",
         f"  target supplied      {spec.inputs.target_antigen!r}",
         f"  weight set           {WEIGHT_SET_VERSION}",
-        f"  weights              " + ", ".join(f"{k}={v}" for k, v in WEIGHTS.items()),
+        f"  weights              " + ", ".join(f"{k}={v}" for k, v in wts.items()),
         f"  minimum measured     {MINIMUM_MEASURED_WEIGHT}",
-        f"  saturation           " + ", ".join(f"{k}={v}" for k, v in SATURATION.items()),
+        f"  free parameters      " + ", ".join(f"{k}={v}" for k, v in sat.items()),
         f"  dropout epsilon      {DROPOUT_EPSILON}",
         f"  fold disagreement    {FOLD_DISAGREEMENT}x",
         f"  risk ceiling         {ceiling}",
         f"  universe             {universe}",
         f"  revision             {_revision()}",
-        f"  configuration hash   {configuration_hash(model.overrides, ceiling)}",
-        "  criticality tiers",
+        f"  configuration hash   "
+        f"{configuration_hash(model.overrides, ceiling, sat, wts)}",
+        f"  margin denominator   {BULK_PANCREAS_LABEL} (bulk only)",
+        "  criticality tiers    [+] marks a platform addition, not from the "
+        "reference table",
     ]
     for tier in (1, 2, 3):
         organs = sorted(o for o, t in ORGAN_TIERS.items() if t == tier)
-        lines.append(f"    tier {tier} (w={TIER_WEIGHTS[tier]}): {', '.join(organs)}")
+        marked = [
+            f"{o}[+]" if o in PLATFORM_ADDED_ORGANS else o for o in organs
+        ]
+        lines.append(f"    tier {tier} (w={TIER_WEIGHTS[tier]}): {', '.join(marked)}")
     if model.overrides:
         lines.append("  overrides")
         for organ, tier in model.overrides.items():
