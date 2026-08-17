@@ -7,6 +7,9 @@ tripped criterion is reported and the run stops; it is not adjusted away.
 from __future__ import annotations
 
 import math
+import os
+import subprocess
+import sys
 
 import numpy as np
 
@@ -106,7 +109,25 @@ def main() -> int:
         )
 
     rows, model = run()
-    by_gene = {r.gene: r for r in rows if r.gene}
+
+    # Several symbols carry more than one accession. Keeping only the last one
+    # would let a second entry under the same name go untested, which is exactly
+    # how a ubiquitous protein could clear the ceiling unnoticed.
+    all_by_gene: dict[str, list] = {}
+    for r in rows:
+        if r.gene:
+            all_by_gene.setdefault(r.gene, []).append(r)
+
+    def best(gene: str):
+        """The highest-scoring entry for a symbol, for reporting."""
+        members = all_by_gene.get(gene) or []
+        scored_members = [m for m in members if m.composite is not None]
+        if scored_members:
+            return max(scored_members, key=lambda m: m.composite)
+        return members[0] if members else None
+
+    by_gene = {g: best(g) for g in all_by_gene}
+    duplicated = {g: len(v) for g, v in all_by_gene.items() if len(v) > 1}
 
     pins = {
         "proteome": UNIPROT_PIN,
@@ -117,7 +138,7 @@ def main() -> int:
         "cell atlas": SERIES,
     }
     print()
-    print(stage3.header(spec, model, len(rows), pins))
+    print(stage3.header(spec, model, len(rows), pins, stage3.SATURATION, stage3.WEIGHTS))
 
     # -- structural report ------------------------------------------------
     scored = [r for r in rows if r.composite is not None]
@@ -132,8 +153,28 @@ def main() -> int:
     print(f"  risk undefined    {sum(1 for r in rows if r.risk is None):,}")
     print(f"  cleared at {ceiling}   {sum(1 for r in rows if r.cleared):,}")
 
+    print(f"  symbols carrying more than one accession: {len(duplicated)}")
+
+    # The specification requires the hash to be stable across processes. A hash
+    # seeded by anything process-local defeats itself silently, so it is checked
+    # here rather than assumed.
     hash_a = stage3.configuration_hash(overrides, ceiling)
-    print(f"\n  configuration hash (this process): {hash_a}")
+    probe = subprocess.run(
+        [
+            sys.executable, "-c",
+            "from car_pipeline.stages.stage3 import configuration_hash;"
+            f"print(configuration_hash({overrides!r}, {ceiling!r}))",
+        ],
+        capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)),
+    )
+    hash_b = probe.stdout.strip()
+    stable = hash_a == hash_b
+    print(f"\n  configuration hash (this process):  {hash_a}")
+    print(f"  configuration hash (fresh process): {hash_b or '<failed>'}")
+    print(f"  stable across processes: {'yes' if stable else 'NO'}")
+    if not stable:
+        print("  the hash is process-dependent and cannot identify a run")
+        return 1
 
     results: list[tuple[str, bool, str]] = []
 
@@ -157,11 +198,18 @@ def main() -> int:
     )
 
     # -- R2 ---------------------------------------------------------------
+    # Tested across every accession carrying the symbol, not just one.
     breached = [
-        g for g in UBIQUITOUS_IMMUNE
-        if (r := by_gene.get(g)) is not None and r.cleared
+        f"{g}({r.accession})"
+        for g in UBIQUITOUS_IMMUNE
+        for r in all_by_gene.get(g, [])
+        if r.cleared
     ]
-    criterion("R2", bool(breached), f"cleared the ceiling: {breached or 'none'}")
+    checked = sum(len(all_by_gene.get(g, [])) for g in UBIQUITOUS_IMMUNE)
+    criterion(
+        "R2", bool(breached),
+        f"cleared the ceiling: {breached or 'none'} (across {checked} accessions)",
+    )
 
     # -- R3 ---------------------------------------------------------------
     c5 = by_gene.get("CEACAM5")
@@ -223,12 +271,17 @@ def main() -> int:
     counts: dict[float, int] = {}
     for r in scored:
         counts[r.composite] = counts.get(r.composite, 0) + 1
-    top_value, top_count = max(counts.items(), key=lambda kv: kv[1])
-    share = top_count / max(1, len(scored))
-    criterion(
-        "R8", share > 0.05,
-        f"most repeated composite {top_value} occurs {top_count}x ({share:.2%})",
-    )
+    if not counts:
+        # Nothing scored at all is a degenerate run, which is the state these
+        # criteria exist to catch. It must trip, not raise.
+        criterion("R8", True, "nothing scored, so the distribution is degenerate")
+    else:
+        top_value, top_count = max(counts.items(), key=lambda kv: kv[1])
+        share = top_count / len(scored)
+        criterion(
+            "R8", share > 0.05,
+            f"most repeated composite {top_value} occurs {top_count}x ({share:.2%})",
+        )
 
     # -- R9 ---------------------------------------------------------------
     def tier_best(tier):
@@ -259,15 +312,17 @@ def main() -> int:
         f"{len(disagreeing)} of 25 carry the flag; all listed below, so none unread",
     )
     def _fmt(x):
-        if x is None:
-            return "n/a"
-        return "undetectable normal" if math.isinf(x) else f"{x:,.1f}x"
+        return "n/a" if x is None else f"{x:,.1f}x"
 
     for r in disagreeing:
+        # A fold built on a floored denominator is a lower bound, not a
+        # measurement, and has to read differently from one that was measured.
+        floored = r.components[stage3.C3].note == "normal below detection"
+        marker = "  [normal below detection]" if floored else ""
         print(
             f"      sources_disagree  {r.gene:10s} "
-            f"baseline {_fmt(r.fold_baseline):>22s}   "
-            f"cohort {_fmt(r.fold_cohort)}"
+            f"baseline {_fmt(r.fold_baseline):>12s}   "
+            f"cohort {_fmt(r.fold_cohort):>10s}{marker}"
         )
 
     # -- R12 --------------------------------------------------------------

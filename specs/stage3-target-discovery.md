@@ -103,9 +103,17 @@ happens to be in the universe on a given run.
 - **C3 tumour versus normal margin.** **Both fold changes are computed and both
   are reported.** Neither denominator is trustworthy alone:
 
-  - `fold_baseline` = median tumour level ÷ the normal baseline's pancreas
-    median. **This is the primary**, because the cohort's own normal arm is n=4
-    and every ratio built on it rests on four samples.
+  - `fold_baseline` = median tumour level ÷ the normal baseline's **bulk
+    pancreas** value. **This is the primary**, because the cohort's own normal
+    arm is n=4 and every ratio built on it rests on four samples.
+
+    The baseline names four pancreas entries: one bulk, three cell-sorted
+    fractions. Only the bulk one is used here, because the tumour side of the
+    ratio is bulk and a median across all four mixes measurement types on one
+    side of a comparison. This restriction applies to **C3 only** — the risk
+    gate reads all four and takes the worst, since the safety question is
+    whether any pancreatic compartment carries the antigen, not what the organ
+    averages.
   - `fold_cohort` = median tumour level ÷ the cohort's solid-normal median.
     Same assay and same pipeline as the tumour side, so it carries no
     cross-cohort batch effect — but almost no samples.
@@ -230,12 +238,16 @@ made here, not carried from any prior run, and are flagged for review:
 | organ | tier | reasoning |
 | --- | --- | --- |
 | vascular (aorta, coronary, tibial artery) | 1 | on-target attack on large vessels is not survivable |
-| eye (retina) | 2 | not life-threatening, but irreversible |
+| eye (retina) | 1 | irreversible; tier 1 is doing "unmanageable", not "fatal" |
 | mucosa (nasopharynx, oral) | 2 | aerodigestive lining, regenerates |
 | connective (cartilage, soft tissue) | 3 | structural, tolerant of damage |
 
 Where a label was genuinely ambiguous the higher tier was taken. Understating
 risk is the failure that costs a patient; overstating it costs a candidate.
+
+All four are marked `[+]` in the output header, so a reader can tell which tiers
+were inherited from the reference table and which the platform supplied. An
+assignment nobody can trace is an assignment nobody can challenge.
 
 Cultured cell lines in the baseline vocabulary (cultured fibroblasts,
 transformed lymphocytes) are **excluded from the risk computation entirely**.
@@ -343,7 +355,7 @@ one, which is worse than having no hash.
 The hash must be verified stable across processes — a hash seeded by anything
 process-local silently defeats itself.
 
-## 10. Rejection criteria — eleven, fixed in advance
+## 10. Rejection criteria — twelve, fixed in advance
 
 A tripped criterion means the spec changes and the run repeats. It never means
 the result gets an explanation.
@@ -374,9 +386,15 @@ perturbed independently, both doubled and halved, holding everything else fixed:
 | C1 expression saturation | 100 transcripts per 10k |
 | C2 specificity ratio saturation | 50× |
 | C3 fold saturation | 64× |
+| C3 baseline detection floor | 0.1 transcripts per million |
 | C4 prevalence threshold | 10 transcripts per million |
 | C5 ectodomain saturation | 200 residues |
 | C6 gene effect saturation | 1.0 |
+
+Seven parameters, so fourteen perturbations. The detection floor is included
+because it is the most consequential of them: it decides how a normal tissue
+reading of zero is handled, and getting that wrong has already cost this
+ranking its top target once in each direction.
 
 The criterion trips if any single perturbation replaces more than half of the
 top 50. Same shape and same threshold as R6, so the two are directly comparable.
