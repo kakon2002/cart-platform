@@ -108,7 +108,7 @@ def main() -> int:
             overrides, ceiling, saturation=saturation, weights=weights,
         )
 
-    rows, model = run()
+    rows, model, stats = run()
 
     # Several symbols carry more than one accession. Keeping only the last one
     # would let a second entry under the same name go untested, which is exactly
@@ -138,7 +138,12 @@ def main() -> int:
         "cell atlas": SERIES,
     }
     print()
-    print(stage3.header(spec, model, len(rows), pins, stage3.SATURATION, stage3.WEIGHTS))
+    print(
+        stage3.header(
+            spec, model, len(rows), pins,
+            stage3.SATURATION, stage3.WEIGHTS, stats,
+        )
+    )
 
     # -- structural report ------------------------------------------------
     scored = [r for r in rows if r.composite is not None]
@@ -251,7 +256,7 @@ def main() -> int:
         for factor in (1.2, 0.8):
             w = dict(stage3.WEIGHTS)
             w[key] = w[key] * factor
-            perturbed, _ = run(weights=w)
+            perturbed, _, _ = run(weights=w)
             overlap = len(base_top & set(top_n(perturbed))) / max(1, len(base_top))
             if overlap < worst_overlap[1]:
                 worst_overlap = (f"{key} x{factor}", overlap)
@@ -307,9 +312,13 @@ def main() -> int:
     # -- R11 --------------------------------------------------------------
     top25 = set(top_n(rows, 25))
     disagreeing = [r for r in rows if r.accession in top25 and r.sources_disagree]
+    # Tested against the measured systematic offset, not against parity. A
+    # parity test flagged all 25 and told a reader nothing.
     criterion(
         "R11", False,
-        f"{len(disagreeing)} of 25 carry the flag; all listed below, so none unread",
+        f"{len(disagreeing)} of 25 depart from the systematic offset "
+        f"({stats['field_offset_fold']:.1f}x) by more than "
+        f"{stats['tolerance_fold']:.0f}x; all listed, so none unread",
     )
     def _fmt(x):
         return "n/a" if x is None else f"{x:,.1f}x"
@@ -319,10 +328,12 @@ def main() -> int:
         # measurement, and has to read differently from one that was measured.
         floored = r.components[stage3.C3].note == "normal below detection"
         marker = "  [normal below detection]" if floored else ""
+        fe = r.field_elevation
         print(
-            f"      sources_disagree  {r.gene:10s} "
+            f"      departs  {r.gene:10s} "
             f"baseline {_fmt(r.fold_baseline):>12s}   "
-            f"cohort {_fmt(r.fold_cohort):>10s}{marker}"
+            f"cohort {_fmt(r.fold_cohort):>10s}   "
+            f"field elevation {fe:,.0f}x{marker}"
         )
 
     # -- R12 --------------------------------------------------------------
@@ -331,7 +342,7 @@ def main() -> int:
         for factor in (2.0, 0.5):
             s = dict(stage3.SATURATION)
             s[key] = s[key] * factor
-            perturbed, _ = run(saturation=s)
+            perturbed, _, _ = run(saturation=s)
             overlap = len(base_top & set(top_n(perturbed))) / max(1, len(base_top))
             if overlap < worst_sat[1]:
                 worst_sat = (f"{key} x{factor}", overlap)
@@ -350,7 +361,84 @@ def main() -> int:
         print(f"  {'TRIPPED' if is_tripped else 'clear  '}  {cid}: {detail}")
     print("=" * 72)
     print(f"  {len(results) - tripped}/{len(results)} criteria clear")
-    return 1 if tripped else 0
+
+    # Reported on every run, not only when it trips. A composite that drifts
+    # toward one component stops being a multi-criteria score long before it
+    # reaches the rejection threshold, and only the trend shows that.
+    print(
+        f"\n  WATCH  strongest single-component correlation: {worst[1]:.3f}"
+        f" ({worst[0]}), rejection at 0.95"
+    )
+
+    if tripped:
+        return 1
+
+    _report_biology(rows, ceiling)
+    return 0
+
+
+def _report_biology(rows, ceiling) -> None:
+    print("\n" + "=" * 72)
+    print("BIOLOGY")
+    print("=" * 72)
+
+    by_gene = {}
+    for r in rows:
+        if r.gene and (r.gene not in by_gene or (r.composite or 0) > (by_gene[r.gene].composite or 0)):
+            by_gene[r.gene] = r
+
+    tier_sizes = {}
+    for r in rows:
+        tier_sizes[r.evidence_class] = tier_sizes.get(r.evidence_class, 0) + 1
+
+    print("\n  known targets for this indication")
+    print(f"    {'gene':10s} {'rank':>14s} {'composite':>10s} {'risk':>7s} "
+          f"{'worst organ':>18s} {'field elev':>11s}  cleared")
+    for g in ["CEACAM5", "CEACAM6", "CLDN18", "MSLN", "MUC1"]:
+        r = by_gene.get(g)
+        if r is None:
+            print(f"    {g:10s} absent")
+            continue
+        size = tier_sizes[r.evidence_class]
+        fe = f"{r.field_elevation:,.1f}x" if r.field_elevation else "n/a"
+        print(
+            f"    {r.gene:10s} {f'{r.tier_rank} of {size:,}':>14s} "
+            f"{r.composite:>10.4f} {r.risk:>7.3f} {r.risk_organ or '-':>18s} "
+            f"{fe:>11s}  {'yes' if r.cleared else 'no'}"
+        )
+
+    classes = [PROTEIN_CONFIRMED, RNA_SUPPORTED, DATA_INSUFFICIENT]
+    print("\n  clearance by ceiling, split by evidence class")
+    print(f"    {'ceiling':>9s} {'all':>7s} " + " ".join(f"{c:>18s}" for c in classes))
+    for name, c in [("conservative", 0.15), ("moderate", 0.35), ("permissive", 0.60)]:
+        cleared = [r for r in rows if r.risk is not None and r.risk <= c]
+        per = [sum(1 for r in cleared if r.evidence_class == k) for k in classes]
+        print(
+            f"    {c:>9.2f} {len(cleared):>7,} "
+            + " ".join(f"{n:>18,}" for n in per)
+            + f"   ({name})"
+        )
+
+    print(f"\n  composition of the cleared set at {ceiling}")
+    cleared = [r for r in rows if r.risk is not None and r.risk <= ceiling]
+    for k in classes:
+        n = sum(1 for r in cleared if r.evidence_class == k)
+        share = n / len(cleared) if cleared else 0.0
+        of_class = n / tier_sizes.get(k, 1)
+        print(
+            f"    {k:20s} {n:>6,}  {share:>7.1%} of cleared   "
+            f"{of_class:>7.1%} of its class"
+        )
+    blocked = [r for r in rows if not (r.risk is not None and r.risk <= ceiling)]
+    for label, group in [("cleared", cleared), ("blocked", blocked)]:
+        if not group:
+            continue
+        conf = sum(r.confidence for r in group) / len(group)
+        stained = sum(1 for r in group if r.evidence_class == PROTEIN_CONFIRMED)
+        print(
+            f"    {label:8s} n={len(group):>6,}  mean confidence {conf:.2f}   "
+            f"protein-confirmed {stained / len(group):.1%}"
+        )
 
 
 if __name__ == "__main__":
