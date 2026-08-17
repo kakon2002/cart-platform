@@ -130,15 +130,20 @@ class SourceCache:
         extra: dict | None = None,
     ) -> Path:
         """Move the payload into place, then write the manifest that blesses it."""
-        if (
-            declared_rows is not None
-            and observed_rows is not None
-            and declared_rows != observed_rows
-        ):
+        count_verified = declared_rows is not None and observed_rows is not None
+        if count_verified and declared_rows != observed_rows:
             tmp_path.unlink(missing_ok=True)
             raise IntegrityError(
                 f"{entry.key}: source declared {declared_rows} rows, "
                 f"received {observed_rows}"
+            )
+        if not count_verified:
+            # Recorded rather than passed over in silence. An entry nobody could
+            # check reads exactly like one that passed its check.
+            print(
+                f"    note: {entry.key} arrived without a declared row count; "
+                "completeness is unverified",
+                flush=True,
             )
 
         dest = self.path(entry)
@@ -154,6 +159,7 @@ class SourceCache:
             "sha256": digest,
             "declared_rows": declared_rows,
             "observed_rows": observed_rows,
+            "count_verified": count_verified,
             "retrieved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
         if extra:

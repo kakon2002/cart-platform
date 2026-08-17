@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
 import re
 import uuid
 from datetime import datetime, timezone
@@ -52,6 +53,17 @@ _DOWNSTREAM_DATASETS: list[tuple[str, str, list[int], bool]] = [
     ("IEDB", "immunogenicity", [9], False),
     ("ClinicalTrials.gov", "prior outcomes", [9], False),
 ]
+
+_RESOLVER_MODULE = "car_pipeline.data.availability"
+
+#: Every dataset name this stage can emit. The status resolver checks its own
+#: registry against this, so a name that drifts on one side fails loudly rather
+#: than quietly reporting the dataset as having no connector.
+KNOWN_DATASET_NAMES = frozenset(
+    [n for n, _, _ in _SCREENING_DATASETS]
+    + [n for n, _, _ in _SHARED_DATASETS]
+    + [n for n, _, _, _ in _DOWNSTREAM_DATASETS]
+)
 
 
 def _slug(text: str) -> str:
@@ -125,10 +137,15 @@ def build_spec(inputs: ProjectInput, resolve_sources: bool = True) -> ProjectSpe
 def _resolve(datasets: list[RequiredDataset]) -> list[RequiredDataset]:
     """Ask the cache what is present, if a resolver has been built yet.
 
-    Until connectors exist every dataset is correctly ``not_configured``.
+    Until the resolver exists every dataset is correctly ``not_configured``.
+
+    The check is for whether the module exists, not whether importing it
+    succeeds. Catching import failures here would turn a broken dependency
+    anywhere in the connector chain into a clean report that no data is
+    configured — a wrong answer that looks like a valid one.
     """
-    try:
-        from car_pipeline.data.availability import resolve_dataset_statuses
-    except ImportError:
+    if importlib.util.find_spec(_RESOLVER_MODULE) is None:
         return datasets
+    from car_pipeline.data.availability import resolve_dataset_statuses
+
     return resolve_dataset_statuses(datasets)

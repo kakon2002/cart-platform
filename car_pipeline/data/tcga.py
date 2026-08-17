@@ -256,7 +256,13 @@ class TCGASource(DataSource):
                             "file; values cannot be stacked positionally"
                         )
                     samples.append(meta["submitter_id"] or meta["file_id"])
-                    types.append(SAMPLE_TYPES.get(meta["sample_type"], "other"))
+                    # An unrecognised category keeps its own label rather than
+                    # being folded into a catch-all. Folded, it would vanish
+                    # from every per-category count while still inflating the
+                    # sample total, and the two would stop adding up silently.
+                    types.append(
+                        SAMPLE_TYPES.get(meta["sample_type"], meta["sample_type"])
+                    )
                     blocks.append(values)
 
             matrix = np.vstack(blocks).astype(np.float32)
@@ -355,6 +361,12 @@ if __name__ == "__main__":
         print(f"  {label}: {got:,}  expected {exp:,}  ({pct:.2f}% off)")
 
     print(f"  joined through the identifier bridge: {bridged}")
+
+    # Every sample must sit in exactly one named category, or the per-category
+    # counts and the sample total stop describing the same set of files.
+    known = {PRIMARY_TUMOUR, SOLID_NORMAL, METASTATIC}
+    stray = sorted({str(t) for t in cohort.sample_types} - known)
+    print(f"  categories outside the expected three: {stray or 'none'}")
 
     print("\n  tumour vs normal median TPM")
     checks = [
