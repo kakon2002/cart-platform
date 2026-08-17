@@ -20,6 +20,7 @@ import gzip
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -31,6 +32,7 @@ CACHE_ROOT = Path(__file__).resolve().parents[2] / "data"
 
 CHUNK = 1 << 20
 MANIFEST_VERSION = 1
+_LINK_NEXT = re.compile(r'<([^>]+)>\s*;\s*rel="next"')
 USER_AGENT = "cart-platform/1.0 (research pipeline)"
 
 
@@ -318,11 +320,10 @@ def stream_paginated_to_file(
             if progress_label and page % 10 == 0:
                 print(f"    {progress_label}: {rows:,} rows", flush=True)
 
-            next_url = None
-            for part in link.split(","):
-                if 'rel="next"' in part:
-                    next_url = part.split(";")[0].strip().strip("<>")
-                    break
+            # The bracketed target can itself contain commas, so the header
+            # cannot be split on them.
+            match = _LINK_NEXT.search(link)
+            next_url = match.group(1) if match else None
 
         fh.flush()
         os.fsync(fh.fileno())
