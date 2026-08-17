@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.claude/
+.env
+
+# Anchored to the repository root on purpose. Without the leading slash this
+# pattern also matches car_pipeline/data/ and silently drops the entire source
+# module from every commit.
+/data/
