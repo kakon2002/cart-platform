@@ -295,6 +295,52 @@ pair_cleared(A, B)  and  not cleared(A)      # the anchor is rescued
 and its strongest form, where neither member cleared alone. Everything else
 Stage 4 emits is a report, not a recommendation.
 
+### 4.1 The claim, stated so it can fail
+
+The paragraphs above are an argument. This is the claim, in quantities that exist
+in the output and can come out against it.
+
+**Claim.** There exists a pair `(A, B)` such that
+
+```
+pair_risk_conservative(A,B) <= ceiling                       (1)  safety is won
+risk_A > ceiling                                             (2)  and it was not already there
+retention(A,B) >= 0.50                                       (3)  at a coverage cost worth paying
+f_AB(A,B) >= 0.10 in >= 60% of evaluable patients            (4)  in most patients, not on average
+pair_risk_conservative(A,B) < min(risk_A, risk_B) - 0.05     (5)  because of conjunction, not selection
+```
+
+Each line is a number this stage produces. (1)–(4) are the admissibility test in
+§7.1. (5) is the one that separates a real result from a restatement, and it is
+the quantitative form of the objection that a pair score is the better of its two
+members wearing a different name.
+
+**What refutes it.** Every one of these is a possible output, and each falsifies
+a different part of the claim:
+
+| observation | what it refutes |
+| --- | --- |
+| no pair satisfies (1) and (2) together | the architecture does not help this indication (P3) |
+| pairs satisfy (1) but never (5) | pairs are safe only because one member was already safer; the conjunction is inert (P1, P2) |
+| pairs satisfy (5) but never (3) | the conjunction works and costs more coverage than it is worth |
+| `f_AB` tracks `f_A x f_B` | co-expression carries no information beyond the marginals (P4) |
+| (1)–(5) hold only for pairs with unresolved organs | safety came from ignorance, not from measured absence (P5, P8) |
+
+**The costs are measured too, not conceded rhetorically.** Each is a column, so a
+reader can price the trade rather than take it on the argument in §4:
+
+| cost | quantity | where |
+| --- | --- | --- |
+| coverage given up | `1 - retention` | §6.4 |
+| escape reservoir created | `unaddressed` | §6.4 |
+| patients not served | share of evaluable patients below the `f_AB` floor | §6.5 |
+| tumour-side ceiling | `min(composite_A, composite_B)`, labelled a bound | §1 |
+
+A pair that wins on (1)–(5) and carries `unaddressed = 0.6` is not a good design.
+It is a safe design that leaves three fifths of the antigen-positive tumour
+untouched, and the output has to make that visible in the same row rather than in
+a later stage.
+
 ---
 
 ## 5. Combined normal tissue risk under AND-gating
@@ -454,17 +500,56 @@ to two antigens marking the same cells.
 
 **A pairing stage built on marginals ranks pairs by the product of each target's
 individual score and therefore adds nothing to Stage 3.** That is rejection
-criterion P4, and it is one of the three criteria written specifically to detect
+criterion P4, and it is one of the four criteria written specifically to detect
 this stage doing nothing.
 
-### 6.2 The new artefact
+### 6.2 The current atlas derivation cannot answer this, and must be re-derived
 
-Stage 4 requires a per-cell presence matrix over the pool. Built by streaming the
-cell atlas matrix in row blocks — it is CSR, 224,988 x 22,164, and the existing
-loader already streams at 8,192 rows — retaining only malignant cells and only
-genes in `P`. Cached under the same manifest discipline as every other artefact,
-with the pool identity in the fingerprint, so a changed pool invalidates it rather
-than silently reusing the wrong columns.
+Settled here rather than discovered mid-implementation.
+
+**It cannot.** `SingleCellSource.build_group_means()` streams the matrix in 8,192
+-row blocks and, inside that loop, accumulates per-group sums and counts. The cell
+axis is consumed and discarded before anything is written. `group_means.npz` is
+5.7 MB and holds:
+
+| array | shape | has a cell axis? |
+| --- | --- | --- |
+| `group_means` | 78 x 22,164 | no — groups x genes |
+| `compartment_means` | 6 x 22,164 | no — compartments x genes |
+| `per_cell_total` | 224,988 | yes, but no gene axis — total counts only |
+| `genes`, `ensembl`, `group_labels`, `level3`, `level3_parent` | 1-D | no |
+
+There is no array in the cache with both a cell axis and a gene axis. `f_AB` is
+therefore not recoverable from it by any computation — not approximately, not
+with more cleverness. The information was destroyed at build time.
+
+**Two further consequences, since they are easy to miss.** The cache also carries
+**no patient axis at all**, so the per-patient floor in §6.5 is equally
+unanswerable from it — this is not solely a conjunction problem. And
+`compartment_means` is a mean over cells rather than a positive fraction, so even
+the marginals `f_A` and `f_B` are not in the cache; a mean of a log1p-transformed
+sparse column is not the fraction of cells above a threshold.
+
+**What is required.** A second builder over the same `h5ad`, additive rather than
+a replacement:
+
+- one further full pass over the 8.3 GB expanded matrix, in the same 8,192-row
+  blocks, using the existing streaming path
+- keeping only rows where `Level 1 Annotation == "Epithelial (malignant)"`
+  (64,538 of 224,988) and only columns for genes in `P` (3,413 of 22,164)
+- carrying `pid` alongside, so the per-patient split is available without a third
+  pass
+- written as a **new cache entry** with its own manifest, declared in
+  `cache_entries()` beside the existing one
+
+**`group_means.npz` is not modified and its fingerprint does not move.** Stage 3's
+inputs are untouched and its output is not invalidated by this work — which is the
+reason for a new entry rather than an extension of the existing one, and it
+matters here because Stage 3 will have to be re-run for R13 (§0) and those two
+re-runs must not become entangled.
+
+The pool identity goes in the new entry's fingerprint, so a changed pool
+invalidates it rather than silently reusing the wrong columns.
 
 Measured, not assumed: the malignant compartment holds **64,538 cells** across
 **43 patients**.
@@ -763,11 +848,17 @@ I5 holds for the optimistic value only. See §5.5.
 | P11 | the single-versus-dual decision returns the same outcome for more than 95% of the pool |
 | P12 | a 2x change in `THETA`, the retention floor or the pooled coverage floor changes more than half of the `DUAL` recommendations |
 | P13 | the same protein is the recommended partner for more than half of all `DUAL` targets |
+| P14 | the recommended partner is the globally lowest-risk admissible protein for more than half of `DUAL` targets — partner choice that does not depend on the anchor |
 
-### P1, P2 and P4 — the criteria that would tell us the pairing logic is doing nothing
+### P1, P2, P4 and P14 — the criteria that would tell us the pairing logic is doing nothing
 
-Three criteria exist specifically to detect this stage adding nothing to Stage 3.
-All three report their measured values whether or not they trip.
+Four criteria exist specifically to detect this stage adding nothing to Stage 3.
+All four report their measured values whether or not they trip.
+
+Each catches a different way of being ceremonial: P1 and P2 that the pair's risk
+is its safer member renamed, P4 that its coverage is the product of two marginals
+already on disk, and P14 that the partner was chosen without reference to the
+anchor at all. A stage can pass any three and fail the fourth.
 
 **P1 and P2 — the null result on the risk side.** `min(risk_A, risk_B)` is the
 answer a stage produces if it never resolves organs: take each target's whole-organ
@@ -780,10 +871,22 @@ member by a margin large enough to matter. A stage can pass one and fail the oth
 and failing either means the same thing.
 
 **P4 — the null result on the coverage side.** `f_A x f_B` is what the marginals
-alone give, and the marginals are already on disk in the cached compartment means.
-If the measured double-positive fraction is rank-equivalent to the product, the
-per-cell pass over the matrix produced no information that was not already
-available, and the co-expression measurement is decorative.
+alone give. The marginals are not literally in the old cache — §6.2 establishes
+that a compartment mean is not a positive fraction — but they are the cheap half
+of the new artefact: `f_A` and `f_B` are 3,413 column sums, requiring no pairwise
+work at all, while `f_AB` is the 5.8 million conjunctions. If the measured
+double-positive fraction is rank-equivalent to the product, then everything the
+expensive half produced was already implied by the cheap half, and the
+co-expression measurement is decorative.
+
+**P14 — the null result on partner selection.** A stage can compute the
+conjunction correctly and still be ceremonial at the point of recommendation, by
+handing every anchor the same globally safe, broadly co-expressed partner. Then
+the partner is a property of the pool, not of the anchor, and the pairing is a
+lookup wearing the clothes of a search. P13 catches the degenerate form where one
+protein wins outright; P14 catches the subtler form where the winner differs by
+name but is always simply the lowest-risk admissible protein available. Both are
+reported as distributions, not just as pass or fail.
 
 The correlation is computed **only over pairs where both members are above the
 dropout epsilon**. The rest have no measurement to correlate, and zero-filling them
@@ -846,7 +949,7 @@ Required in the output regardless of what any of them turn out to be:
 - pairs evaluated; pairs clearing; pairs clearing where **neither** member cleared
   alone
 - the four-way outcome distribution over `P`
-- P1, P2 and P4's measured correlations
+- P1, P2, P4 and P14's measured values, whether or not any of them trips
 - the share of pairs whose risk is set by the bulk arm (§5.3), and the share where
   cell type resolution strictly lowers risk
 - dropout-silent pool members and unmeasurable pairs
@@ -919,10 +1022,12 @@ specific gap, rather than being rediscovered later as a surprise.
 
 Implementation order once approved, and **after R13 clears**:
 
-1. the per-cell artefact in `data/singlecell.py` — malignant-cell submatrix over the
-   pool, cached, with the pool in the fingerprint
+1. the per-cell artefact in `data/singlecell.py` — a **new** cache entry beside
+   `group_means`, holding the malignant-cell submatrix over the pool with `pid`
+   carried alongside, fingerprinted on the pool (§6.2). `group_means.npz` is not
+   touched, so Stage 3 is not invalidated.
 2. `stages/stage4.py` — conjunction risk, then coverage, then the decision
-3. `verify_pairing.py` — the five invariants first, then the thirteen criteria, and
+3. `verify_pairing.py` — the five invariants first, then the fourteen criteria, and
    only then any reading of the biology
 
 Same order and same rule as Stage 3: the invariants and criteria run before anyone
