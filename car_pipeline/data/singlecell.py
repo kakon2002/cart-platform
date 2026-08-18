@@ -589,6 +589,9 @@ COUNTS_LAYER = "counts"
 
 MALIGNANT_LEVEL1 = "Epithelial (malignant)"
 
+JOIN_SYMBOL = "symbol"
+JOIN_ENSEMBL_BRIDGE = "ensembl_bridge"
+
 
 @dataclass
 class MalignantCells:
@@ -607,6 +610,29 @@ class MalignantCells:
     def evaluable_patients(self, minimum: int = 100) -> list[str]:
         labels, counts = np.unique(self.patient, return_counts=True)
         return sorted(str(l) for l, c in zip(labels, counts) if c >= minimum)
+
+    def subset(self, genes: list[str]) -> "MalignantCells":
+        """Narrow to a subset of the columns already held.
+
+        A smaller gene set is a slice of this one, not a different derivation,
+        so taking it here avoids streaming 8.3 GB again to answer a question the
+        loaded matrix already contains.
+        """
+        column = {g: i for i, g in enumerate(self.genes)}
+        # Genes with no column are recorded rather than rejected, exactly as the
+        # builder records them. Some requested genes have no row in the matrix
+        # at all, so a subset that refused them would behave differently from
+        # the derivation it is a subset of.
+        present = [g for g in genes if g in column]
+        absent = [g for g in genes if g not in column]
+        return MalignantCells(
+            genes=present,
+            counts=self.counts[:, [column[g] for g in present]],
+            patient=self.patient,
+            untreated=self.untreated,
+            depth=self.depth,
+            missing=sorted(set(self.missing) | set(absent)),
+        )
 
 
 def _gene_digest(genes: Iterable[str]) -> str:

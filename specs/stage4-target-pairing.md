@@ -522,6 +522,13 @@ KRT19 is included because it is the canonical malignant marker at a compartment
 mean of 14.1, so it is the loudest possible signal — a derivation broken the way
 §6.3's Trap 2 breaks one returns 0.0000 for it, which is unmistakable.
 
+**KRT19 is requested as an extra column, not drawn from the pool.** It is a
+cytokeratin, so it never passes the surface filter and can never be a pool
+member. That is what makes it a good control rather than a problem: it is the
+loudest signal in the atlas and it is independent of everything the ranking
+stage decided. The per-cell artefact is therefore built over the pool **plus**
+the control genes, and the controls take no part in any pairing.
+
 **CEACAM5 is excluded from this check and must not be used for it.** CEACAM5 reads
 **2 molecules across all 64,538 malignant cells**, a detection fraction of
 0.0000. This is the dropout failure Stage 3 already documented and quantified
@@ -762,6 +769,20 @@ re-checked here.
 | I4 | `pair_confidence <= min(confidence_A, confidence_B)` |
 | I5 | `combined_risk_optimistic <= min(risk_A, risk_B)` |
 | I6 | `f_AB` at 1 count `>=` `f_AB` at 2 counts `>=` at 3 counts |
+| I7 | `independence_risk <= combined_risk` — the optimistic bound never exceeds the gate |
+
+I7 follows from scores lying in `[0, 1]`, where `score_A x score_B <= min(score_A,
+score_B)` organ by organ. It is asserted rather than assumed because it is the
+arithmetic that makes §5.2's two bounds a range rather than two unrelated
+numbers; if it ever failed, the pair of them would be reported as an interval
+that does not contain what it claims to.
+
+**Both risk numbers are carried at four decimals**, the precision the ranking
+stage stores its own risk at. I1 and I5 compare across the two stages, and a
+full-precision pair risk against a rounded single risk disagrees at the fifth
+decimal for arithmetic reasons rather than substantive ones. The invariants
+absorb that boundary and print the worst observed gap, so a real disagreement
+cannot hide underneath the tolerance.
 
 I1 is checked across the whole pool, not spot-checked: `min(x,x) = x` at every
 level, so pairing a target with itself must reproduce Stage 3 exactly. If it does
@@ -775,10 +796,10 @@ not, the two machineries disagree about what an organ score is.
 | P2 | fewer than 1% of pairs achieve `combined_risk < min(risk_A, risk_B) - 0.05` |
 | P3 | **no blocked target is rescued by any pair** — no target moves from blocked to cleared |
 | P4 | `f_AB` correlates above 0.98 (Spearman) with `f_A x f_B` across measured pairs |
-| P5 | a pair clears whose clearance depends on an organ unresolved for either member |
+| P5 | a pair is marked cleared on the optimistic arm — `optimistic <= ceiling < combined` |
 | P6 | a pair carrying `CO_EXPRESSION_NOT_MEASURED` is recommended |
 | P7 | a pair containing a ubiquitous immune protein (HLA-A/B, CD74, PTPRC) clears |
-| P8 | more than 10% of clearing pairs clear because one member is unmeasured in the organ setting the other's risk |
+| P8 | more than 10% of clearing pairs stop clearing when unresolved organs are charged at full criticality |
 | P9 | a recommended pair's coverage is concentrated in fewer than 60% of evaluable patients |
 | P10 | `DUAL` is recommended for a target that already clears alone |
 | P11 | the decision returns the same outcome for more than 95% of the pool |
@@ -816,6 +837,36 @@ universally, not as "MSLN must be rescued": requiring a named protein to survive
 how a screen becomes a confirmation of what was already believed. MSLN, CLDN18,
 CEACAM6, CEACAM5 and MUC1 are a **reported watch list** whose outcome is printed
 either way.
+
+### P5 and P8 detail — two different questions about ignorance
+
+Stage 3's open problem is a gate that selects for absence of evidence. The pair
+version would be worse, because it is disguised as a design feature: a pair
+"clears" because member B was never measured where member A is dangerous, and the
+output reads as a successful AND gate.
+
+**P5 is the wiring check.** Clearance must be decided on `combined_risk`, never on
+`combined_risk_optimistic`. A pair that clears only on the optimistic arm is
+`RISK_UNRESOLVED` by definition and must not be marked cleared.
+
+**P8 is the substantive one, and it is not the same question.** Merely having an
+unresolved organ is not a failure: the conservative arm already charges the
+measured member's own score there, so such a pair cleared *despite* the gap. P8
+asks whether clearance would survive the unmeasured antigen **saturating** the
+organ nobody looked at. Written as a number that needs a third fill:
+
+```
+pessimistic(o) = criticality(o)                            o unresolved for the pair
+               = min(score_A(o), score_B(o)) x criticality(o)   otherwise
+```
+
+computed and reported, and **never the gate**. Charging full criticality at every
+gap would fail almost everything and would make the pool's measurement coverage,
+rather than its biology, the thing under test.
+
+An earlier draft phrased both loosely enough that they were first implemented as
+"has any unresolved organ" — a property of the data rather than of the clearance.
+The wording above is deliberately operational for that reason.
 
 ### P16 detail
 

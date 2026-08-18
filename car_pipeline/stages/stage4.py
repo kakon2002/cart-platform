@@ -1,0 +1,532 @@
+"""Stage 4 — target pairing and the single-versus-dual decision.
+
+Implements `specs/stage4-target-pairing.md`. Pool, thresholds and criteria are
+fixed there and are read from here, not tuned.
+
+Two new measurements, and nothing else is re-derived:
+
+* combined risk, the minimum per organ before the maximum across organs, which
+  is the only thing an AND gate buys over either antigen alone
+* co-expression, the fraction of malignant cells carrying both antigens, which
+  is what the gate actually kills
+
+The per-organ scores come from the ranking stage rather than being recomputed,
+so pairing a target with itself reproduces its single-antigen risk exactly. A
+second implementation of the tissue mapping would be a second place for the
+mapping bugs to live.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+from dataclasses import dataclass, field
+
+import numpy as np
+
+from car_pipeline.stages import stage3
+from car_pipeline.stages.stage3 import RiskModel, Ranked
+
+#: The pool is the top of the tumour-side ranking with risk ignored entirely.
+#: Risk is the thing pairing exists to fix, so filtering on it first would leave
+#: the stage unable to reach the targets a dual design is for.
+POOL_SIZE = 200
+
+#: A cell carries an antigen when at least one molecule was captured. Reported
+#: at 2 and 3 as well, because the ordering is not stable across them.
+DETECTION_COUNTS = 1
+SENSITIVITY_COUNTS = (1, 2, 3)
+
+#: Set against the measured range rather than chosen and then discovered to
+#: admit nothing: the best pair of known targets in this atlas reaches 0.047 of
+#: malignant cells, so a floor at 0.05 or 0.10 would eliminate every pair this
+#: stage exists to evaluate. Deliberately low, and paired with P16, which trips
+#: if even this admits nothing.
+COVERAGE_FLOOR = 0.02
+PATIENT_FRACTION_FLOOR = 0.60
+
+#: A proportion cannot be estimated from three cells. 29 of 43 patients clear
+#: this; the excluded ones are reported rather than dropped quietly.
+MIN_MALIGNANT_CELLS = 100
+
+#: Below this a positive fraction is not a measurement. Carrying forward the
+#: rule that a single-cell zero never rejects a target: such a pair is marked
+#: unmeasured, not scored zero.
+MIN_DETECTED_CELLS = 10
+
+SINGLE = "SINGLE"
+DUAL = "DUAL"
+NO_DESIGN = "NO_DESIGN"
+UNRESOLVED = "UNRESOLVED"
+
+
+# --------------------------------------------------------------------------
+# combined risk
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class PairRisk:
+    combined: float | None            # the gate: min per organ, unresolved filled
+    optimistic: float | None          # unresolved organs contribute nothing
+    independence: float | None        # score_A x score_B, the lower bound
+    #: Unresolved organs charged at full criticality rather than at the measured
+    #: member's score. Not the gate, and not a candidate for it: it is the
+    #: question "would this pair still clear if the unmeasured antigen turned
+    #: out to saturate the organ", which is what "clearance depends on an
+    #: unresolved organ" means when written as a number.
+    pessimistic: float | None
+    organ: str | None
+    unresolved_organs: list[str] = field(default_factory=list)
+
+    @property
+    def risk_unresolved(self) -> bool:
+        return bool(self.unresolved_organs)
+
+
+def pair_risk(
+    model: RiskModel, a: dict[str, float], b: dict[str, float]
+) -> PairRisk:
+    """Minimum per organ, then maximum across organs.
+
+    Minimum because an AND gate only fires where both antigens are present, so
+    the organ's risk is bounded by whichever is scarcer there. Taking the
+    maximum would reduce the pair to its more dangerous member and ignore the
+    architecture entirely.
+
+    The minimum assumes perfect overlap within the organ, which is maximal
+    co-expression rather than minimal. That is pessimistic for safety and
+    optimistic for coverage, and the two coincide, which is what makes it the
+    right thing to gate on. It is a bound: neither source carries a joint
+    distribution over cells, so no measurement of within-organ co-expression
+    exists to be had.
+
+    Organs measured for neither member are outside both mappings and contribute
+    to nothing. The ranking stage already tolerates organs nobody measured, and
+    filling them here would break the identity that pairing a target with itself
+    reproduces its own risk.
+    """
+    conservative: dict[str, float] = {}
+    optimistic: dict[str, float] = {}
+    independence: dict[str, float] = {}
+    pessimistic: dict[str, float] = {}
+    unresolved: list[str] = []
+
+    for organ in set(a) | set(b):
+        sa, sb = a.get(organ), b.get(organ)
+        if sa is not None and sb is not None:
+            conservative[organ] = optimistic[organ] = min(sa, sb)
+            independence[organ] = sa * sb
+            pessimistic[organ] = min(sa, sb)
+            continue
+        # One member measured here and the other not. The pair's whole claim is
+        # an absence, so an unobserved absence cannot be credited to it: the
+        # missing member is assumed present wherever nobody looked.
+        unresolved.append(organ)
+        known = sa if sa is not None else sb
+        conservative[organ] = known
+        independence[organ] = known
+        pessimistic[organ] = 1.0
+
+    combined, organ = stage3.worst_organ(model, conservative)
+    opt, _ = stage3.worst_organ(model, optimistic)
+    ind, _ = stage3.worst_organ(model, independence)
+    pess, _ = stage3.worst_organ(model, pessimistic)
+    # Rounded to the precision the ranking stage stores its own risk at, so the
+    # two are directly comparable. Comparing a full precision pair risk against
+    # a rounded single risk reports a disagreement at the fifth decimal that is
+    # arithmetic rather than substance.
+    return PairRisk(
+        _round(combined),
+        _round(opt),
+        _round(ind),
+        _round(pess),
+        organ,
+        sorted(unresolved),
+    )
+
+
+def _round(value: float | None) -> float | None:
+    return None if value is None else round(value, 4)
+
+
+# --------------------------------------------------------------------------
+# co-expression
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class Coverage:
+    measured: bool
+    f_a: float | None = None
+    f_b: float | None = None
+    f_ab: float | None = None
+    p_a_given_b: float | None = None
+    p_b_given_a: float | None = None
+    sacrificed_a: float | None = None
+    sacrificed_b: float | None = None
+    jaccard: float | None = None
+    patients_at_floor: int = 0
+    patients_evaluable: int = 0
+    reason: str = ""
+
+    @property
+    def patient_fraction(self) -> float:
+        if not self.patients_evaluable:
+            return 0.0
+        return self.patients_at_floor / self.patients_evaluable
+
+
+def intersection_matrix(positive: np.ndarray) -> np.ndarray:
+    """Pairwise double-positive counts for every gene pair at once.
+
+    `positive` is cells x genes. The product of its transpose with itself gives
+    every intersection in one pass; the diagonal is the marginal count. Exact in
+    float32 because the cell count is far below the point where it stops
+    counting integers exactly.
+    """
+    m = positive.astype(np.float32)
+    return (m.T @ m).astype(np.int64)
+
+
+def coverage_from_counts(
+    n_cells: int,
+    n_a: int,
+    n_b: int,
+    n_ab: int,
+    patients_at_floor: int,
+    patients_evaluable: int,
+) -> Coverage:
+    if n_a < MIN_DETECTED_CELLS or n_b < MIN_DETECTED_CELLS:
+        # This assay drops transcripts that bulk measurement finds abundantly
+        # present, so silence here is the assay reporting its own capture
+        # failure. Unmeasured, never zero, and never a rejection.
+        return Coverage(measured=False, reason="below detection")
+
+    f_a, f_b = n_a / n_cells, n_b / n_cells
+    f_ab = n_ab / n_cells
+    union = n_a + n_b - n_ab
+    return Coverage(
+        measured=True,
+        f_a=f_a,
+        f_b=f_b,
+        f_ab=f_ab,
+        # Named for what survives: P(B|A) is the share of A's own positive cells
+        # that also carry B, so it is A's coverage that it describes.
+        p_a_given_b=n_ab / n_b,
+        p_b_given_a=n_ab / n_a,
+        sacrificed_a=1.0 - n_ab / n_a,
+        sacrificed_b=1.0 - n_ab / n_b,
+        jaccard=(n_ab / union) if union else 0.0,
+        patients_at_floor=patients_at_floor,
+        patients_evaluable=patients_evaluable,
+    )
+
+
+# --------------------------------------------------------------------------
+# pairs
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class Pair:
+    gene_a: str
+    gene_b: str
+    accession_a: str
+    accession_b: str
+    risk: PairRisk
+    coverage: Coverage
+    risk_a: float
+    risk_b: float
+    cleared_a: bool
+    cleared_b: bool
+    organ_a: str | None
+    organ_b: str | None
+    composite_a: float
+    composite_b: float
+    confidence_a: float
+    confidence_b: float
+    ceiling: float
+    organs_total: int = 0
+    organs_resolved: int = 0
+
+    @property
+    def confidence(self) -> float:
+        """Third number, never combined with the other two.
+
+        Bounded by the weaker member by construction: a pair cannot be better
+        evidenced than the least evidenced antigen in it. The two discounts are
+        the things pairing adds to the question — how much of the organ union
+        was resolved for both members, and whether co-expression was measurable
+        at all.
+        """
+        base = min(self.confidence_a, self.confidence_b)
+        resolved = (
+            self.organs_resolved / self.organs_total if self.organs_total else 0.0
+        )
+        measured = 1.0 if self.coverage.measured else 0.75
+        return round(base * resolved * measured, 4)
+
+    @property
+    def cleared(self) -> bool:
+        """Conservative value, so an unresolved organ cannot clear a pair."""
+        return self.risk.combined is not None and self.risk.combined <= self.ceiling
+
+    @property
+    def delta_a(self) -> float | None:
+        if self.risk.combined is None:
+            return None
+        return self.risk_a - self.risk.combined
+
+    @property
+    def delta_b(self) -> float | None:
+        if self.risk.combined is None:
+            return None
+        return self.risk_b - self.risk.combined
+
+    @property
+    def rescued(self) -> list[str]:
+        """A condition, not a statistic.
+
+        A member is rescued only when its own risk is above the ceiling and the
+        pair's is not. A large movement that does not cross buys nothing and is
+        not a rescue; the delta still reports how far it got.
+        """
+        if not self.cleared:
+            return []
+        out = []
+        if self.risk_a > self.ceiling:
+            out.append(self.gene_a)
+        if self.risk_b > self.ceiling:
+            out.append(self.gene_b)
+        return out
+
+    @property
+    def coverage_ok(self) -> bool:
+        c = self.coverage
+        return (
+            c.measured
+            and c.f_ab >= COVERAGE_FLOOR
+            and c.patient_fraction >= PATIENT_FRACTION_FLOOR
+        )
+
+    @property
+    def admissible(self) -> bool:
+        return self.cleared and self.coverage_ok
+
+
+def build_pool(rows: list[Ranked], size: int = POOL_SIZE) -> list[Ranked]:
+    """Top of the tumour-side ranking, risk ignored entirely.
+
+    One entry per symbol: several symbols carry more than one accession, and two
+    pool members naming the same gene would pair with each other and report a
+    perfect intersection that means nothing.
+    """
+    scored = [r for r in rows if r.composite is not None and r.gene]
+    scored.sort(key=lambda r: (-r.composite, r.gene, r.accession))
+    seen: set[str] = set()
+    pool: list[Ranked] = []
+    for r in scored:
+        if r.gene in seen:
+            continue
+        seen.add(r.gene)
+        pool.append(r)
+        if len(pool) == size:
+            break
+    return pool
+
+
+def evaluate(
+    pool: list[Ranked],
+    per_organ: dict[str, dict[str, float]],
+    model: RiskModel,
+    ceiling: float,
+    cells,
+    threshold: int = DETECTION_COUNTS,
+) -> list[Pair]:
+    """Every pair in the pool. No pair is excluded from computation."""
+    missing_risk = [r.gene for r in pool if r.risk is None]
+    if missing_risk:
+        # The pool ignores the *value* of risk, not whether it exists. A member
+        # with no risk at all would make every pair containing it unresolvable,
+        # and silently so.
+        raise ValueError(
+            "pool members carry no normal tissue risk: " + ", ".join(missing_risk)
+        )
+
+    column = {g: i for i, g in enumerate(cells.genes)}
+    present: list[int] = []
+    slot: dict[int, int] = {}
+    for pos, r in enumerate(pool):
+        i = column.get(r.gene)
+        if i is None:
+            continue
+        slot[pos] = len(present)
+        present.append(i)
+
+    positive = cells.counts[:, np.asarray(present)] >= threshold
+    n_cells = positive.shape[0]
+    inter = intersection_matrix(positive)
+
+    # Per patient, accumulated as a count of patients at or above the floor for
+    # each pair. A pair double-positive in half the patients and absent in the
+    # rest pools identically to one that is uniform, and those are different
+    # products.
+    at_floor = np.zeros_like(inter)
+    labels, counts = np.unique(cells.patient, return_counts=True)
+    evaluable = [l for l, c in zip(labels, counts) if c >= MIN_MALIGNANT_CELLS]
+    for label in evaluable:
+        rows_p = cells.patient == label
+        sub = positive[rows_p]
+        at_floor += (intersection_matrix(sub) >= COVERAGE_FLOOR * sub.shape[0])
+    n_evaluable = len(evaluable)
+
+    out: list[Pair] = []
+    for i in range(len(pool)):
+        for j in range(i + 1, len(pool)):
+            ra, rb = pool[i], pool[j]
+            si, sj = slot.get(i), slot.get(j)
+            if si is None or sj is None:
+                cov = Coverage(measured=False, reason="no row in the cell atlas")
+            else:
+                cov = coverage_from_counts(
+                    n_cells,
+                    int(inter[si, si]),
+                    int(inter[sj, sj]),
+                    int(inter[si, sj]),
+                    int(at_floor[si, sj]),
+                    n_evaluable,
+                )
+            pr = pair_risk(
+                model, per_organ[ra.accession], per_organ[rb.accession]
+            )
+            union = len(set(per_organ[ra.accession]) | set(per_organ[rb.accession]))
+            out.append(
+                Pair(
+                    gene_a=ra.gene,
+                    gene_b=rb.gene,
+                    accession_a=ra.accession,
+                    accession_b=rb.accession,
+                    risk=pr,
+                    coverage=cov,
+                    confidence_a=ra.confidence,
+                    confidence_b=rb.confidence,
+                    organs_total=union,
+                    organs_resolved=union - len(pr.unresolved_organs),
+                    risk_a=ra.risk,
+                    risk_b=rb.risk,
+                    cleared_a=ra.cleared,
+                    cleared_b=rb.cleared,
+                    organ_a=ra.risk_organ,
+                    organ_b=rb.risk_organ,
+                    composite_a=ra.composite,
+                    composite_b=rb.composite,
+                    ceiling=ceiling,
+                )
+            )
+    return out
+
+
+# --------------------------------------------------------------------------
+# the decision
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class Decision:
+    gene: str
+    outcome: str
+    partner: str | None = None
+    pair: Pair | None = None
+    failed_on: dict[str, int] = field(default_factory=dict)
+
+
+def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
+    by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
+    for p in pairs:
+        by_gene[p.gene_a].append(p)
+        by_gene[p.gene_b].append(p)
+
+    cleared = {r.gene: r.cleared for r in pool}
+    out: list[Decision] = []
+    for r in pool:
+        mine = by_gene[r.gene]
+        admissible = [p for p in mine if p.admissible]
+        # Among partners that clear, safety is settled for all of them, so what
+        # separates them is how much of the tumour the gate still kills.
+        admissible.sort(key=lambda p: (-p.coverage.f_ab, p.risk.combined))
+
+        if cleared[r.gene]:
+            best = admissible[0] if admissible else None
+            out.append(
+                Decision(
+                    gene=r.gene,
+                    outcome=SINGLE,
+                    partner=_other(best, r.gene) if best else None,
+                    pair=best,
+                )
+            )
+            continue
+
+        if admissible:
+            best = admissible[0]
+            out.append(
+                Decision(
+                    gene=r.gene,
+                    outcome=DUAL,
+                    partner=_other(best, r.gene),
+                    pair=best,
+                )
+            )
+            continue
+
+        failed = {
+            "risk": sum(1 for p in mine if not p.cleared),
+            "coverage": sum(1 for p in mine if p.cleared and not p.coverage_ok),
+            "unmeasured": sum(1 for p in mine if not p.coverage.measured),
+        }
+        salvageable = [
+            p
+            for p in mine
+            if p.risk.risk_unresolved
+            and p.risk.optimistic is not None
+            and p.risk.optimistic <= p.ceiling
+            and p.coverage_ok
+        ]
+        out.append(
+            Decision(
+                gene=r.gene,
+                outcome=UNRESOLVED if salvageable else NO_DESIGN,
+                failed_on=failed,
+            )
+        )
+    return out
+
+
+def _other(pair: Pair, gene: str) -> str:
+    return pair.gene_b if pair.gene_a == gene else pair.gene_a
+
+
+# --------------------------------------------------------------------------
+# reproducibility
+# --------------------------------------------------------------------------
+
+
+def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
+    """Covers the stage 3 hash as well as this stage's own parameters.
+
+    A pairing result is not interpretable without knowing which ranking produced
+    its inputs, so the two travel together.
+    """
+    payload = {
+        "stage3": stage3_hash,
+        "pool_size": POOL_SIZE,
+        "pool": pool_genes,
+        "detection_counts": DETECTION_COUNTS,
+        "coverage_floor": COVERAGE_FLOOR,
+        "patient_fraction_floor": PATIENT_FRACTION_FLOOR,
+        "min_malignant_cells": MIN_MALIGNANT_CELLS,
+        "min_detected_cells": MIN_DETECTED_CELLS,
+    }
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
