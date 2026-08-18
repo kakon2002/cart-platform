@@ -339,7 +339,16 @@ measurement there from either source. Two risks are computed:
 - `combined_risk_optimistic` — unresolved organs contribute nothing
 - `combined_risk` (**the gate**) — each unresolved organ contributes
   `measured_member_score(o) x criticality(o)`, the missing member assumed present
-  wherever nobody looked; `criticality(o)` in full where neither is measured
+  wherever nobody looked
+
+**Organs measured for neither member are outside the analysis entirely** and
+contribute to neither number. This is not an oversight and it is forced: Stage 3
+already tolerates organs nobody measured, taking its maximum over the organs that
+resolve, and I1 requires `combined_risk(T,T) == risk(T)` exactly. Filling
+never-measured organs with `criticality(o)` would break that identity for every
+target and would introduce ignorance the single-antigen gate never charged for.
+The pair adds no new tolerance; it only refuses to *benefit* from a gap where one
+member is measured and the other is not.
 
 Where `combined_risk_optimistic <= ceiling < combined_risk`, the pair is
 `RISK_UNRESOLVED` and does not clear. It is reported with the specific organs that
