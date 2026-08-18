@@ -614,18 +614,21 @@ class RiskModel:
         return organ
 
 
-def compute_risk(
+def per_organ_scores(
     model: RiskModel,
     atlas_gene,
     baseline_values: np.ndarray | None,
     baseline_tissues: list[str],
     calibration: CalibrationCurve,
-) -> tuple[float | None, str | None]:
-    """Worst organ, weighted by criticality.
+) -> dict[str, float]:
+    """Expression score per organ, before criticality is applied.
 
-    Maximum rather than mean: one unmanageable organ disqualifies a target
-    however clean the rest are. Returns None when nothing measured it at all,
-    which fails the gate rather than reading as no risk.
+    Split out from `compute_risk` so the pairing stage can take a conjunction
+    across two of these before the maximum, rather than reimplementing the
+    mapping. A second implementation of this would be a second place for the
+    tissue-mapping bugs to live.
+
+    An organ absent from the returned mapping was measured by neither source.
     """
     per_organ: dict[str, float] = {}
 
@@ -653,11 +656,37 @@ def compute_risk(
             if score > per_organ.get(organ, -1.0):
                 per_organ[organ] = score
 
+    return per_organ
+
+
+def worst_organ(
+    model: RiskModel, per_organ: dict[str, float]
+) -> tuple[float | None, str | None]:
+    """Criticality-weighted maximum over organs.
+
+    Maximum rather than mean: one unmanageable organ disqualifies a target
+    however clean the rest are. Returns None when nothing measured it at all,
+    which fails the gate rather than reading as no risk.
+    """
     if not per_organ:
         return None, None
+    organ = max(per_organ, key=lambda o: per_organ[o] * model.weight(o))
+    return per_organ[organ] * model.weight(organ), organ
 
-    worst_organ = max(per_organ, key=lambda o: per_organ[o] * model.weight(o))
-    return per_organ[worst_organ] * model.weight(worst_organ), worst_organ
+
+def compute_risk(
+    model: RiskModel,
+    atlas_gene,
+    baseline_values: np.ndarray | None,
+    baseline_tissues: list[str],
+    calibration: CalibrationCurve,
+) -> tuple[float | None, str | None]:
+    return worst_organ(
+        model,
+        per_organ_scores(
+            model, atlas_gene, baseline_values, baseline_tissues, calibration
+        ),
+    )
 
 
 # --------------------------------------------------------------------------
