@@ -221,10 +221,14 @@ escape resistance and construct budget. The ceiling is a gate, not a score.
 | cost | quantity | where |
 | --- | --- | --- |
 | tumour not addressed | `1 - f_AB` | §6.4 |
-| coverage of A given up by adding B | `1 - P(A\|B)` | §6.4 |
-| coverage of B given up by adding A | `1 - P(B\|A)` | §6.4 |
+| **coverage of A given up by adding B** | `sacrificed_A = 1 - P(B\|A) = 1 - f_AB / f_A` | §6.4 |
+| **coverage of B given up by adding A** | `sacrificed_B = 1 - P(A\|B) = 1 - f_AB / f_B` | §6.4 |
 | patients below the floor | share of evaluable patients | §6.7 |
 | tumour-side ceiling | `min(composite_A, composite_B)`, a bound | §1 |
+
+Note the pairing of subscripts, which is easy to invert: what A gives up is
+governed by `P(B|A)`, the share of **A's** positive cells that also carry B. A
+conditional named for A in front measures B's loss, not A's.
 
 A pair that wins on (1)–(5) and leaves `1 - f_AB = 0.95` is a safe design that
 kills a twentieth of the tumour. That has to be visible in the same row.
@@ -260,11 +264,25 @@ same cell. Neither source can say what fraction of cells in an organ carry both.
 
 So `min` is not an estimate of co-expression. It is the **Fréchet upper bound**:
 the largest co-expressing fraction consistent with the two marginals, attained
-only when one antigen's positive cells nest entirely inside the other's. It
-assumes worst-case co-expression within the organ, which is the conservative
-direction, and it is what the gate uses.
+only when one antigen's positive cells nest entirely inside the other's.
 
-**The optimistic bound is reported beside it:**
+**Naming the bounds precisely, because it is easy to get backwards.** `min`
+assumes **perfect overlap** — maximal co-expression, not minimal. Saying it
+assumes "worst-case co-expression" invites the opposite reading and should be
+avoided. Perfect overlap is:
+
+- **pessimistic for safety** — it puts the largest possible number of
+  double-positive normal cells in the organ, so risk comes out as high as the
+  marginals permit
+- **optimistic for coverage** — the same assumption applied to a tumour would put
+  the largest possible number of double-positive malignant cells there
+
+**Those two coincide**, which is what makes `min` the right thing to gate on: the
+single assumption that is least favourable on safety is also the one that flatters
+coverage most, so a pair that clears under `min` clears under an assumption that
+was working against it in the only direction that matters.
+
+**The other bound, reported beside it:**
 
 ```
 independence_risk(organ) = score_A(organ) x score_B(organ) x criticality(organ)
@@ -272,18 +290,20 @@ independence_risk        = max over organs
 ```
 
 which is what the organ's risk would be if the two antigens were distributed
-independently within it. The truth lies between the two for any organ where the
-antigens are neither nested nor independent, and reporting both is what lets a
-reader see how much of the safety case is architecture and how much is assumption.
+independently within it.
 
 **Gate on `min`.** Report `independence_risk`, the gap between them, and the organ
 that sets each.
 
-| number | meaning | used for |
-| --- | --- | --- |
-| `combined_risk` | conservative bound, worst-case co-expression | **the gate** |
-| `independence_risk` | optimistic bound, independent co-expression | reported |
-| `min(risk_A, risk_B)` | what a stage that never conjoined would produce | P1, P2 null |
+| number | assumption | direction | used for |
+| --- | --- | --- | --- |
+| `combined_risk` (`min`) | perfect overlap — maximal co-expression | highest risk the marginals allow; pessimistic for safety | **the gate** |
+| `independence_risk` | independence within the organ | lower risk; optimistic for safety | reported |
+| `min(risk_A, risk_B)` | no conjunction at all | what a stage that never conjoined would produce | P1, P2 null |
+
+The truth for any real organ sits between the first two unless the antigens are
+exactly nested or exactly independent. Reporting both is what lets a reader see
+how much of the safety case is architecture and how much is assumption.
 
 ### 5.3 A tighter bound is available and is reported, not gated on
 
@@ -346,14 +366,20 @@ them kills 5% of the tumour. That is a number that looks right for the wrong
 reason: Jaccard measures agreement between two sets and is blind to how large they
 are, and the gate's value is entirely a matter of how large they are.
 
-Four quantities are reported on every pair. None of the other three is primary:
+Reported on every pair. Only the first is primary:
 
 | quantity | definition | what it says |
 | --- | --- | --- |
 | **`f_AB`** | fraction of malignant cells positive for both | **what the gate kills** |
 | `P(A\|B)` | `f_AB / f_B` | how much of B's coverage survives adding A |
 | `P(B\|A)` | `f_AB / f_A` | how much of A's coverage survives adding B |
+| `sacrificed_A` | `1 - P(B\|A)` | share of A's own coverage given up by adding B |
+| `sacrificed_B` | `1 - P(A\|B)` | share of B's own coverage given up by adding A |
 | `Jaccard` | `f_AB / f_(A or B)` | overlap shape, reported for comparability only |
+
+`sacrificed_A` and `sacrificed_B` are the conditionals restated as losses, and
+they are carried on the rescue row (§9.1) because that is where the trade has to
+be legible. Watch the subscripts: what **A** gives up is set by `P(B|A)`.
 
 `P(A|B)` and `P(B|A)` are what a designer reads to decide which antigen is paying:
 an asymmetric pair, where one conditional is near 1 and the other near 0.1,
@@ -665,17 +691,35 @@ how much**, on the pair's own row rather than as something a reader reconstructs
 | `risk_A`, `risk_B` | each member's single-antigen risk, as measured on this run |
 | `cleared_A`, `cleared_B` | whether each cleared alone |
 | `combined_risk` | the pair's gated risk |
-| `delta_A` | `risk_A - combined_risk` |
-| `delta_B` | `risk_B - combined_risk` |
-| `rescued` | which members go blocked -> cleared |
+| `delta_A`, `delta_B` | `risk_X - combined_risk` — how far the risk moved |
+| **`rescued`** | **which members go blocked -> cleared** |
 | `organ_A`, `organ_B`, `organ_pair` | the risk-setting organ for each |
+| `f_A`, `f_B`, `f_AB` | coverage of each alone, and of the pair |
+| **`sacrificed_A`** | `1 - f_AB / f_A` — the share of A's coverage given up |
+| **`sacrificed_B`** | `1 - f_AB / f_B` — the share of B's coverage given up |
 
-Worked example of the intended reading: MSLN alone is **0.637**, set by lung. If a
-partner brings the pair under 0.15, the row shows `rescued: MSLN`,
-`delta_A: 0.487`, and the organ that stopped binding. That is the headline result
-of this stage and it must be visible per pair.
+**Rescue is a condition, not a statistic.** A member is rescued only when
 
-Pairs are sorted with `rescued` non-empty first.
+```
+risk_X > ceiling  and  combined_risk <= ceiling
+```
+
+A large `delta` that does not cross the ceiling is **not** a rescue and must not
+rank as one. A pair moving MSLN from 0.637 to 0.20 has a `delta_A` of 0.437 and an
+empty `rescued` field, and it sorts below a pair with a smaller delta that lands at
+0.13. `delta` is reported because it says how far a pair got; it is never sorted
+on and it never substitutes for the condition.
+
+Sorting: `rescued` non-empty first, then `f_AB` descending. Within the rescued set
+the safety question is already answered for every row, so what separates them is
+coverage.
+
+**The trade is visible in the same row.** A pair that rescues MSLN from 0.637 to
+under 0.15 but reaches only 30% of the malignant cells MSLN reached alone has
+traded a safety problem for an efficacy problem. `sacrificed_A = 0.70` says so on
+the row where the rescue is claimed, rather than leaving a reader to reconstruct it
+from `f_A` and `f_AB` elsewhere. A rescue reported without its cost is half a
+result.
 
 ### 9.2 Header
 
@@ -790,7 +834,8 @@ output whatever the values:
 
 - pool composition, composite range, cleared count, the 20 below the cut
 - pairs clearing; pairs clearing where **neither** member cleared alone
-- the rescue table (§9.1), sorted with rescues first
+- the rescue table (§9.1), sorted with rescues first then by `f_AB`, carrying
+  `sacrificed_A` and `sacrificed_B` on every rescued row
 - the four-way outcome distribution
 - P1, P2, P4 and P14's measured values
 - `f_AB` distribution over all pairs, pooled and per patient
