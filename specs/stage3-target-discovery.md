@@ -259,6 +259,61 @@ required rationale. **The rationale travels into the output header**, so a reade
 sees which safety default was relaxed and why. An override without a rationale
 fails schema validation — already enforced by the input model.
 
+### Making the two scales commensurable
+
+The two measurements per organ sit on different scales, and until they are put
+on one axis the maximum below is comparing incomparable numbers. The staining
+call is an ordinal intensity judgement; the transcript value is a continuous
+abundance. Mapping the four staining levels onto 0, 1/3, 2/3 and 1 asserts that
+they are evenly spaced and that the top of the scale means maximal danger.
+Neither is true, and asserting it is what broke the gate.
+
+**The mapping is measured, not chosen.** Every (protein, organ) pair carrying
+both a staining call and a transcript value is collected, giving one population
+of transcript values per staining level. Each level is then represented by the
+median of its own population and scored through the **same** continuous function
+the transcript side uses. The two axes become commensurable by construction
+rather than by assertion, and no constant is picked by hand.
+
+The calibration is derived from the pinned releases at run time, reported in the
+output header, and included in the configuration hash. It is part of the
+experiment, not a property of the code.
+
+**What the calibration measured, and it does not flatter the staining scale.**
+Medians are monotonic across the four levels, so the ordinal carries signal and
+its direction is right. But adjacent levels barely separate: the probability
+that a randomly drawn organ at one level carries more transcript than one at the
+level below runs at 0.68, 0.60 and 0.61, against 0.50 for no information at all.
+Roughly half of Medium observations fall inside the interquartile range of High.
+**The scale is real but weak**, and any downstream reading that treats a
+one-level difference as decisive is over-reading it. Reported alongside the
+curve on every run, so the weakness travels with the result.
+
+### Aggregating cell types within an organ
+
+The staining table records a call per cell type, and the level for an organ is
+the **maximum** across its cell types. This was flagged as an independent source
+of inflation, and it was measured rather than assumed:
+
+* It is the safety-correct aggregation. A therapy meets individual cells, not
+  organ averages; one cell type expressing the antigen is a real target however
+  the organ averages out.
+* It is also the more informative one. Against the transcript axis it separates
+  adjacent levels at 0.68 / 0.60 / 0.61, where taking the median across cell
+  types gives 0.68 / 0.56 / 0.56, closer to noise at every boundary.
+* Whatever inflation it produces is now absorbed by the calibration, because the
+  quantity calibrated is exactly the quantity scored. The inflation was only
+  ever a problem while the scale was asserted.
+
+**Residual limitation, stated rather than hidden.** Organs differ greatly in how
+many cell types the atlas records: 41 for the gastrointestinal tract and 35 for
+brain, against 1 for heart and 2 for liver. An organ with more recorded cell
+types has more opportunities to reach a high call, and the calibration corrects
+the level-to-transcript mapping globally rather than per organ, so it does not
+remove this. Whether that is bias or biology is genuinely unresolved: an organ
+with more distinct cell types does present more distinct opportunities for
+on-target toxicity. Left uncorrected, and reported.
+
 ### Combining the two measurements per organ
 
 `expression_score(organ) = max(atlas_score(organ), baseline_score(organ))`
@@ -374,6 +429,16 @@ the result gets an explanation.
 | R10 | more than 10% of the top 100 were reached only through the identifier bridge |
 | R11 | a `sources_disagree` flag goes unread in the top 25 |
 | R12 | a 2× change in any single saturation point reshuffles more than half of the top 50 |
+| R13 | after calibration, the clearance rate at the conservative ceiling still differs by more than 5× between PROTEIN_CONFIRMED and RNA_SUPPORTED |
+
+**R13 detail.** Fixed before the calibrated run, not after seeing it. The
+defect this calibration exists to correct is that the gate selected for absence
+of evidence: at the conservative ceiling it cleared 0 percent of
+protein-confirmed targets against 42.8 percent of RNA-supported ones. Two
+proteins that differ only in whether anyone has stained them should clear at
+comparable rates. A gap beyond 5x means the staining axis is still not
+commensurable with the transcript axis and the calibration did not work. Rate
+means cleared as a share of that class, not as a share of the cleared set.
 
 **R12 detail.** R6 perturbs the weights, which were fixed deliberately and are
 visible as choices. The saturation points in §4 are equally free parameters and
