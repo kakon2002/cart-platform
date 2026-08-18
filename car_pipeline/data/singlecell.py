@@ -22,6 +22,7 @@ compartments. It does not refute.
 from __future__ import annotations
 
 import gzip
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -434,9 +435,183 @@ class SingleCellSource(DataSource):
             atlas.per_cell_total = d["per_cell_total"]
         return atlas
 
+    # -- per cell, malignant compartment ----------------------------------
 
-JOIN_SYMBOL = "symbol"
-JOIN_ENSEMBL_BRIDGE = "ensembl_bridge"
+    def malignant_entry(self, genes: list[str]) -> CacheEntry:
+        digest = _gene_digest(genes)
+        return CacheEntry(
+            key=f"malignant_cells_{digest}",
+            filename=f"malignant_cells_{digest}.npz",
+            fingerprint={
+                "series": SERIES,
+                "file": ARCHIVE,
+                "layer": COUNTS_LAYER,
+                "compartment": MALIGNANT_LEVEL1,
+                # The gene set is part of what this artifact *is*. Without it a
+                # changed pool would silently reuse the wrong columns.
+                "genes": digest,
+                "n_genes": len(genes),
+                "derived_version": 1,
+            },
+        )
+
+    def build_malignant(self, genes: list[str]) -> Path:
+        """Stream raw counts for one gene set over malignant cells only.
+
+        Kept as its own cache entry rather than folded into the group means.
+        That artifact consumes the cell axis inside its accumulation loop and
+        stores 78 x 22,164 group means, so no conjunction over cells can be
+        recovered from it; and leaving it untouched means the ranking stage is
+        not invalidated by anything done here.
+        """
+        entry = self.malignant_entry(genes)
+
+        def fetcher(tmp: Path) -> dict:
+            with h5py.File(self.matrix_path(), "r") as fh:
+                var_names = list(self._read_index(fh["var"]))
+                column_of = {g: i for i, g in enumerate(var_names)}
+                present = [g for g in genes if g in column_of]
+                missing = [g for g in genes if g not in column_of]
+                cols = np.asarray([column_of[g] for g in present], dtype=np.int64)
+
+                # A full width lookup rather than a search over each row. The
+                # column indices in this file are stored in descending order
+                # within a row, so anything relying on the ascending order this
+                # format usually carries matches nothing and reports every gene
+                # as absent, silently.
+                lut = np.full(len(var_names), -1, dtype=np.int32)
+                lut[cols] = np.arange(len(cols), dtype=np.int32)
+
+                obs = fh["obs"]
+                l1_codes, l1_cats = self._read_categorical(obs, LEVEL1)
+                if l1_cats is None or MALIGNANT_LEVEL1 not in list(l1_cats):
+                    raise KeyError(
+                        f"the annotation has no {MALIGNANT_LEVEL1!r} branch; "
+                        f"found {sorted(set(map(str, l1_cats or [])))}"
+                    )
+                malignant = l1_codes == list(l1_cats).index(MALIGNANT_LEVEL1)
+                n_cells = int(malignant.sum())
+                if n_cells == 0:
+                    raise ValueError("no malignant cells selected")
+
+                pid = self._read_column(obs, "pid")
+                tr_codes, tr_cats = self._read_categorical(obs, TREATMENT)
+                untreated_all = tr_codes == list(tr_cats).index(UNTREATED_LABEL)
+
+                layer = fh["layers"][COUNTS_LAYER]
+                data, indices = layer["data"], layer["indices"]
+                iptr = layer["indptr"][:]
+
+                counts = np.zeros((n_cells, len(present)), dtype=np.uint16)
+                depth = np.zeros(n_cells, dtype=np.int64)
+                written = 0
+                for start in range(0, len(iptr) - 1, ROW_BLOCK):
+                    stop = min(start + ROW_BLOCK, len(iptr) - 1)
+                    keep_rows = np.nonzero(malignant[start:stop])[0]
+                    if keep_rows.size == 0:
+                        continue
+                    lo, hi = int(iptr[start]), int(iptr[stop])
+                    blk_i = indices[lo:hi]
+                    blk_d = data[lo:hi]
+                    off = iptr[start:stop + 1] - lo
+                    rows_here = stop - start
+                    row_of = np.repeat(np.arange(rows_here), np.diff(off))
+
+                    out_row = np.full(rows_here, -1, dtype=np.int64)
+                    out_row[keep_rows] = np.arange(
+                        written, written + keep_rows.size
+                    )
+                    target = out_row[row_of]
+                    wanted = target >= 0
+
+                    depth += np.bincount(
+                        target[wanted], weights=blk_d[wanted], minlength=n_cells
+                    ).astype(np.int64)
+
+                    take = wanted & (lut[blk_i] >= 0)
+                    if take.any():
+                        vals = blk_d[take]
+                        if vals.max() > np.iinfo(np.uint16).max:
+                            raise ValueError("a count exceeds the stored width")
+                        counts[target[take], lut[blk_i][take]] = vals
+                    written += keep_rows.size
+
+                if written != n_cells:
+                    raise ValueError(
+                        f"wrote {written} rows for {n_cells} malignant cells"
+                    )
+
+                # Written through a handle: passing the path would have numpy
+                # append its own suffix, and the cache would then commit a file
+                # that is not the one it just wrote.
+                with open(tmp, "wb") as out:
+                    np.savez_compressed(
+                        out,
+                        genes=np.asarray(present, dtype=str),
+                        missing=np.asarray(missing, dtype=str),
+                        counts=counts,
+                        patient=np.asarray(
+                            [str(p) for p in pid[malignant]], dtype=str
+                        ),
+                        untreated=untreated_all[malignant],
+                        depth=depth,
+                    )
+
+            return {
+                "observed_rows": n_cells,
+                "extra": {
+                    "cells": n_cells,
+                    "genes": len(present),
+                    "missing": len(missing),
+                },
+            }
+
+        return self.cache.ensure(entry, fetcher)
+
+    def load_malignant(self, genes: list[str]) -> MalignantCells:
+        path = self.build_malignant(genes)
+        with np.load(path, allow_pickle=False) as d:
+            return MalignantCells(
+                genes=[str(g) for g in d["genes"]],
+                counts=d["counts"],
+                patient=d["patient"],
+                untreated=d["untreated"],
+                depth=d["depth"],
+                missing=[str(g) for g in d["missing"]],
+            )
+
+
+#: The layer holding raw integer counts. `X` is log1p(CP10K) and is normalised
+#: per cell, so a fixed threshold on it is not a fixed count threshold: raw depth
+#: across malignant cells runs from 96 to 9,642. Detection is defined on counts,
+#: so counts is what gets read.
+COUNTS_LAYER = "counts"
+
+MALIGNANT_LEVEL1 = "Epithelial (malignant)"
+
+
+@dataclass
+class MalignantCells:
+    """Per-cell counts for a fixed gene set, malignant compartment only."""
+
+    genes: list[str]              # requested order, one column each
+    counts: np.ndarray            # cells x genes, uint16
+    patient: np.ndarray           # cells, patient label
+    untreated: np.ndarray         # cells, bool
+    depth: np.ndarray             # cells, total counts across all genes
+    missing: list[str]            # requested genes with no column in the matrix
+
+    def positive(self, threshold: int = 1) -> np.ndarray:
+        return self.counts >= threshold
+
+    def evaluable_patients(self, minimum: int = 100) -> list[str]:
+        labels, counts = np.unique(self.patient, return_counts=True)
+        return sorted(str(l) for l, c in zip(labels, counts) if c >= minimum)
+
+
+def _gene_digest(genes: Iterable[str]) -> str:
+    canonical = "\n".join(genes)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
 def match_surface(
