@@ -6,6 +6,7 @@ tripped criterion is reported and the run stops; it is not adjusted away.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import subprocess
@@ -100,12 +101,21 @@ def main() -> int:
         for organ, ov in spec.inputs.tissue_criticality_overrides.items()
     }
 
+    # Measured before anything is scored. The staining axis and the transcript
+    # axis are put on one scale by observation rather than by assertion, and the
+    # curve is reported and hashed as part of the run.
+    calibration = stage3.calibrate_atlas_levels(
+        surface, by_acc, by_sym, gtex_profiles, gtex_tissues,
+        stage3.RiskModel(overrides=overrides),
+    )
+
     def run(saturation=None, weights=None):
         return stage3.rank(
             coverage_rows, surface_by_acc, by_acc, by_sym,
             cells, cell_index, gtex_profiles, gtex_tissues,
             cohort, cohort_join, dependency, dep_index,
-            overrides, ceiling, saturation=saturation, weights=weights,
+            overrides, ceiling, calibration,
+            saturation=saturation, weights=weights,
         )
 
     rows, model, stats = run()
@@ -141,7 +151,7 @@ def main() -> int:
     print(
         stage3.header(
             spec, model, len(rows), pins,
-            stage3.SATURATION, stage3.WEIGHTS, stats,
+            stage3.SATURATION, stage3.WEIGHTS, stats, calibration,
         )
     )
 
@@ -163,12 +173,25 @@ def main() -> int:
     # The specification requires the hash to be stable across processes. A hash
     # seeded by anything process-local defeats itself silently, so it is checked
     # here rather than assumed.
-    hash_a = stage3.configuration_hash(overrides, ceiling)
+    hash_a = stage3.configuration_hash(
+        overrides, ceiling, stage3.SATURATION, stage3.WEIGHTS, calibration
+    )
     probe = subprocess.run(
         [
             sys.executable, "-c",
-            "from car_pipeline.stages.stage3 import configuration_hash;"
-            f"print(configuration_hash({overrides!r}, {ceiling!r}))",
+            "import json,sys;"
+            "from car_pipeline.stages import stage3;"
+            "c=stage3.CalibrationCurve(**json.loads(sys.argv[1]));"
+            f"print(stage3.configuration_hash({overrides!r}, {ceiling!r},"
+            " stage3.SATURATION, stage3.WEIGHTS, c))",
+            json.dumps({
+                "tpm": {str(k): v for k, v in calibration.tpm.items()},
+                "quartiles": {str(k): list(v) for k, v in calibration.quartiles.items()},
+                "counts": {str(k): v for k, v in calibration.counts.items()},
+                "separations": {str(k): v for k, v in calibration.separations.items()},
+                "monotonic": calibration.monotonic,
+                "observations": calibration.observations,
+            }),
         ],
         capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__)),
     )
@@ -349,6 +372,27 @@ def main() -> int:
     criterion(
         "R12", worst_sat[1] < 0.5,
         f"worst retention {worst_sat[1]:.0%} at {worst_sat[0]}",
+    )
+
+    # -- R13 --------------------------------------------------------------
+    tier_totals = {}
+    for r in rows:
+        tier_totals[r.evidence_class] = tier_totals.get(r.evidence_class, 0) + 1
+    rate = {}
+    for k in (PROTEIN_CONFIRMED, RNA_SUPPORTED):
+        n = sum(1 for r in rows if r.evidence_class == k and r.cleared)
+        rate[k] = n / tier_totals.get(k, 1)
+    hi, lo = max(rate.values()), min(rate.values())
+    if lo == 0.0:
+        ratio = float("inf") if hi > 0 else 1.0
+    else:
+        ratio = hi / lo
+    criterion(
+        "R13", ratio > 5.0,
+        f"clearance rate {PROTEIN_CONFIRMED} {rate[PROTEIN_CONFIRMED]:.1%} vs "
+        f"{RNA_SUPPORTED} {rate[RNA_SUPPORTED]:.1%}, ratio "
+        + ("infinite" if ratio == float("inf") else f"{ratio:.2f}x")
+        + " against a limit of 5x",
     )
 
     # -- report -----------------------------------------------------------

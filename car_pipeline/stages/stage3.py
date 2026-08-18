@@ -266,10 +266,142 @@ ATLAS_ORGANS: dict[str, str] = {
     "vagina": "reproductive",
 }
 
-#: Ordinal staining levels on a 0-1 axis. Known to be miscalibrated against the
-#: transcript axis; see the open problem in the specification. Carried forward
-#: unchanged so the defect stays visible rather than being half-corrected here.
-ATLAS_LEVEL_SCORE = {0: 0.0, 1: 1 / 3, 2: 2 / 3, 3: 1.0}
+LEVEL_NAMES = {0: "Not detected", 1: "Low", 2: "Medium", 3: "High"}
+
+
+@dataclass
+class CalibrationCurve:
+    """Staining levels placed on the transcript axis by measurement.
+
+    The two sources describe the same organs in different units, so until they
+    sit on one axis the worst-organ maximum is comparing incomparable numbers.
+    Rather than asserting an evenly spaced ordinal, every organ carrying both a
+    staining call and a transcript value contributes one observation, and each
+    level is represented by the median of its own population. That value is then
+    scored through the same continuous function the transcript side uses, so the
+    two axes are commensurable by construction rather than by assertion.
+    """
+
+    tpm: dict[int, float]
+    quartiles: dict[int, tuple[float, float, float]]
+    counts: dict[int, int]
+    separations: dict[int, float]
+    monotonic: bool
+    observations: int
+
+    def score(self, level: int) -> float:
+        # A non-detection scores zero, not the transcript level its population
+        # happens to sit at. The calibrated value for that level is a central
+        # estimate of a wide distribution, and using it as a risk term means an
+        # observation of *absence* raises measured risk — which it cannot.
+        # Scoring it zero still leaves the organ measured, so the maximum below
+        # lets a positive transcript reading stand rather than being cancelled.
+        if level == 0:
+            return 0.0
+        return _baseline_score(self.tpm[level])
+
+    def as_payload(self) -> dict:
+        return {str(k): round(v, 6) for k, v in sorted(self.tpm.items())}
+
+
+def _separation(lower: np.ndarray, upper: np.ndarray) -> float:
+    """Probability that a draw from the upper level exceeds one from the lower.
+
+    0.50 means the two levels say nothing about each other; 1.00 means they
+    separate perfectly. Ties count as half.
+    """
+    combined = np.concatenate([lower, upper])
+    order = combined.argsort(kind="mergesort")
+    ranks = np.empty(len(combined), dtype=float)
+    ranks[order] = np.arange(1, len(combined) + 1)
+    ordered = combined[order]
+    i = 0
+    while i < len(ordered):
+        j = i
+        while j + 1 < len(ordered) and ordered[j + 1] == ordered[i]:
+            j += 1
+        if j > i:
+            ranks[order[i : j + 1]] = (i + j) / 2 + 1
+        i = j + 1
+    u = ranks[len(lower) :].sum() - len(upper) * (len(upper) + 1) / 2
+    return float(u / (len(lower) * len(upper)))
+
+
+def calibrate_atlas_levels(
+    surface,
+    atlas_by_accession: dict,
+    atlas_by_symbol: dict,
+    gtex_profiles: dict,
+    gtex_tissues: list[str],
+    model: "RiskModel",
+) -> CalibrationCurve:
+    """Measure what each staining level is worth in transcript terms.
+
+    Pairs are formed exactly the way risk is computed: the level for an organ is
+    the maximum across its cell types, and the transcript value is the maximum
+    across the tissues mapping to that organ. Calibrating the same quantity that
+    gets scored is what lets the curve absorb whatever inflation that
+    aggregation introduces, instead of leaving it to be argued about.
+    """
+    populations: dict[int, list[float]] = {k: [] for k in LEVEL_NAMES}
+
+    for rec in surface:
+        gene = atlas_by_accession.get(rec.accession) or (
+            atlas_by_symbol.get(rec.gene) if rec.gene else None
+        )
+        profile = gtex_profiles.get(rec.accession)
+        if gene is None or profile is None or not gene.staining:
+            continue
+
+        atlas_organ: dict[str, int] = {}
+        for tissue, _cell_type, level in gene.staining:
+            organ = model.organ_for_atlas(tissue)
+            if organ is not None and level > atlas_organ.get(organ, -1):
+                atlas_organ[organ] = level
+
+        base_organ: dict[str, float] = {}
+        for label, tpm in zip(gtex_tissues, profile.values):
+            organ = model.organ_for_baseline(label)
+            if organ is not None:
+                value = float(tpm)
+                if value > base_organ.get(organ, -1.0):
+                    base_organ[organ] = value
+
+        for organ, level in atlas_organ.items():
+            if organ in base_organ:
+                populations[level].append(base_organ[organ])
+
+    empty = [LEVEL_NAMES[k] for k, v in populations.items() if not v]
+    if empty:
+        raise ValueError(
+            "no paired observations for staining level(s): " + ", ".join(empty)
+        )
+
+    arrays = {k: np.asarray(v, dtype=float) for k, v in populations.items()}
+    tpm: dict[int, float] = {}
+    quartiles: dict[int, tuple[float, float, float]] = {}
+    counts: dict[int, int] = {}
+    for k, v in arrays.items():
+        q1, med, q3 = (float(x) for x in np.percentile(v, [25, 50, 75]))
+        tpm[k] = med
+        quartiles[k] = (q1, med, q3)
+        counts[k] = int(v.size)
+
+    separations = {k: _separation(arrays[k], arrays[k + 1]) for k in range(3)}
+    ordered_medians = [tpm[k] for k in sorted(tpm)]
+    monotonic = all(
+        ordered_medians[i] < ordered_medians[i + 1]
+        for i in range(len(ordered_medians) - 1)
+    )
+
+    return CalibrationCurve(
+        tpm=tpm,
+        quartiles=quartiles,
+        counts=counts,
+        separations=separations,
+        monotonic=monotonic,
+        observations=int(sum(counts.values())),
+    )
 
 BASELINE_TPM_SATURATION = 1000.0
 
@@ -487,6 +619,7 @@ def compute_risk(
     atlas_gene,
     baseline_values: np.ndarray | None,
     baseline_tissues: list[str],
+    calibration: CalibrationCurve,
 ) -> tuple[float | None, str | None]:
     """Worst organ, weighted by criticality.
 
@@ -501,7 +634,10 @@ def compute_risk(
             organ = model.organ_for_atlas(tissue)
             if organ is None:
                 continue
-            score = ATLAS_LEVEL_SCORE[level]
+            # Converted to its measured transcript equivalent and scored by the
+            # same function the transcript side uses, so the maximum below is
+            # comparing like with like.
+            score = calibration.score(level)
             if score > per_organ.get(organ, -1.0):
                 per_organ[organ] = score
 
@@ -559,9 +695,10 @@ def rank(
     dependency_index: dict[str, int],
     overrides: dict[str, int],
     ceiling: float,
+    calibration: CalibrationCurve,
     saturation: dict[str, float] | None = None,
     weights: dict[str, float] | None = None,
-) -> tuple[list[Ranked], RiskModel]:
+) -> tuple[list[Ranked], RiskModel, dict]:
     sat = dict(SATURATION if saturation is None else saturation)
     wts = dict(WEIGHTS if weights is None else weights)
 
@@ -675,6 +812,7 @@ def rank(
             atlas_gene,
             profile.values if profile is not None else None,
             gtex_tissues,
+            calibration,
         )
         # Undefined risk is not low risk. It fails.
         cleared = risk is not None and risk <= ceiling
@@ -778,6 +916,7 @@ def configuration_hash(
     ceiling: float,
     saturation: dict[str, float] | None = None,
     weights: dict[str, float] | None = None,
+    calibration: CalibrationCurve | None = None,
 ) -> str:
     """Covers the tissue tables themselves, not only the tier assignments.
 
@@ -801,7 +940,12 @@ def configuration_hash(
         "baseline_organs": BASELINE_ORGANS,
         "atlas_organs": ATLAS_ORGANS,
         "excluded_labels": sorted(EXCLUDED_LABELS),
-        "atlas_level_score": {str(k): v for k, v in ATLAS_LEVEL_SCORE.items()},
+        # The measured curve, not an assumed scale. It is derived from the
+        # pinned releases, so it belongs to the experiment: two runs that
+        # calibrated differently must not compare as the same one.
+        "atlas_level_calibration": (
+            calibration.as_payload() if calibration is not None else None
+        ),
         "baseline_tpm_saturation": BASELINE_TPM_SATURATION,
         "overrides": overrides,
         "ceiling": ceiling,
@@ -818,6 +962,7 @@ def header(
     saturation: dict[str, float] | None = None,
     weights: dict[str, float] | None = None,
     stats: dict | None = None,
+    calibration: CalibrationCurve | None = None,
 ) -> str:
     """Describes the run that produced the output, not the module defaults."""
     sat = SATURATION if saturation is None else saturation
@@ -841,7 +986,7 @@ def header(
         f"  universe             {universe}",
         f"  revision             {_revision()}",
         f"  configuration hash   "
-        f"{configuration_hash(model.overrides, ceiling, sat, wts)}",
+        f"{configuration_hash(model.overrides, ceiling, sat, wts, calibration)}",
         f"  margin denominator   {BULK_PANCREAS_LABEL} (bulk only)",
         f"  field offset         "
         + (
@@ -873,6 +1018,32 @@ def header(
             rationale = spec.inputs.tissue_criticality_overrides.get(organ)
             if rationale is not None:
                 lines.append(f"      rationale: {rationale.rationale}")
+    if calibration is not None:
+        lines.append(
+            "  staining calibration measured against the transcript axis, "
+            f"{calibration.observations:,} paired organs"
+        )
+        lines.append(
+            f"    {'level':14s} {'n':>7s} {'Q1':>9s} {'median':>9s} "
+            f"{'Q3':>9s} {'score':>8s}"
+        )
+        for k in sorted(calibration.tpm):
+            q1, med, q3 = calibration.quartiles[k]
+            lines.append(
+                f"    {LEVEL_NAMES[k]:14s} {calibration.counts[k]:>7,} "
+                f"{q1:>9.3f} {med:>9.3f} {q3:>9.3f} "
+                f"{calibration.score(k):>8.4f}"
+            )
+        sep = "  ".join(
+            f"{LEVEL_NAMES[k][:4]}->{LEVEL_NAMES[k + 1][:4]} "
+            f"{calibration.separations[k]:.3f}"
+            for k in sorted(calibration.separations)
+        )
+        lines.append(f"    monotonic: {'yes' if calibration.monotonic else 'NO'}")
+        lines.append(f"    separation (0.50 = no information): {sep}")
+        lines.append(
+            "    the scale is real but weak; a one-level difference is not decisive"
+        )
     lines.append("  source pins")
     for name, pin in pins.items():
         lines.append(f"    {name}: {pin}")
