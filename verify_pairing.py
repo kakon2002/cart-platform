@@ -367,6 +367,12 @@ def main() -> int:
     print("=" * 72)
     print(f"  {16 - len(tripped)}/16 criteria clear")
 
+    # Measurements, printed whether or not a criterion tripped. These describe
+    # what the atlas contains rather than what should be built, so withholding
+    # them behind a passing run would hide the strongest thing this stage has to
+    # say about the architecture.
+    _report_measurements(pool, pairs, decisions, duals)
+
     if tripped:
         print()
         print(f"  STOPPING: {', '.join(tripped)} tripped. The specification "
@@ -376,6 +382,103 @@ def main() -> int:
 
     _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash)
     return 0
+
+
+def _report_measurements(pool, pairs, decisions, duals) -> None:
+    print()
+    print("=" * 72)
+    print("WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)")
+    print("=" * 72)
+
+    print()
+    print("  What the weights are doing in this stage")
+    print("  " + "-" * 68)
+    # Within the admissible set the ordering key is the co-expression gate, not
+    # the composite the weights produce. Measured rather than asserted: how often
+    # would the recommendation change if partners were ordered by composite?
+    by_gene: dict[str, list] = {r.gene: [] for r in pool}
+    for p in pairs:
+        by_gene[p.gene_a].append(p)
+        by_gene[p.gene_b].append(p)
+    differ = 0
+    for gene in duals:
+        adm = [p for p in by_gene[gene] if p.admissible]
+        if not adm:
+            continue
+        by_cov = min(adm, key=lambda p: (-p.coverage.f_ab, p.risk.combined))
+        by_comp = max(
+            adm, key=lambda p: min(p.composite_a, p.composite_b)
+        )
+        if {by_cov.gene_a, by_cov.gene_b} != {by_comp.gene_a, by_comp.gene_b}:
+            differ += 1
+    n = max(len(duals), 1)
+    print(f"    swapping the ordering key from coverage to composite changes "
+          f"{differ} of {len(duals)} recommendations ({differ / n:.0%})")
+    print()
+    print("    The weights never order anything in this stage. They enter only")
+    print("    through pool membership, and the pool boundary moves little:")
+    print("    halving it changed one partner in ten (P15). So the weights are")
+    print("    close to decorative here, and a reader should be told that rather")
+    print("    than assume they are doing work.")
+    print()
+    print("    But the swap number above is NOT the evidence for that, and it")
+    print("    should not be read as it. The two keys agreeing means the choice")
+    print("    is insensitive to which one is used — and the reason is P13: one")
+    print("    partner wins under both keys, so almost nothing is being ordered")
+    print("    at all. Partner concentration, not the coverage gate, is why the")
+    print("    weights make no difference to this output.")
+
+    print()
+    print("  Coverage and the escape population")
+    print("  " + "-" * 68)
+    print("    AND-gate coverage is the intersection. Escape is one minus it.")
+    print("    Both are FLOORS: this is a single-nucleus assay and it drops")
+    print("    transcripts, so the true intersection is higher and the true")
+    print("    escape lower. The direction is known; the magnitude is not.")
+    print()
+    print(f"    {'A':<10}{'B':<10}{'A alone':>9}{'B alone':>9}{'OR':>8}"
+          f"{'AND':>8}{'escape':>9}{'cost':>7}")
+
+    watch_pairs = [
+        p for p in pairs
+        if p.coverage.measured and p.gene_a in WATCH and p.gene_b in WATCH
+    ]
+    best = sorted(
+        (p for p in pairs if p.coverage.measured),
+        key=lambda p: -p.coverage.f_ab,
+    )[:5]
+    for p in watch_pairs + [b for b in best if b not in watch_pairs]:
+        c = p.coverage
+        cost = f"{c.coverage_cost:.1f}x" if c.coverage_cost else "n/a"
+        print(f"    {p.gene_a:<10}{p.gene_b:<10}{c.f_a:>9.4f}{c.f_b:>9.4f}"
+              f"{c.or_gate:>8.4f}{c.f_ab:>8.4f}{c.escape:>9.4f}{cost:>7}")
+
+    print()
+    print("    The best-covering pairs above are all high-abundance genes. That")
+    print("    is the dropout bias of section 6.5 visible in the output: a scarce")
+    print("    antigen cannot show a large intersection on this assay whatever")
+    print("    its biology, so this table ranks detectability alongside truth.")
+
+    if watch_pairs:
+        # The most favourable watch-list pair, not the worst. An argument that
+        # holds on the best case does not depend on which pair was picked.
+        best_watch = min(watch_pairs, key=lambda p: p.coverage.escape)
+        c = best_watch.coverage
+        print()
+        print(f"    Stated plainly, on the most favourable known pair: an "
+              f"AND-gate on {best_watch.gene_a}+{best_watch.gene_b}")
+        print(f"    reaches {c.f_ab:.1%} of malignant cells, so {c.escape:.1%} "
+              f"escape it. {best_watch.gene_a} alone reaches {c.f_a:.1%}")
+        print(f"    and {best_watch.gene_b} alone {c.f_b:.1%}; the safety gain "
+              f"costs {c.coverage_cost:.1f}x the coverage of the")
+        print("    better single target, and an OR-gate on the same two would "
+              f"reach {c.or_gate:.1%}.")
+        print("    That is antigen heterogeneity measured directly, and it is the")
+        print("    strongest argument in this output that AND-gating may be the")
+        print("    wrong architecture for this indication even though it does")
+        print("    solve the safety problem. It is a floor, so the real figure is")
+        print("    better than this — but not better than the single-target one,")
+        print("    which is deflated by the same assay in the same direction.")
 
 
 def _inv(failures: list[str], cid: str, ok: bool, detail: str) -> None:
