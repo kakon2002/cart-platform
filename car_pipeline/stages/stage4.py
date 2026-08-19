@@ -176,6 +176,41 @@ class Coverage:
             return 0.0
         return self.patients_at_floor / self.patients_evaluable
 
+    # -- what each architecture would reach --------------------------------
+    #
+    # Named quantities rather than things a reader derives from two columns.
+    # The AND gate's coverage is the intersection; a single target is its own
+    # marginal; an OR gate is the union. The differences between those three are
+    # the price of the safety the AND gate buys, and they belong in the output.
+
+    @property
+    def escape(self) -> float | None:
+        """Malignant cells the AND gate does not engage.
+
+        A floor, not an estimate. This assay drops transcripts, so the measured
+        intersection understates the true one and this number overstates the
+        true escape population.
+        """
+        return None if self.f_ab is None else 1.0 - self.f_ab
+
+    @property
+    def or_gate(self) -> float | None:
+        """Union: what a design firing on either antigen would reach."""
+        if self.f_ab is None:
+            return None
+        return self.f_a + self.f_b - self.f_ab
+
+    @property
+    def best_single(self) -> float | None:
+        return None if self.f_ab is None else max(self.f_a, self.f_b)
+
+    @property
+    def coverage_cost(self) -> float | None:
+        """How many times more of the tumour the better single target reaches."""
+        if not self.f_ab:
+            return None
+        return self.best_single / self.f_ab
+
 
 def intersection_matrix(positive: np.ndarray) -> np.ndarray:
     """Pairwise double-positive counts for every gene pair at once.
