@@ -24,6 +24,10 @@ from car_pipeline.stages.stage1 import KNOWN_DATASET_NAMES
 
 # Datasets with a connector. Anything absent from this map has none, which is a
 # different finding from a connector whose data will not read.
+# The two binder sources are declared by stage 1 and deliberately absent here:
+# no connector has been written for either yet, so both resolve to
+# not_configured rather than to a connector that cannot fetch. Adding a name
+# here before its connector exists would report the source as merely uncached.
 CONNECTORS: dict[str, type[DataSource]] = {
     UniProtSource.name: UniProtSource,
     TCGASource.name: TCGASource,
@@ -81,7 +85,12 @@ if __name__ == "__main__":
     available = [d for d in blocking if d.status is DatasetStatus.AVAILABLE]
     score = spec.data_availability_score
     print(
-        f"\n  availability score: {score:.3f}  expected 0.857"
+        # 6 of 8 since the binder row split. The score fell from 0.857 without
+        # anything becoming less available: the merged row was never connected
+        # either, and counting two unconnected sources as one understated the
+        # gap. Neither has a connector yet, so both read not_configured; the
+        # numerator moves only when one is actually built.
+        f"\n  availability score: {score:.3f}  expected 0.750"
         f"   ({len(available)} of {len(blocking)} blocking)"
     )
     missing = [d.name for d in blocking if d.status is not DatasetStatus.AVAILABLE]

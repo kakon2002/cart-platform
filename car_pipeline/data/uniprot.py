@@ -5,6 +5,18 @@ leave no transmembrane segment behind and are not consistently spelled out in
 the localisation text, so without it that entire class of protein is invisible
 to the attachment gate — which would silently drop several of the best known
 targets.
+
+The eighth, chain boundaries, is requested because a mature protein is not
+always one molecule. Where a precursor is cleaved, some of the resulting chains
+are released rather than held at the surface, and a binder raised against a
+released chain meets its antigen in plasma rather than on a cell. The surface
+filter itself does not consult this field — attachment and orientation are
+decided by the membrane evidence alone — so adding it left the surface set
+identical, 3,480 before and after. It is not free even so: the field list is
+inside the cache fingerprint, so adding it invalidated the proteome cache and
+re-fetched all 20,431 entries. The field is carried so that a later stage can
+tell the anchored chain from the shed one instead of treating the precursor as
+uniformly reachable.
 """
 
 from __future__ import annotations
@@ -26,6 +38,7 @@ FIELDS = [
     "ft_transmem",
     "ft_topo_dom",
     "ft_lipid",
+    "ft_chain",
 ]
 RELEASE_PIN = "2026_02"
 PAGE_SIZE = 500
@@ -34,6 +47,7 @@ BASE = "https://rest.uniprot.org/uniprotkb/search"
 _NOTE = re.compile(r'/note="([^"]*)"')
 _TRANSMEM = re.compile(r"\bTRANSMEM\b")
 _TOPO_SEGMENT = re.compile(r"TOPO_DOM\s+(\S+?)\.\.(\S+?);((?:(?!TOPO_DOM).)*)", re.S)
+_CHAIN_SEGMENT = re.compile(r"CHAIN\s+(\S+?)\.\.(\S+?);((?:(?!CHAIN).)*)", re.S)
 _GPI = re.compile(r"GPI-anchor", re.IGNORECASE)
 
 # Localisation phrases that place a protein at the outward face of the cell
@@ -101,6 +115,13 @@ class ProteinRecord:
     topo_notes: list[str] = field(default_factory=list)
     extracellular_residues: int | None = None
 
+    #: Mature chains carved out of the precursor, as (start, end, note). A bound
+    #: recorded as uncertain is kept as None rather than dropping the chain: the
+    #: chain exists either way, and losing the row would understate how many
+    #: pieces a precursor is cut into. An empty list means the entry carries no
+    #: chain annotation at all, which is not the same as being a single chain.
+    chains: list[tuple[int | None, int | None, str]] = field(default_factory=list)
+
     # filter outcome
     attached: bool = False
     outward: bool = False
@@ -141,6 +162,31 @@ def _count_extracellular_residues(topo_field: str) -> int | None:
     return total if measured else None
 
 
+def _bound(text: str) -> int | None:
+    """A residue position, or None where the annotation records it as uncertain."""
+    try:
+        return int(text.lstrip("<>?"))
+    except ValueError:
+        return None
+
+
+def parse_chains(chain_field: str) -> list[tuple[int | None, int | None, str]]:
+    """Mature chains carved out of the precursor, in annotation order.
+
+    A chain whose bounds cannot be read is kept with None bounds rather than
+    skipped. Dropping it would make a cleaved precursor look like an uncleaved
+    one, which is the direction that matters: it is the difference between a
+    protein held at the surface and one released into plasma.
+    """
+    chains: list[tuple[int | None, int | None, str]] = []
+    for start, end, tail in _CHAIN_SEGMENT.findall(chain_field):
+        note_match = _NOTE.search(tail)
+        chains.append(
+            (_bound(start), _bound(end), note_match.group(1) if note_match else "")
+        )
+    return chains
+
+
 def names_compartment(subcellular: str) -> bool:
     """True when the localisation text places the protein somewhere specific."""
     text = subcellular.lower()
@@ -148,8 +194,12 @@ def names_compartment(subcellular: str) -> bool:
 
 
 def parse_row(row: list[str]) -> ProteinRecord:
-    accession, gene, protein_name, subcellular, transmem, topo, lipid = (
-        (row + [""] * 7)[:7]
+    # Width tracks FIELDS. A row padded or truncated to the old width would drop
+    # the new column silently, and the drop would only surface as an empty chain
+    # list — indistinguishable from a protein that genuinely has no chain
+    # annotation, and only after the re-fetch had already been paid for.
+    accession, gene, protein_name, subcellular, transmem, topo, lipid, chain = (
+        (row + [""] * len(FIELDS))[: len(FIELDS)]
     )
 
     transmem_count = len(_TRANSMEM.findall(transmem))
@@ -165,6 +215,7 @@ def parse_row(row: list[str]) -> ProteinRecord:
         gpi_anchored=gpi,
         topo_notes=notes,
         extracellular_residues=_count_extracellular_residues(topo),
+        chains=parse_chains(chain),
     )
 
     # Gate 1 — is it held in a membrane at all. Secreted proteins fail here.
