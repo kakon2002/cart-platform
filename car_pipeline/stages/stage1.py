@@ -48,8 +48,15 @@ _SHARED_DATASETS: list[tuple[str, str, list[int]]] = [
 ]
 
 # name, purpose, stages, required
+#
+# The binder sources are two rows, not one. They were declared together while
+# both were assumed unreachable, and a single row cannot carry two statuses: the
+# structures and the antibody annotation over them are separate services that
+# can be connected, cached and fail independently. Merged, one of them being
+# available would have reported the other as available too.
 _DOWNSTREAM_DATASETS: list[tuple[str, str, list[int], bool]] = [
-    ("SAbDab and PDB", "binder retrieval", [5], True),
+    ("PDB", "binder structures", [5], True),
+    ("SAbDab", "antibody chain and numbering annotation", [5], True),
     ("IEDB", "immunogenicity", [9], False),
     ("ClinicalTrials.gov", "prior outcomes", [9], False),
 ]

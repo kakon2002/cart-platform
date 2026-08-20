@@ -90,9 +90,14 @@ reordering anything: it annotates, and the annotation travels.
 
 ## 2. Sources — measured, not assumed
 
-Stage 1 declares one blocking dataset for this stage:
-`("SAbDab and PDB", "binder retrieval", [5], True)`. It is the only required
-dataset the availability score has never satisfied.
+Stage 1 declared one blocking dataset for this stage,
+`("SAbDab and PDB", "binder retrieval", [5], True)` — the only required dataset
+the availability score had never satisfied. **That row has since been split**, per
+§2.5, into `("PDB", "binder structures", [5], True)` and
+`("SAbDab", "antibody chain and numbering annotation", [5], True)`. Neither has a
+connector yet, so both read `not_configured` and the availability score is 0.750
+(6 of 8 blocking) rather than 0.857. Nothing became less available: counting two
+unconnected sources as one had understated the gap.
 
 **Revision 1 concluded that half of it was unreachable. That conclusion was
 wrong**, and the way it was wrong is the thing worth recording: the probe saw an

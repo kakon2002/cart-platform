@@ -224,9 +224,15 @@ def main() -> int:
     print("REJECTION CRITERIA")
     print("=" * 72)
     tripped: list[str] = []
+    # Every outcome, not only the failures: the persisted artifact records which
+    # criteria were checked as well as which failed, so a criterion silently
+    # dropped from the run is visible in the manifest rather than reading as a
+    # criterion that passed.
+    outcomes: dict[str, bool] = {}
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+        outcomes[cid] = not is_tripped
         if is_tripped:
             tripped.append(cid)
 
@@ -366,6 +372,21 @@ def main() -> int:
 
     print("=" * 72)
     print(f"  {16 - len(tripped)}/16 criteria clear")
+
+    # Written whether or not a criterion tripped, and carrying which ones did.
+    # A stage that only persisted its output on a clean run would leave nothing
+    # on disk in exactly the state the project is actually in, and the next
+    # stage would have to re-run this one to see anything — re-deriving the very
+    # numbers under question. The manifest says plainly whether the payload may
+    # be read as a result, so the artifact cannot be mistaken for one.
+    written = stage4.write_decisions(
+        decisions,
+        pool_genes,
+        s3_hash,
+        criteria=outcomes,
+    )
+    print(f"  decisions written to {written}")
+    print(f"  usable as a result: {'no' if tripped else 'yes'}")
 
     # Measurements, printed whether or not a criterion tripped. These describe
     # what the atlas contains rather than what should be built, so withholding

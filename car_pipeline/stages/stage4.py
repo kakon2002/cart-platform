@@ -475,6 +475,17 @@ class Decision:
     pair: Pair | None = None
     failed_on: dict[str, int] = field(default_factory=dict)
 
+    #: Carried so the decision can be read without the pool beside it. A symbol
+    #: is not an identity here — several symbols in this proteome carry more
+    #: than one accession, and `build_pool` keeps exactly one of them. A
+    #: consumer re-deriving the accession from the symbol would sometimes pick
+    #: the other one and would never be told.
+    accession: str = ""
+    partner_accession: str | None = None
+    #: Position in the pool as Stage 4 ordered it, so the order survives the
+    #: round trip and can be checked rather than trusted.
+    pool_index: int = -1
+
 
 def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
     by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
@@ -483,8 +494,9 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
         by_gene[p.gene_b].append(p)
 
     cleared = {r.gene: r.cleared for r in pool}
+    accession_of = {r.gene: r.accession for r in pool}
     out: list[Decision] = []
-    for r in pool:
+    for index, r in enumerate(pool):
         mine = by_gene[r.gene]
         admissible = [p for p in mine if p.admissible]
         # Among partners that clear, safety is settled for all of them, so what
@@ -499,6 +511,11 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
                     outcome=SINGLE,
                     partner=_other(best, r.gene) if best else None,
                     pair=best,
+                    accession=r.accession,
+                    partner_accession=(
+                        accession_of.get(_other(best, r.gene)) if best else None
+                    ),
+                    pool_index=index,
                 )
             )
             continue
@@ -511,6 +528,9 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
                     outcome=DUAL,
                     partner=_other(best, r.gene),
                     pair=best,
+                    accession=r.accession,
+                    partner_accession=accession_of.get(_other(best, r.gene)),
+                    pool_index=index,
                 )
             )
             continue
@@ -533,6 +553,8 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
                 gene=r.gene,
                 outcome=UNRESOLVED if salvageable else NO_DESIGN,
                 failed_on=failed,
+                accession=r.accession,
+                pool_index=index,
             )
         )
     return out
@@ -565,3 +587,139 @@ def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
+# --------------------------------------------------------------------------
+# persistence
+# --------------------------------------------------------------------------
+#
+# Until now this stage returned its decisions and printed a summary, so nothing
+# downstream could read what it decided without re-running it — and re-running
+# it re-derives numbers that are themselves under question. The artifact is
+# written under the same discipline as a source cache: payload first, manifest
+# second, both atomic, the manifest acting as the commit marker. A payload with
+# no manifest beside it is a run that died mid-write and must not be read.
+
+DECISIONS_KEY = "decisions"
+
+
+def _decision_payload(d: Decision) -> dict:
+    return {
+        "gene": d.gene,
+        "accession": d.accession,
+        "outcome": d.outcome,
+        "partner": d.partner,
+        "partner_accession": d.partner_accession,
+        "pool_index": d.pool_index,
+        # Present only where the outcome is terminal. An absent mapping and a
+        # mapping of zeros mean different things and are kept apart.
+        "failed_on": d.failed_on or None,
+    }
+
+
+def write_decisions(
+    decisions: list[Decision],
+    pool_genes: list[str],
+    stage3_hash: str,
+    criteria: dict[str, bool],
+    root=None,
+):
+    """Persist the decisions, with the hashes and criteria that produced them.
+
+    The criteria mapping is written into the manifest rather than left to the
+    reader's memory. These decisions are currently produced by a run that stops
+    on five tripped criteria, and an artifact that did not say so would be read
+    as a result. A consumer is expected to refuse the payload when anything is
+    tripped, which is why the outcome is stored beside the data and not in a log.
+    """
+    from car_pipeline.data.source import CACHE_ROOT, _write_json_atomic
+
+    base = (root or CACHE_ROOT) / "stage4"
+    payload_path = base / (DECISIONS_KEY + ".json")
+    manifest_path = base / (DECISIONS_KEY + ".manifest.json")
+
+    # A stale manifest must never bless a new payload. Removed first, so a crash
+    # between the two writes leaves an unblessed payload rather than a blessed
+    # mismatch, and the reader below refuses the first and cannot detect the
+    # second.
+    if manifest_path.exists():
+        manifest_path.unlink()
+
+    # No default. A caller that omitted the criteria would mint a manifest
+    # claiming the payload is usable as a result, which is the one thing this
+    # artifact exists to prevent it from claiming.
+    if not criteria:
+        raise ValueError(
+            "criteria outcomes are required: an artifact written without them "
+            "would assert usable_as_result with nothing behind it"
+        )
+
+    config_hash = configuration_hash(stage3_hash, pool_genes)
+    rows = [_decision_payload(d) for d in decisions]
+    _write_json_atomic(payload_path, {"decisions": rows})
+
+    blob = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    tripped = sorted(k for k, ok in (criteria or {}).items() if not ok)
+    _write_json_atomic(
+        manifest_path,
+        {
+            "key": DECISIONS_KEY,
+            "rows": len(rows),
+            "digest": hashlib.sha256(blob).hexdigest(),
+            "stage3_hash": stage3_hash,
+            "stage4_hash": config_hash,
+            "pool_size": len(pool_genes),
+            "outcomes": {
+                name: sum(1 for d in decisions if d.outcome == name)
+                for name in (SINGLE, DUAL, NO_DESIGN, UNRESOLVED)
+            },
+            "criteria_tripped": tripped,
+            "usable_as_result": not tripped,
+        },
+    )
+    return payload_path
+
+
+def read_decisions(root=None, allow_unusable: bool = False) -> tuple[list[dict], dict]:
+    """Read the decisions, refusing a payload no manifest blesses.
+
+    Returns the rows *and* the manifest, because the rows alone do not say
+    whether they may be read as a result and a caller handed only the rows
+    cannot find out. Today they may not: the writing run stops on five tripped
+    criteria. A caller that genuinely wants the decisions anyway — to inspect
+    why the run stopped, which is a legitimate thing to want — has to say so.
+
+    The digest is re-derived rather than trusted. A truncated or hand-edited
+    payload that still parses as JSON is exactly the failure this guards, and it
+    is silent without the check.
+    """
+    from car_pipeline.data.source import CACHE_ROOT, CacheError
+
+    base = (root or CACHE_ROOT) / "stage4"
+    payload_path = base / (DECISIONS_KEY + ".json")
+    manifest_path = base / (DECISIONS_KEY + ".manifest.json")
+    if not manifest_path.exists():
+        raise CacheError(
+            "no manifest beside " + str(payload_path)
+            + "; the writing run did not finish"
+        )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    rows = json.loads(payload_path.read_text(encoding="utf-8"))["decisions"]
+    blob = json.dumps(rows, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    if hashlib.sha256(blob).hexdigest() != manifest["digest"]:
+        raise CacheError(
+            str(payload_path) + " does not match its manifest digest; refusing to read"
+        )
+    if len(rows) != manifest["rows"]:
+        raise CacheError(
+            str(payload_path) + " has " + str(len(rows)) + " rows, manifest says "
+            + str(manifest["rows"])
+        )
+    if not manifest.get("usable_as_result") and not allow_unusable:
+        raise CacheError(
+            str(payload_path) + " was written by a run that tripped "
+            + ", ".join(manifest.get("criteria_tripped", []))
+            + "; pass allow_unusable=True to read it as diagnostics rather than "
+            "as a result"
+        )
+    return rows, manifest

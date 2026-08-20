@@ -73,8 +73,8 @@ def main() -> int:
     blocking = [d for d in spec.required_datasets if d.required]
 
     check("spec discovery_mode", spec.discovery_mode.value, "B")
-    check("datasets", len(spec.required_datasets), 9)
-    check("blocking datasets", len(blocking), 7)
+    check("datasets", len(spec.required_datasets), 10)
+    check("blocking datasets", len(blocking), 8)
     check("construct budget kb", spec.design_constraints.max_construct_kb, 3.5)
     check("safety switch required", spec.design_constraints.require_safety_switch, True)
     check("risk ceiling", spec.design_constraints.normal_tissue_risk_ceiling, 0.15)
@@ -110,11 +110,11 @@ def main() -> int:
             cancer_type="x", malignancy_type="solid", target_antigen="MSLN"
         )
     )
-    check("validation datasets", len(validate.required_datasets), 6)
+    check("validation datasets", len(validate.required_datasets), 7)
     check(
         "validation blocking",
         len([d for d in validate.required_datasets if d.required]),
-        4,
+        5,
     )
 
     # The returned spec must not alias the shared indication config.
