@@ -420,10 +420,27 @@ size term for a score**, not a membership test, and `_score_c5` returns 1.0 or 0
   proteome annotates as **secreted**: a soluble serum protein, not on the cell. 250
   of 562 residues, 45%, are declared surface-accessible and are not. A binder
   solved against that region would pass and be reported as a usable CAR binder for
-  a target it can only meet in plasma. Where a protein has multiple chain features,
-  select the chain carrying the membrane anchor — for MSLN, 296–598 — and emit the
-  chosen chain id so the choice is auditable. Any candidate whose antigen range
-  overlaps a chain annotated secreted is flagged `SHED_ANTIGEN`, never passed.
+  a target it can only meet in plasma.
+
+  **The rule is the smallest chain containing the anchor position**, and the
+  qualifier is not pedantry — it is what the annotation forced. Now that chain
+  boundaries are fetched, MSLN measures as **three** chains, not two:
+
+  ```
+   37..598   Mesothelin                          spans the whole precursor
+   37..286   Megakaryocyte-potentiating factor   secreted
+  296..598   Mesothelin, cleaved form            anchored
+  ```
+
+  Two of the three contain the anchor, so "the chain carrying the anchor" is
+  ambiguous and a first-match or longest-match reading returns 37–598 — the whole
+  precursor, which is the original defect restored. Taking the smallest chain that
+  contains the anchor gives 296–598. Emit the chosen chain id so the choice is
+  auditable, and report the count of proteins where more than one chain contained
+  the anchor, because that count is how often this rule was load-bearing rather
+  than incidental. Measured: 190 of the 3,480 surface proteins carry more than one
+  chain. Any candidate whose antigen range overlaps a chain annotated secreted is
+  flagged `SHED_ANTIGEN`, never passed.
 
 - **The deposited numbering is not the proteome's numbering.** Measured on the
   amatuximab complex 4F3F: the antigen entity's own sequence position 2 aligns to

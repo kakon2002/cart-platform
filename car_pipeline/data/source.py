@@ -299,25 +299,36 @@ def stream_paginated_to_file(
     declared_header: str = "x-total-results",
     has_header_row: bool = True,
     progress_label: str | None = None,
+    capture_headers: tuple[str, ...] = (),
 ) -> dict:
     """Follow ``next`` links, appending rows to one file, counting as it goes.
 
     The declared total is read from the first response and compared against the
     rows actually written. A dropped page is otherwise invisible.
+
+    ``capture_headers`` names response headers to record from the first page.
+    A source that states which release it served can then be checked against the
+    release the caller asked for, instead of the label being an assertion the
+    payload never has to honour.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
     rows = 0
     declared: int | None = None
+    captured: dict[str, str] = {}
     page = 0
     next_url: str | None = url
 
     with open(dest, "wb") as fh:
         while next_url:
             with _open(next_url, headers=headers, timeout=timeout) as resp:
-                if declared is None:
+                if page == 0:
                     raw = resp.headers.get(declared_header)
                     declared = int(raw) if raw is not None else None
+                    for name in capture_headers:
+                        value = resp.headers.get(name)
+                        if value is not None:
+                            captured[name.lower()] = value
                 body = resp.read()
                 link = resp.headers.get("Link", "") or ""
 
@@ -352,7 +363,7 @@ def stream_paginated_to_file(
         "digest": digest.hexdigest(),
         "declared_rows": declared,
         "observed_rows": rows,
-        "extra": {"source_url": url, "pages": page},
+        "extra": {"source_url": url, "pages": page, **captured},
     }
 
 

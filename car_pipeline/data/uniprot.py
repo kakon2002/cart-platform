@@ -27,7 +27,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
-from car_pipeline.data.source import CacheEntry, DataSource, stream_paginated_to_file
+from car_pipeline.data.source import (
+    CacheEntry,
+    CacheError,
+    DataSource,
+    stream_paginated_to_file,
+)
 
 QUERY = "(reviewed:true) AND (organism_id:9606)"
 FIELDS = [
@@ -40,7 +45,16 @@ FIELDS = [
     "ft_lipid",
     "ft_chain",
 ]
+#: The release this project is pinned to. The search service always serves its
+#: current release and offers no way to request an older one, so the pin cannot
+#: be enforced by the request. It is enforced on the response instead: the
+#: service states which release it served, and a fetch that does not match this
+#: value fails rather than filing whatever arrived under this label. Bumping
+#: this constant changes the cache fingerprint, so the change invalidates the
+#: cache and re-fetches instead of silently replacing the contents.
 RELEASE_PIN = "2026_02"
+RELEASE_HEADER = "X-UniProt-Release"
+RELEASE_DATE_HEADER = "X-UniProt-Release-Date"
 PAGE_SIZE = 500
 BASE = "https://rest.uniprot.org/uniprotkb/search"
 
@@ -115,12 +129,12 @@ class ProteinRecord:
     topo_notes: list[str] = field(default_factory=list)
     extracellular_residues: int | None = None
 
-    #: Mature chains carved out of the precursor, as (start, end, note). A bound
-    #: recorded as uncertain is kept as None rather than dropping the chain: the
-    #: chain exists either way, and losing the row would understate how many
-    #: pieces a precursor is cut into. An empty list means the entry carries no
-    #: chain annotation at all, which is not the same as being a single chain.
-    chains: list[tuple[int | None, int | None, str]] = field(default_factory=list)
+    #: Mature chains carved out of the precursor, in annotation order. A chain
+    #: whose bounds could not be read is kept rather than dropped: the chain
+    #: exists either way, and losing the row would understate how many pieces a
+    #: precursor is cut into. An empty list means the entry carries no chain
+    #: annotation at all, which is not the same as being a single chain.
+    chains: list["Chain"] = field(default_factory=list)
 
     # filter outcome
     attached: bool = False
@@ -162,27 +176,90 @@ def _count_extracellular_residues(topo_field: str) -> int | None:
     return total if measured else None
 
 
-def _bound(text: str) -> int | None:
-    """A residue position, or None where the annotation records it as uncertain."""
+#: Markers the annotation uses for a position it does not know exactly.
+_UNCERTAIN = "<>?"
+_CHAIN_ID = re.compile(r'/id="([^"]*)"')
+
+
+def _bound(text: str) -> tuple[int | None, bool]:
+    """A residue position and whether the annotation hedged it.
+
+    ``<37`` means "somewhere at or before 37", not 37. Stripping the marker and
+    returning the number would turn a hedge into a measurement, and the caller
+    could never tell — which is the whole failure class this project keeps
+    finding. The number is kept because it is still the best available estimate,
+    and the flag is kept beside it so a rule that needs an exact boundary can
+    refuse rather than proceed on one that was never exact.
+    """
+    stripped = text.lstrip(_UNCERTAIN)
+    uncertain = stripped != text
     try:
-        return int(text.lstrip("<>?"))
+        return int(stripped), uncertain
     except ValueError:
-        return None
+        return None, True
 
 
-def parse_chains(chain_field: str) -> list[tuple[int | None, int | None, str]]:
+@dataclass(frozen=True)
+class Chain:
+    """One mature chain carved out of a precursor."""
+
+    start: int | None
+    end: int | None
+    note: str
+    chain_id: str
+    start_uncertain: bool = False
+    end_uncertain: bool = False
+
+    @property
+    def exact(self) -> bool:
+        """True only when both boundaries are numbers the annotation stated flatly."""
+        return (
+            self.start is not None
+            and self.end is not None
+            and not self.start_uncertain
+            and not self.end_uncertain
+        )
+
+    def contains(self, position: int) -> bool:
+        """Whether a residue falls inside, refusing to guess on a missing bound."""
+        if self.start is None or self.end is None:
+            return False
+        return self.start <= position <= self.end
+
+    @property
+    def length(self) -> int | None:
+        if self.start is None or self.end is None:
+            return None
+        return self.end - self.start + 1
+
+
+def parse_chains(chain_field: str) -> list[Chain]:
     """Mature chains carved out of the precursor, in annotation order.
 
-    A chain whose bounds cannot be read is kept with None bounds rather than
+    A chain whose bounds cannot be read is kept with empty bounds rather than
     skipped. Dropping it would make a cleaved precursor look like an uncleaved
     one, which is the direction that matters: it is the difference between a
     protein held at the surface and one released into plasma.
+
+    The chain identifier is retained because the stage that picks between chains
+    has to be able to say which one it picked; a start and end alone name a range
+    rather than a chain.
     """
-    chains: list[tuple[int | None, int | None, str]] = []
+    chains: list[Chain] = []
     for start, end, tail in _CHAIN_SEGMENT.findall(chain_field):
         note_match = _NOTE.search(tail)
+        id_match = _CHAIN_ID.search(tail)
+        lo, lo_unc = _bound(start)
+        hi, hi_unc = _bound(end)
         chains.append(
-            (_bound(start), _bound(end), note_match.group(1) if note_match else "")
+            Chain(
+                start=lo,
+                end=hi,
+                note=note_match.group(1) if note_match else "",
+                chain_id=id_match.group(1) if id_match else "",
+                start_uncertain=lo_unc,
+                end_uncertain=hi_unc,
+            )
         )
     return chains
 
@@ -243,6 +320,32 @@ def parse_row(row: list[str]) -> ProteinRecord:
     return rec
 
 
+def check_release(meta: dict) -> str:
+    """Confirm the service served the release this project is pinned to.
+
+    Separated from the fetch so it can be exercised without downloading 20,431
+    entries. The failure it guards is silent by construction: the manifest
+    records the release as a label, so a service that had moved on would file a
+    different proteome under the pinned name and every count measured against
+    the old one would drift without anything raising.
+    """
+    served = meta.get("extra", {}).get(RELEASE_HEADER.lower())
+    if served is None:
+        raise CacheError(
+            "the proteome service did not state which release it served; "
+            f"refusing to cache an unlabelled fetch under {RELEASE_PIN}"
+        )
+    if served != RELEASE_PIN:
+        raise CacheError(
+            f"the proteome service is serving release {served} and this project "
+            f"is pinned to {RELEASE_PIN}. Every count downstream is measured "
+            "against the pinned release, so the fetch stops here rather than "
+            "replacing them with a different proteome. Bump RELEASE_PIN "
+            "deliberately and re-run every verifier."
+        )
+    return served
+
+
 class UniProtSource(DataSource):
     name = "UniProt"
     namespace = "uniprot"
@@ -275,9 +378,15 @@ class UniProtSource(DataSource):
 
         def fetcher(tmp: Path) -> dict:
             print("  fetching reviewed human proteome", flush=True)
-            return stream_paginated_to_file(
-                self._url(), tmp, progress_label="proteome"
+            meta = stream_paginated_to_file(
+                self._url(),
+                tmp,
+                progress_label="proteome",
+                capture_headers=(RELEASE_HEADER, RELEASE_DATE_HEADER),
             )
+            served = check_release(meta)
+            print(f"    proteome release {served} confirmed against the pin", flush=True)
+            return meta
 
         return self.cache.ensure(entry, fetcher)
 
@@ -336,14 +445,19 @@ def load_surface() -> tuple[list[ProteinRecord], dict]:
 if __name__ == "__main__":
     recs = UniProtSource().load()
     stats = summarise(recs)
+    # Measured against the pinned release, not reconstructed. The previous
+    # figures here were an estimate carried from a prior run and had never been
+    # this code's output; they sat 0.46% above the surface count and were read
+    # as a discrepancy. Now that the release is enforced on the response, these
+    # are reproducible and a difference means something changed.
     expected = {
         "entries": 20431,
-        "surface": 3496,
-        "single_pass": 1464,
-        "multi_pass": 1894,
-        "gpi_anchored": 138,
-        "internal_anchored": 1322,
-        "compartment_unresolved": 550,
+        "surface": 3480,
+        "single_pass": 1455,
+        "multi_pass": 1889,
+        "gpi_anchored": 136,
+        "internal_anchored": 1349,
+        "compartment_unresolved": 533,
     }
     for k, v in stats.items():
         exp = expected[k]

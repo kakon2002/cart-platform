@@ -9,10 +9,12 @@ here would notice.
 
 from car_pipeline.data.uniprot import UniProtSource, summarise
 
-# The reference figures were reconstructed from a prior run rather than copied
-# from it, so they are targets to land near rather than to match exactly. Drift
-# beyond this is a defect worth chasing; drift below it is reconstruction noise.
-# The validation sets below, which are exact, are the real test.
+# These figures are now measured against the pinned proteome release rather than
+# reconstructed, so they are reproducible and a difference means the filter or
+# the data moved. The tolerance is kept because the pin is enforced on the
+# response rather than on the request: a release bump is caught by the fetch,
+# but nothing here should fail on the last digit of a count. The validation sets
+# below, which are exact, remain the real test.
 COUNT_TOLERANCE_PCT = 3.0
 
 KNOWN_TARGETS = [
@@ -46,18 +48,18 @@ def main() -> int:
     # What the two gates decide. These are gated on.
     decisions = {
         "entries": 20431,
-        "surface": 3496,
-        "single_pass": 1464,
-        "multi_pass": 1894,
-        "gpi_anchored": 138,
+        "surface": 3480,
+        "single_pass": 1455,
+        "multi_pass": 1889,
+        "gpi_anchored": 136,
     }
     # How the withheld set is subdivided for reporting. The boundary between
     # these two rests on a compartment vocabulary that had to be inferred rather
     # than read, and no protein's fate depends on which side it lands. Reported,
     # not gated.
     subdivision = {
-        "internal_anchored": 1322,
-        "compartment_unresolved": 550,
+        "internal_anchored": 1349,
+        "compartment_unresolved": 533,
     }
 
     drift_ok = True
