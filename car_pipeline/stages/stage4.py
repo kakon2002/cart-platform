@@ -602,6 +602,10 @@ def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
 
 DECISIONS_KEY = "decisions"
 
+#: Bumped when the payload's shape changes. Without it an artifact written by an
+#: older layout reads as current and fails somewhere further away.
+DECISIONS_MANIFEST_VERSION = 1
+
 
 def _decision_payload(d: Decision) -> dict:
     return {
@@ -638,21 +642,21 @@ def write_decisions(
     payload_path = base / (DECISIONS_KEY + ".json")
     manifest_path = base / (DECISIONS_KEY + ".manifest.json")
 
+    # Validated before anything on disk is touched. Raising after the unlink
+    # would destroy a previously valid artifact to punish a bad call, which
+    # turns a caller's mistake into data loss.
+    if not criteria:
+        raise ValueError(
+            "criteria outcomes are required: an artifact written without them "
+            "would assert usable_as_result with nothing behind it"
+        )
+
     # A stale manifest must never bless a new payload. Removed first, so a crash
     # between the two writes leaves an unblessed payload rather than a blessed
     # mismatch, and the reader below refuses the first and cannot detect the
     # second.
     if manifest_path.exists():
         manifest_path.unlink()
-
-    # No default. A caller that omitted the criteria would mint a manifest
-    # claiming the payload is usable as a result, which is the one thing this
-    # artifact exists to prevent it from claiming.
-    if not criteria:
-        raise ValueError(
-            "criteria outcomes are required: an artifact written without them "
-            "would assert usable_as_result with nothing behind it"
-        )
 
     config_hash = configuration_hash(stage3_hash, pool_genes)
     rows = [_decision_payload(d) for d in decisions]
@@ -664,6 +668,7 @@ def write_decisions(
         manifest_path,
         {
             "key": DECISIONS_KEY,
+            "manifest_version": DECISIONS_MANIFEST_VERSION,
             "rows": len(rows),
             "digest": hashlib.sha256(blob).hexdigest(),
             "stage3_hash": stage3_hash,
@@ -680,7 +685,12 @@ def write_decisions(
     return payload_path
 
 
-def read_decisions(root=None, allow_unusable: bool = False) -> tuple[list[dict], dict]:
+def read_decisions(
+    root=None,
+    allow_unusable: bool = False,
+    expect_stage3_hash: str | None = None,
+    expect_stage4_hash: str | None = None,
+) -> tuple[list[dict], dict]:
     """Read the decisions, refusing a payload no manifest blesses.
 
     Returns the rows *and* the manifest, because the rows alone do not say
@@ -715,6 +725,27 @@ def read_decisions(root=None, allow_unusable: bool = False) -> tuple[list[dict],
             str(payload_path) + " has " + str(len(rows)) + " rows, manifest says "
             + str(manifest["rows"])
         )
+    version = manifest.get("manifest_version")
+    if version != DECISIONS_MANIFEST_VERSION:
+        raise CacheError(
+            str(payload_path) + " was written under manifest version "
+            + str(version) + "; this reader expects "
+            + str(DECISIONS_MANIFEST_VERSION)
+        )
+    # The hashes are recorded so a consumer can tell whether these decisions came
+    # from the configuration it is holding. Recording them and never checking
+    # them would let an artifact from a different ranking be read as current,
+    # which is precisely what carrying the hashes was supposed to prevent.
+    for label, expected, actual in (
+        ("stage3_hash", expect_stage3_hash, manifest.get("stage3_hash")),
+        ("stage4_hash", expect_stage4_hash, manifest.get("stage4_hash")),
+    ):
+        if expected is not None and expected != actual:
+            raise CacheError(
+                str(payload_path) + " was written under " + label + " "
+                + str(actual) + ", but the caller is running " + str(expected)
+                + "; these decisions are not from this configuration"
+            )
     if not manifest.get("usable_as_result") and not allow_unusable:
         raise CacheError(
             str(payload_path) + " was written by a run that tripped "
