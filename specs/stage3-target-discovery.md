@@ -357,6 +357,60 @@ fall-through and reported.
 **The output must report the fall-through count, and it must read 0.** A
 fail-safe that is silently doing work is a mapping bug wearing a disguise.
 
+### A fourth mapping problem: one gene is not always one antigen
+
+Every expression source here is keyed on gene symbol, and for a subset of genes
+that is the wrong unit. Where a gene carries two promoters, the transcripts they
+drive can have different tissue distributions, and a gene-level value is their
+sum — so the risk score is computed for a molecule that does not exist.
+
+**Measured over the pool**, using distinct transcription start sites among
+protein-coding transcripts as the structural test (tolerance 500 bp):
+
+| | count |
+| --- | --- |
+| pool genes resolvable in the annotation | 191 of 200 |
+| with more than one distinct start site | 65 (34%) |
+| **with start sites at least 10 kb apart** | **25** |
+
+**25 is an upper bound on candidates, not a count of affected genes.** A separate
+promoter is a necessary condition for materially different tissue distributions —
+it is what makes separate regulation possible — and it is not a sufficient one.
+Confirming any individual gene requires transcript-level expression. The number is
+recorded so the subset is known and bounded; it must not be quoted as "25 genes
+have wrong risk scores".
+
+**The worked case, and the one that matters to the pairing stage.** CLDN18 carries
+two start sites 11.4 kb apart. Resolved against transcript-level medians:
+
+| tissue | gene level | CLDN18.1 | CLDN18.2 | .2 share |
+| --- | --- | --- | --- | --- |
+| Lung | 68.44 | **60.96** | 7.48 | 10.9% |
+| Stomach | 210.56 | 3.09 | **207.47** | 98.5% |
+| Pancreas | 0.11 | 0.11 | 0.00 | 0% |
+
+Which transcript is which isoform is decided by the measurement, not asserted: the
+lung-dominant one is CLDN18.1, the stomach-dominant one is CLDN18.2, and CLDN18.2
+is the therapeutic target. Scored through this stage's own risk function:
+
+| antigen | risk | peak organ |
+| --- | --- | --- |
+| CLDN18, gene level | 0.6138 | **lung** |
+| CLDN18.2, resolved | 0.4637 | **gi_tract** |
+
+So the gene-level score put CLDN18's peak risk in an organ its therapeutic isoform
+is barely in, and understated the organ it is actually in. Resolving it halves the
+lung term and moves the peak to the stomach — which is the approved CLDN18.2
+antibody's real dose-limiting toxicity. **It does not rescue the target**: 0.4637
+is still three times the ceiling, and the stomach term is genuine.
+
+**Not fixed here, and the reason is a source constraint.** Transcript-level medians
+are published for the previous baseline release, and this stage is pinned to the
+current one. Isoform-resolved values therefore cannot enter the gate without either
+un-pinning the baseline or mixing releases inside a single score, and neither is
+done silently. Until then, a gene with widely separated promoters carries a flag
+saying its score is a sum over isoforms, and the flag travels with it.
+
 ### Clearance
 
 `cleared = risk <= normal_tissue_risk_ceiling` from the project spec: 0.15
@@ -429,16 +483,64 @@ the result gets an explanation.
 | R10 | more than 10% of the top 100 were reached only through the identifier bridge |
 | R11 | a `sources_disagree` flag goes unread in the top 25 |
 | R12 | a 2× change in any single saturation point reshuffles more than half of the top 50 |
-| R13 | after calibration, the clearance rate at the conservative ceiling still differs by more than 5× between PROTEIN_CONFIRMED and RNA_SUPPORTED |
+| ~~R13~~ | **withdrawn — see the amendment below. Replaced by R13′.** |
+| R13′ | over organs carrying both a positive staining call and a transcript value, the median difference between the two derived scores departs from zero by more than 0.05, or staining exceeds transcript in fewer than 35% or more than 65% of them |
 
-**R13 detail.** Fixed before the calibrated run, not after seeing it. The
-defect this calibration exists to correct is that the gate selected for absence
-of evidence: at the conservative ceiling it cleared 0 percent of
-protein-confirmed targets against 42.8 percent of RNA-supported ones. Two
-proteins that differ only in whether anyone has stained them should clear at
-comparable rates. A gap beyond 5x means the staining axis is still not
-commensurable with the transcript axis and the calibration did not work. Rate
-means cleared as a share of that class, not as a share of the cleared set.
+**R13 is withdrawn, and this invalidates every comparison that cited its ratio.**
+Any statement of the form "clearance is X% against Y%, a ratio of Z" — including
+the 75.32× this run reports and the 1.3× reported earlier as the outcome of the
+calibration — is a comparison between two populations that are not comparable, and
+none of those numbers should be quoted again.
+
+**Why it was wrong.** R13 rested on one sentence: *"two proteins that differ only
+in whether anyone has stained them should clear at comparable rates."* Measured,
+they do not differ only in that. `evidence_class` is `PROTEIN_CONFIRMED` if and
+only if the tissue atlas holds a staining call, so the two classes are "proteins
+somebody raised an antibody against" and "proteins nobody did" — and those
+populations differ enormously on the transcript axis, where no staining value and
+no calibration is involved at all:
+
+| class | n | breadth Q1 / median / Q3 | median peak TPM |
+| --- | --- | --- | --- |
+| `PROTEIN_CONFIRMED` | 1,935 | 19 / **51** / 67 | 61.81 |
+| `RNA_SUPPORTED` | 1,479 | 0 / **7** / 35 | 7.74 |
+
+Breadth is the count of the 68 baseline tissues at or above 1 TPM. The probability
+that a protein-confirmed gene is broader than an RNA-supported one is **0.780**;
+0.500 would mean the populations were interchangeable. Nearly a third of the
+RNA-supported class — 471 of 1,479 — is below 1 TPM in *every* tissue, and all of
+it clears trivially. R13 was measuring which proteins have been studied.
+
+**A second reason, structural and unfixable by calibration.** §"Combining the two
+measurements per organ" takes the **maximum** of the staining-derived and
+transcript-derived score, so that a "not detected" call cannot cancel a positive
+transcript reading. That is right, and it has a consequence nothing else states:
+adding a second source can only raise an organ's score, never lower it. A protein
+measured twice therefore has two chances to exceed the ceiling and a protein
+measured once has one. **The gate rewards being unmeasured**, and the effect
+concentrates exactly on low-expressed proteins, which are the ones worth finding.
+Measured: of protein-confirmed proteins that clear on transcript alone, 72 of 83
+are blocked once staining is added.
+
+**What R13′ tests instead, and why it can fail.** The calibration's actual job is
+to put the two axes on one scale. That is a paired question — same protein, same
+organ, two measurements — and it carries no population difference and no gate.
+Over 30,906 paired organs the current run measures a median difference of
+**+0.0000** over positive calls, with staining exceeding transcript in **50.0%** of
+them, so R13′ clears comfortably. It would fail if the calibration were removed,
+mis-centred, or allowed to drift against a new atlas release, which is precisely
+the failure R13 was reaching for and could not isolate.
+
+The 0.05 and 35–65% bounds are set from what the scoring function does rather than
+from the observed value: 0.05 is a third of the 0.15 ceiling, so a systematic
+offset smaller than that cannot on its own move an organ across the gate, and a
+split inside 35–65% cannot make either axis the systematic decider.
+
+**What replaces R13's reporting role.** Both quantities above are printed in the
+header every run, ungated: the breadth distribution per evidence class with its
+separation, and the count of proteins whose verdict is flipped by the second
+source. They are real and worth watching. They are not criteria, because neither
+has a failing state the ranking could correct.
 
 **R12 detail.** R6 perturbs the weights, which were fixed deliberately and are
 visible as choices. The saturation points in §4 are equally free parameters and
