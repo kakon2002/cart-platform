@@ -360,56 +360,109 @@ fail-safe that is silently doing work is a mapping bug wearing a disguise.
 ### A fourth mapping problem: one gene is not always one antigen
 
 Every expression source here is keyed on gene symbol, and for a subset of genes
-that is the wrong unit. Where a gene carries two promoters, the transcripts they
-drive can have different tissue distributions, and a gene-level value is their
-sum — so the risk score is computed for a molecule that does not exist.
+that is the wrong unit. A gene-level value sums transcripts that can sit in
+different tissues and present different surfaces, so the score describes a
+molecule that does not exist.
 
-**Measured over the pool**, using distinct transcription start sites among
-protein-coding transcripts as the structural test (tolerance 500 bp):
+**A gene only produces a wrong answer when two independent things are both true**,
+and separating them is what keeps this from being a scare number:
+
+- **(a) the isoforms differ where a binder looks.** If they differ only in a
+  cytoplasmic tail, the epitope is the same whichever is expressed.
+- **(b) separate promoters drive them.** Without that there is no mechanism for
+  one isoform to dominate in a different tissue from the other.
+
+Measured over the 200-member pool. (a) from the proteome's alternative-product
+and topology annotation; (b) from distinct protein-coding transcription start
+sites at least 10 kb apart, tolerance 500 bp.
 
 | | count |
 | --- | --- |
-| pool genes resolvable in the annotation | 191 of 200 |
-| with more than one distinct start site | 65 (34%) |
-| **with start sites at least 10 kb apart** | **25** |
+| more than one annotated isoform | 120 of 200 |
+| **(a)** isoforms differ inside an extracellular / reachable region | **98** |
+| difference confined where no surface binder can reach | 21 |
+| undetermined topology | 1 |
+| **(b)** separate promoters | **25** of 191 resolvable |
+| **both (a) and (b) — the shape CLDN18 has** | **15** |
 
-**25 is an upper bound on candidates, not a count of affected genes.** A separate
-promoter is a necessary condition for materially different tissue distributions —
-it is what makes separate regulation possible — and it is not a sufficient one.
-Confirming any individual gene requires transcript-level expression. The number is
-recorded so the subset is known and bounded; it must not be quoted as "25 genes
-have wrong risk scores".
+The fifteen: ADGRF1, ANO1, CEMIP2, **CLDN18**, EMB, **ERBB2**, ERBB3, GPR35,
+**NRG3**, PTPRR, RHBDL2, SCNN1A, SEMA4B, SLC5A1, TMC5. Two of them are Stage 4
+recommendations and one, ERBB2, is among the most-used CAR targets in the clinic.
 
-**The worked case, and the one that matters to the pairing stage.** CLDN18 carries
-two start sites 11.4 kb apart. Resolved against transcript-level medians:
+**120 is a floor, not a truth.** It counts genes where the reviewed proteome
+annotates alternative products; other annotations carry more transcripts. MUC16
+and SDC1 read as single-isoform here and are not. "One isoform in the proteome"
+must not propagate downstream as "no isoform problem".
 
-| tissue | gene level | CLDN18.1 | CLDN18.2 | .2 share |
-| --- | --- | --- | --- | --- |
-| Lung | 68.44 | **60.96** | 7.48 | 10.9% |
-| Stomach | 210.56 | 3.09 | **207.47** | 98.5% |
-| Pancreas | 0.11 | 0.11 | 0.00 | 0% |
+**A separate finding fell out of this and belongs to the surface filter, not
+here:** several pool members are not plasma-membrane proteins at all, and their
+`Extracellular` topological domain is the annotation's convention for an organelle
+lumen — VMP1, ATP2C2, GOLM1, ACSL5, MTLN. The filter upstream is admitting them.
 
-Which transcript is which isoform is decided by the measurement, not asserted: the
-lung-dominant one is CLDN18.1, the stomach-dominant one is CLDN18.2, and CLDN18.2
-is the therapeutic target. Scored through this stage's own risk function:
+#### The worked case
+
+CLDN18 carries two promoters 11.4 kb apart, and the proteome names the isoforms
+directly: `P56856-1` is CLDN18.1 and `P56856-2` is CLDN18.2, the therapeutic
+target. The splice difference spans residues 1–69 against a topology of
+`1–6 cytoplasmic, 7–27 TM1, 28–80 extracellular`. So the difference is the
+cytoplasmic N-terminus, all of TM1, and the first 42 residues of extracellular
+loop 1 — verified at sequence level as 8 mismatches in that loop with residues
+70–261 identical. **The entire protein-level difference sits on the surface the
+approved antibody binds**, and both isoforms are full length and membrane
+anchored, so no gene-keyed source can tell them apart.
+
+Resolved against transcript-level medians on the pinned release:
+
+| tissue | gene | CLDN18.2 fraction | CLDN18.2 |
+| --- | --- | --- | --- |
+| Lung | 150.96 | 0.014 | **2.05** |
+| Stomach | 427.67 | 0.956 | **408.88** |
+| Pancreas | 0.24 | 0.000 | 0.00 |
+
+**98.6% of CLDN18's lung signal is the isoform the therapy does not bind.**
+Scored through this stage's own function:
 
 | antigen | risk | peak organ |
 | --- | --- | --- |
-| CLDN18, gene level | 0.6138 | **lung** |
-| CLDN18.2, resolved | 0.4637 | **gi_tract** |
+| CLDN18, gene level | 0.7271 | **lung** |
+| CLDN18.2, resolved | 0.5225 | **gi_tract** |
 
-So the gene-level score put CLDN18's peak risk in an organ its therapeutic isoform
-is barely in, and understated the organ it is actually in. Resolving it halves the
-lung term and moves the peak to the stomach — which is the approved CLDN18.2
-antibody's real dose-limiting toxicity. **It does not rescue the target**: 0.4637
-is still three times the ceiling, and the stomach term is genuine.
+The gene-level score put the peak risk in an organ the therapeutic isoform is
+barely in. Resolved, the peak moves to the stomach — which is where the approved
+CLDN18.2 antibody's dose-limiting toxicity actually is. **It does not rescue the
+target**: 0.5225 is still three and a half times the ceiling, and the stomach term
+is real.
 
-**Not fixed here, and the reason is a source constraint.** Transcript-level medians
-are published for the previous baseline release, and this stage is pinned to the
-current one. Isoform-resolved values therefore cannot enter the gate without either
-un-pinning the baseline or mixing releases inside a single score, and neither is
-done silently. Until then, a gene with widely separated promoters carries a flag
-saying its score is a sum over isoforms, and the flag travels with it.
+#### The trap in doing this, which is worse than not doing it
+
+Gene medians and transcript medians come from **different quantification tools**.
+Measured on CLDN18, the transcripts sum to roughly half the gene-level value in
+the same tissue — 78.0 against 150.96 in lung, 209.1 against 427.7 in stomach,
+a ratio of 0.52 and 0.49. Substituting a transcript TPM directly into a gate
+calibrated on gene TPM would therefore **understate every isoform-resolved risk
+about twofold, and would do it silently** — which would make resolving isoforms
+look like a safety improvement when it is a units error.
+
+So the isoform split enters as a **ratio computed within the transcript tool**,
+applied to the pinned gene value. Units stay on the axis the gate was calibrated
+on and only the proportion crosses between tools. A tissue with no transcript
+signal at all is left **unresolved**, not resolved to zero: 14 of 68 tissues for
+CLDN18.
+
+#### What each source can and cannot resolve
+
+| source | isoform-resolvable | why |
+| --- | --- | --- |
+| normal tissue baseline | **yes**, per-tissue transcript medians on the pinned release | via the portal API; no bulk median file exists at any release |
+| tumour cohort | **not as configured** — gene-level quantification only | transcript-level needs a different repository |
+| tissue atlas staining | **no** | antibody-based and gene-keyed; the antibody cannot be attributed to an isoform |
+| single-cell atlas | **no, and it is a chemistry ceiling** | 3'-capture single-nucleus: isoforms differing at the 5' end share the sequenced region, so no annotation can separate them |
+| proteome | **yes** | stable per-isoform accessions and per-isoform sequences |
+
+The single-cell row is the one with consequences beyond this stage: the pairing
+stage's per-cell co-expression can never be isoform-resolved on this assay, so a
+pair involving any of the fifteen carries a co-expression measure that is a sum
+over isoforms and cannot be corrected.
 
 ### Clearance
 
