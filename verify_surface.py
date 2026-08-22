@@ -1,10 +1,10 @@
 """Surface filter check against the two validation sets.
 
 Twenty-eight proteins with clinical or trial precedent must survive the filter.
-Ten deliberately chosen negatives must not. The negatives are split between two
-different reasons for rejection, and the split is asserted: if every negative
-failed on the anchor rule alone, the topology gate could be broken and nothing
-here would notice.
+Twelve deliberately chosen negatives must not. The negatives are split across
+three different reasons for rejection, and the split is asserted: if every
+negative failed on the anchor rule alone, the other two gates could be broken and
+nothing here would notice.
 """
 
 from car_pipeline.data.uniprot import UniProtSource, summarise
@@ -29,11 +29,26 @@ NEGATIVE_CONTROLS = [
     "TP53", "ACTB", "GAPDH", "TUBB", "LMNA",
     # membrane, but of internal compartments
     "CANX", "CALR", "GOLGA2", "SEC61A1", "RPN1",
+    # anchored in an organelle membrane, and admitted for a while because the
+    # phrase "cell membrane" or "cell surface" appeared in a free-text note
+    # rather than in a location statement. See NOTE_ONLY_REJECTS.
+    "GOLM1", "MTLN",
 ]
 
 # Rejected because the topology gate found no outward face, despite being
 # anchored in a membrane.
 TOPOLOGY_REJECTS = ["CANX", "SEC61A1", "RPN1"]
+
+# Rejected because the localisation gate now reads location statements only.
+# Both of these carry an organelle location and a note that happens to contain a
+# plasma-membrane phrase: one describes transient trafficking ("Cycles via the
+# cell surface and endosomes upon lumenal pH disruption"), the other describes
+# lipid binding ("Preferentially binds to cardiolipin relative to other common
+# cell membrane lipids"). Neither is a statement about where the protein rests.
+# Asserted by name, in the same shape as the CALR check below, because a
+# regression here is silent: the count would move by fourteen and nothing else
+# would look wrong.
+NOTE_ONLY_REJECTS = ["GOLM1", "MTLN"]
 
 
 def main() -> int:
@@ -48,9 +63,9 @@ def main() -> int:
     # What the two gates decide. These are gated on.
     decisions = {
         "entries": 20431,
-        "surface": 3480,
-        "single_pass": 1455,
-        "multi_pass": 1889,
+        "surface": 3466,
+        "single_pass": 1446,
+        "multi_pass": 1884,
         "gpi_anchored": 136,
     }
     # How the withheld set is subdivided for reporting. The boundary between
@@ -58,8 +73,8 @@ def main() -> int:
     # than read, and no protein's fate depends on which side it lands. Reported,
     # not gated.
     subdivision = {
-        "internal_anchored": 1349,
-        "compartment_unresolved": 533,
+        "internal_anchored": 1362,
+        "compartment_unresolved": 534,
     }
 
     drift_ok = True
@@ -109,6 +124,8 @@ def main() -> int:
         else:
             if not rec.attached:
                 reason = "no anchor"
+            elif rec.outward_note_only:
+                reason = "outward evidence only in a free-text note"
             elif not rec.outward:
                 reason = "no outward face (topology)"
             else:
@@ -117,7 +134,7 @@ def main() -> int:
                 f"  {'ok  ' if ok else 'FAIL'}  {gene:10s} attached={str(rec.attached):5s}"
                 f" outward={str(rec.outward):5s}  rejected on: {reason}"
             )
-    print(f"  {rejected}/{len(NEGATIVE_CONTROLS)} rejected   expected 10")
+    print(f"  {rejected}/{len(NEGATIVE_CONTROLS)} rejected   expected 12")
 
     print("\nrejection reasons")
     on_topology = [
@@ -130,6 +147,26 @@ def main() -> int:
         f"   expected at least one of {TOPOLOGY_REJECTS}"
     )
 
+    note_only = [
+        g
+        for g in NOTE_ONLY_REJECTS
+        if (r := by_gene.get(g)) is not None and r.outward_note_only
+    ]
+    print(
+        f"  rejected on the location-statement rule: {sorted(note_only)}"
+        f"   expected {sorted(NOTE_ONLY_REJECTS)}"
+    )
+
+    # Every entry held out in the third state, by name. Fourteen is small enough
+    # to read, and a silent change in this set is exactly what a count alone
+    # would hide.
+    held = sorted(r.gene for r in records if r.outward_note_only)
+    print(f"\n  held out, plasma-membrane evidence only in a note ({len(held)}):")
+    print(f"    {', '.join(held)}")
+    print("    ASTN2 is the one to keep in view: its note reads \"Integral membrane")
+    print("    protein not detected at the cell membrane\", so the previous rule")
+    print("    admitted it on a sentence denying the thing it was matching.")
+
     calr = by_gene.get("CALR")
     if calr is not None:
         print(
@@ -141,6 +178,7 @@ def main() -> int:
         passed == len(KNOWN_TARGETS)
         and rejected == len(NEGATIVE_CONTROLS)
         and bool(on_topology)
+        and sorted(note_only) == sorted(NOTE_ONLY_REJECTS)
         and calr is not None
         and calr.outward
         and not calr.attached

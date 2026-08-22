@@ -506,6 +506,67 @@ coverage side this is the conservative direction. It is not conservative for the
 single-versus-dual decision, because it makes every pair look worse than it is and
 so biases the stage toward `SINGLE` and toward abundant antigens.
 
+### 6.5a Two hard limits of this assay, not caveats on it
+
+Both of the following are properties of the chemistry. Neither can be corrected by
+a better reference, a better threshold, or more cells, and neither is written as a
+qualification on a number that is otherwise usable — where they apply, the number
+does not mean what the metric name says.
+
+**Isoforms differing at the 5' end are invisible.** This is 3'-capture
+single-nucleus sequencing: it sequences a short window at the 3' end of each
+transcript. Two isoforms that share that window are the same read whatever
+annotation is used, so a gene whose isoforms differ by alternative first exons is
+counted as one gene here, permanently.
+
+Fifteen pool members have isoforms that both differ where a binder looks and are
+driven by separate promoters — the shape that makes the distinction matter.
+**ADGRF1, ANO1, CEMIP2, CLDN18, EMB, ERBB2, ERBB3, GPR35, NRG3, PTPRR, RHBDL2,
+SCNN1A, SEMA4B, SLC5A1, TMC5.**
+
+For a pair involving any of them, `f_AB` is the fraction of malignant nuclei
+carrying **either isoform of that member together with the other antigen**, which
+is not the quantity an AND gate fires on. The direction is not conservative: it
+**overstates** the coverage a real isoform-specific construct would reach, because
+cells expressing only the isoform the binder does not bind are counted as hits.
+That is the opposite direction to the dropout bias in §6.5, so the two do not
+cancel and must not be described as offsetting.
+
+CLDN18 is the worked case: the two isoforms differ across transmembrane helix 1
+and the first extracellular loop, which is the entire surface the clinical binder
+class engages, and 98.6% of the gene's lung signal is the isoform that class does
+not bind.
+
+**Consequence for this stage's current output, stated plainly.** Every one of the
+thirteen `DUAL` recommendations involves NRG3 — twelve as the partner and one as
+the target. NRG3 is one of the fifteen. **So every dual co-expression figure this
+stage currently emits is a sum over isoforms and cannot be corrected on this
+assay.** A pair score involving any of the fifteen is reported with an
+`ISOFORM_SUMMED` marker on the row, and a marker on a row is not a footnote in a
+header: it travels with the number wherever the number goes.
+
+**Detection rate tracks gene length, not only expression.** Nuclear capture
+sequences unspliced pre-mRNA, and intronic content scales with genomic span.
+Measured over 186 pool genes with both quantities: Spearman between detection rate
+and genomic span is **+0.68**, against **+0.20** between detection rate and bulk
+tumour expression. Span and expression are close to independent here (−0.16), and
+the span effect survives stratification — inside every quartile of bulk expression
+the detection-to-span correlation stays between **+0.67 and +0.80**.
+
+So `f_AB`, and therefore the coverage floor in §6.8 and everything gated on it, is
+substantially a function of how long the two genes are. NRG3 is the extreme case
+and it is not a coincidence that it dominates the output: **1,112 kb of genomic
+span, detected in 49% of malignant nuclei, and 180th of 186 pool genes by bulk
+tumour expression.** It passes the coverage gate on length.
+
+**These two limits share a subject and not a cause**, and both land on NRG3 for
+the same underlying reason: it is an enormous gene. Its four promoters are 924 kb
+apart because the gene is 1,112 kb long, and its detection rate is inflated for
+the same reason. The three flags this stage carries against NRG3 — promoter
+spread, capture artefact, and taking 92.3% of dual partner slots — are one
+property with three symptoms, not three independent findings, and treating them as
+independent corroboration would be counting the same fact three times.
+
 ### 6.6 Mandatory sanity check on the derivation
 
 Run before any pairing. **MSLN, CLDN18 and CEACAM6 must each be detected in a
