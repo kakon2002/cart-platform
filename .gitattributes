@@ -1,0 +1,20 @@
+# Line endings are normalised to LF in the repository and checked out as-is.
+#
+# Without this the repository held a mix: two specs were committed CRLF, one LF,
+# the Python files CRLF, and `core.autocrlf` is false so nothing reconciled them.
+# An editor that rewrote a file wholesale then produced a diff of the entire file
+# — one edit came within a commit of landing 1,800 lines of churn for 61 lines of
+# content, which is the kind of diff nobody reads and a real change can hide in.
+#
+# `eol=lf` rather than `eol=native`: the working tree matches the repository, so
+# what a reviewer reads is what is stored, and a tool that rewrites a file cannot
+# flip its endings as a side effect.
+* text=auto eol=lf
+
+# Binary and cached payloads: never touched, never diffed as text.
+*.png binary
+*.gz binary
+*.gct binary
+*.npz binary
+*.h5ad binary
+*.zip binary
