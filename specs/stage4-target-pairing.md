@@ -178,8 +178,8 @@ two members, neither of which cleared alone.*
 combined_risk(A,B) <= ceiling                          (1)  safety is won
 risk_A > ceiling                                       (2)  and was not already there
 combined_risk(A,B) < min(risk_A, risk_B) - 0.05        (3)  by conjunction, not by selection
-f_AB >= COVERAGE_FLOOR                                 (4)  and the gate still kills enough
-f_AB >= COVERAGE_FLOOR in >= 60% of evaluable patients (5)  in most patients, not on average
+f_AB >= COVERAGE_FLOOR                                 (4)  REPORTED, NOT GATED — 6.5b
+f_AB >= COVERAGE_FLOOR in >= 60% of evaluable patients (5)  REPORTED, NOT GATED — 6.5b
 ```
 
 Every line is a number the stage emits. (3) is the one that separates a result
@@ -567,6 +567,110 @@ spread, capture artefact, and taking 92.3% of dual partner slots — are one
 property with three symptoms, not three independent findings, and treating them as
 independent corroboration would be counting the same fact three times.
 
+### 6.5b Coverage is reported, and does not select
+
+**Decision: `f_AB` no longer gates or orders partner selection.** It is reported,
+labelled span-confounded, and read beside a second number. What follows is why,
+what it costs, and what would let the gate come back.
+
+**Why.** The measurement does not carry the meaning the gate needs. Detection rate
+tracks genomic span at rho **+0.68** against **+0.20** for bulk tumour expression;
+the confound reaches the joint quantity, not only the marginals — `f_AB` itself
+correlates **+0.63** with the geometric mean of the two spans against **+0.08**
+with their expression; and it survives stratification, holding between **+0.67 and
++0.80** inside every quartile of expression. A threshold on it admits and rejects
+partners substantially on how long their genes are.
+
+Three alternatives were considered and priced before choosing:
+
+| option | why not |
+| --- | --- |
+| regress span out of detection | `f_AB` is an intersection over a per-cell binary matrix. Residualising two marginals does not produce a residualised joint, and the result is no longer a fraction of cells while the floor it is compared against still is. Corrects an artefact only partly understood, into a number that cannot be interpreted. |
+| compare only within a span stratum | Only **19.6%** of pairs share a span quintile. It discards every short-with-long pair, including MSLN+CLDN18 at 8 kb against 35 kb. And it fixes the ordering while leaving the absolute floor — which is where the gate bites — still wrong. |
+| substitute bulk expression | Bulk has no co-expression. It gives tissue-average marginals, and "the fraction of cells carrying both" has no bulk analogue. This changes what is measured rather than how well. |
+
+Changing the statistic was also tested and does not help: the mean count per cell
+correlates **+0.69** with span, marginally worse than the detection rate. The
+artefact is in the counts, not in the binarisation.
+
+**What this gives up, stated rather than hidden.** Nothing now stops a pair with
+negligible overlap being recommended. That was the floor's job. So every pair
+reports two numbers and a reader has to look at both:
+
+- **`f_AB`** — the fraction itself, still a floor for the dropout reason in §6.5.
+- **`span_percentile`** — where that fraction sits among measured pairs of similar
+  gene length. 0.50 means typical for genes this long. A high `f_AB` on two long
+  genes and a high one on two short genes are not the same claim, and the
+  percentile is what separates them.
+
+Two criteria are withdrawn with the gate, because both enforced it:
+
+- **P9** asserted no recommendation sits below the patient floor. That floor counts
+  patients whose `f_AB` clears the coverage floor, so it inherits the confound
+  whole. Reported now, and the current figure is stark: **70 of 70** recommended
+  pairs sit below it.
+- **P16** existed to catch a coverage floor set so high it admitted nothing. The
+  floor no longer admits or rejects. Reported.
+
+Sixteen criteria become fourteen. Neither withdrawal is a relaxation of a standard
+that was being met; both remove a test of a threshold that no longer acts.
+
+**The resolution path, so this reads as fixable rather than permanent.** The cause
+is known exactly: the atlas was quantified against a pre-mRNA reference, so
+intronic reads are counted and intronic content scales with span. Recovering an
+unconfounded `f_AB` needs, in order:
+
+1. the raw sequence data — the series publishes three processed matrices and no
+   exon-only quantification, and the cached object carries a single `counts`
+   layer with no spliced/unspliced split, so neither the archive nor the cache
+   can supply it;
+2. realignment and **exon-only quantification**, which is where the confound is
+   actually removed;
+3. its own release pin and cache entry under the discipline every other source
+   follows, since a re-quantification that cannot be reproduced is not evidence.
+
+Not done here, and not small. Written down because the difference between "this
+measurement is confounded" and "this measurement is permanently unusable" is the
+three steps above, and only the first is a data-access problem.
+
+### 6.5c Removing the coverage gate did not resolve P13, and the reason is structural
+
+Measured after the change. Partner concentration did not fall — **it moved**:
+
+| | before | after |
+| --- | --- | --- |
+| dual recommendations | 13 | **70** |
+| dominant partner | NRG3, 92.3% | **NPSR1, 95.7%** |
+| admissible partners per dual target | 1 for 12 of 13 | min 1, **median 1**, max 29 |
+| P12 (count sensitivity) | tripped, 84.6% | **clears**, 7.1% |
+| P15 (pool-halving stability) | clears | **trips**, 100% |
+
+The cause is not the coverage gate and was never going to be. Combined risk is the
+maximum over organs of `min(score_A, score_B) x criticality`. **A partner scoring
+near zero in every organ drives `min(A, B)` to near zero for every A**, so it
+minimises combined risk universally, whatever it is paired with. NPSR1 is that
+protein: single risk **0.0277** against **0.2272** for the next lowest in the pool,
+with per-organ scores of 0.0277 in brain, 0.0220 in gi_tract and 0.0000 in
+everything else. It is the lowest-risk partner for **67 of 70** targets, and not
+by a hair — the median gap to the second-best partner is **0.0925**, over half the
+ceiling.
+
+So any selection rule that minimises combined risk selects the same protein for
+every target. The choice is target-independent by construction, and P13 measures
+exactly that.
+
+**The tension this exposes, which is the real finding.** An AND gate genuinely is
+made safest by pairing with something absent everywhere — that is not a defect in
+the arithmetic, it is what the architecture does. What stops the stage recommending
+a partner that contributes nothing to tumour targeting is a coverage term, and the
+coverage term is the one that cannot currently be trusted. Removing it made the
+risk side honest and left the stage with no counterweight.
+
+P13 is therefore **not resolved**, and must not be recorded as resolved. It is
+now correctly attributed: it is a property of minimising a min-based risk without
+a usable coverage term, not a property of the coverage gate that used to precede
+it.
+
 ### 6.6 Mandatory sanity check on the derivation
 
 Run before any pairing. **MSLN, CLDN18 and CEACAM6 must each be detected in a
@@ -640,6 +744,10 @@ median, min, max, and the count of evaluable patients at or above the floor.
 
 ### 6.8 Coverage floor, and why it is set low
 
+**Both floors below are reported and neither selects — see §6.5b.** They are
+retained because they still bound the reported numbers and still appear in the
+configuration hash, not because anything is admitted or rejected by them.
+
 `COVERAGE_FLOOR = 0.02`, applied to pooled `f_AB` and, separately, required in at
 least 60% of evaluable patients.
 
@@ -704,7 +812,10 @@ Partner `Q` is admissible for target `T` when all hold:
   so nothing is bought by crossing it twice. The best admissible partner is still
   recorded, with an explicit note that dual was available and not taken.
 - **`DUAL`** — `not cleared(T)` and an admissible partner exists. The recommended
-  partner is the admissible partner with the **highest `f_AB`** — among partners
+  partner is the admissible partner with the **lowest combined risk**, ties broken
+  by partner name so the choice is deterministic. It was the highest `f_AB` until
+  §6.5b withdrew coverage from selection; the older rule is described in the rest
+  of this paragraph and no longer applies — among partners
   that clear, the risk question is settled and what separates them is how much
   tumour the gate still kills. Ties broken by lower `combined_risk`, then higher
   `composite(Q)`.
@@ -861,14 +972,14 @@ not, the two machineries disagree about what an organ score is.
 | P6 | a pair carrying `CO_EXPRESSION_NOT_MEASURED` is recommended |
 | P7 | a pair containing a ubiquitous immune protein (HLA-A/B, CD74, PTPRC) clears |
 | P8 | more than 10% of clearing pairs stop clearing when unresolved organs are charged at full criticality |
-| P9 | a recommended pair's coverage is concentrated in fewer than 60% of evaluable patients |
+| ~~P9~~ | **withdrawn to a reported number — §6.5b.** It enforced the patient floor, which selection no longer applies |
 | P10 | `DUAL` is recommended for a target that already clears alone |
 | P11 | the decision returns the same outcome for more than 95% of the pool |
 | P12 | moving `DETECTION_COUNTS` from 1 to 2 changes more than half the `DUAL` recommendations |
 | P13 | the same protein is the recommended partner for more than half of all `DUAL` targets |
 | P14 | **the top-ranked pair is the top two singles put together** — the best pair is `(rank 1, rank 2)` by composite |
 | P15 | halving or doubling the pool size changes more than half the `DUAL` recommendations |
-| P16 | no pair anywhere reaches `f_AB >= 0.02` — the floor admits nothing |
+| ~~P16~~ | **withdrawn to a reported number — §6.5b.** It checked that the coverage floor admitted something; the floor no longer admits or rejects |
 
 ### The four that say the stage is doing nothing
 
@@ -1009,4 +1120,5 @@ Once approved, and with §0.1 understood:
 2. **the §6.6 sanity check, run and passing, before anything else is written** —
    §6.3's Trap 2 returns zeros silently and only a known-answer check catches it
 3. `stages/stage4.py` — combined risk, then co-expression, then the decision
-4. `verify_pairing.py` — six invariants, then sixteen criteria, then the biology
+4. `verify_pairing.py` — six invariants, then fourteen criteria, then the biology
+   (sixteen until §6.5b withdrew P9 and P16 with the gate they enforced)

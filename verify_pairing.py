@@ -17,6 +17,7 @@ import numpy as np
 from car_pipeline.configs.pdac import PDAC_PROJECT
 from car_pipeline.data.coverage import build_coverage
 from car_pipeline.data.depmap import DepMapSource, gene_index
+from car_pipeline.data.genespan import GeneSpanSource
 from car_pipeline.data.gtex import GTExSource
 from car_pipeline.data.hpa import HPASource, index as atlas_index
 from car_pipeline.data.singlecell import SingleCellSource, match_surface as cell_match
@@ -144,7 +145,23 @@ def main() -> int:
 
     print("evaluating pairs", flush=True)
     pairs = stage4.evaluate(pool, per_organ, model, ceiling, cells)
+    # Span context before any pair is read. Reporting only — nothing below gates
+    # on it — but a co-expression figure printed without it invites exactly the
+    # reading the measurement cannot support.
+    # Annotation only, so a failure here must not lose the run. It is also not
+    # registered as a connector, which means the preflight cannot have checked
+    # it: a hard failure this late would discard everything computed above for a
+    # source that gates nothing.
+    try:
+        spans = GeneSpanSource().load()
+    except Exception as exc:                          # noqa: BLE001
+        print(f"  span context unavailable ({type(exc).__name__}); coverage will "
+              "be reported without it")
+        spans = {}
+    annotated = stage4.annotate_span_context(pairs, spans)
     decisions = stage4.decide(pool, pairs)
+    measurable = sum(1 for p in pairs if p.coverage.measured and p.coverage.f_ab is not None)
+    print(f"  span context attached to {annotated:,} pairs of {measurable:,} measured")
 
     # ---------------- invariants ---------------------------------------
     print()
@@ -300,10 +317,17 @@ def main() -> int:
               f"({frac8:.1%}) stop clearing if the unmeasured antigen saturates "
               "its organ (limit 10%)")
 
+    # P9 is withdrawn as a criterion and kept as a reported number. It asserted
+    # that no recommendation sits below the patient floor, which was enforceable
+    # only while the patient floor took part in selection. That floor counts
+    # patients whose f_AB clears the coverage floor, so it inherits the span
+    # confound wholesale, and selection no longer uses either. Gating on it here
+    # would reinstate through the criteria the thing removed from the stage.
     p9 = [p for p in recommended
           if p.coverage.patient_fraction < stage4.PATIENT_FRACTION_FLOOR]
-    criterion("P9", bool(p9),
-              f"{len(p9)} recommended pairs below the patient floor")
+    print(f"  report   P9: {len(p9)} of {len(recommended)} recommended pairs sit "
+          f"below the patient floor of {stage4.PATIENT_FRACTION_FLOOR} "
+          f"(reported, not gated — see 6.5b)")
 
     cleared_map = {r.gene: r.cleared for r in pool}
     p10 = [d for d in decisions
@@ -364,14 +388,16 @@ def main() -> int:
               f"pool halved to {len(half)}: {moved} of {len(shared)} shared dual "
               f"targets change partner ({moved / denom:.1%}, limit 50%)")
 
+    # P16 is withdrawn with P9 and for the same reason: it existed to catch a
+    # coverage floor set so high it admitted nothing, and the floor no longer
+    # admits or rejects anything. The count is still worth seeing.
     reach = [p for p in pairs if p.coverage.measured
              and p.coverage.f_ab >= stage4.COVERAGE_FLOOR]
-    criterion("P16", not reach,
-              f"{len(reach):,} pairs reach f_AB >= {stage4.COVERAGE_FLOOR} "
-              f"of {len(meas):,} measured")
+    print(f"  report   P16: {len(reach):,} of {len(meas):,} measured pairs reach "
+          f"f_AB >= {stage4.COVERAGE_FLOOR} (reported, not gated)")
 
     print("=" * 72)
-    print(f"  {16 - len(tripped)}/16 criteria clear")
+    print(f"  {14 - len(tripped)}/14 criteria clear")
 
     # Written whether or not a criterion tripped, and carrying which ones did.
     # A stage that only persisted its output on a clean run would leave nothing
@@ -414,7 +440,7 @@ def _report_measurements(pool, pairs, decisions, duals) -> None:
     print()
     print("  What the weights are doing in this stage")
     print("  " + "-" * 68)
-    # Within the admissible set the ordering key is the co-expression gate, not
+    # Within the admissible set the ordering key is the combined risk margin, not
     # the composite the weights produce. Measured rather than asserted: how often
     # would the recommendation change if partners were ordered by composite?
     by_gene: dict[str, list] = {r.gene: [] for r in pool}
@@ -426,28 +452,29 @@ def _report_measurements(pool, pairs, decisions, duals) -> None:
         adm = [p for p in by_gene[gene] if p.admissible]
         if not adm:
             continue
-        by_cov = min(adm, key=lambda p: (-p.coverage.f_ab, p.risk.combined))
+        by_risk = min(adm, key=lambda p: (p.risk.combined, stage4._other(p, gene)))
         by_comp = max(
             adm, key=lambda p: min(p.composite_a, p.composite_b)
         )
-        if {by_cov.gene_a, by_cov.gene_b} != {by_comp.gene_a, by_comp.gene_b}:
+        if {by_risk.gene_a, by_risk.gene_b} != {by_comp.gene_a, by_comp.gene_b}:
             differ += 1
     n = max(len(duals), 1)
-    print(f"    swapping the ordering key from coverage to composite changes "
+    print(f"    swapping the ordering key from combined risk to composite changes "
           f"{differ} of {len(duals)} recommendations ({differ / n:.0%})")
     print()
     print("    The weights never order anything in this stage. They enter only")
-    print("    through pool membership, and the pool boundary moves little:")
-    print("    halving it changed one partner in ten (P15). So the weights are")
-    print("    close to decorative here, and a reader should be told that rather")
-    print("    than assume they are doing work.")
+    print("    through pool membership, and P15 above measures how much that")
+    print("    boundary matters: read the figure printed there rather than any")
+    print("    number quoted here, because it has moved.")
     print()
-    print("    But the swap number above is NOT the evidence for that, and it")
-    print("    should not be read as it. The two keys agreeing means the choice")
-    print("    is insensitive to which one is used — and the reason is P13: one")
-    print("    partner wins under both keys, so almost nothing is being ordered")
-    print("    at all. Partner concentration, not the coverage gate, is why the")
-    print("    weights make no difference to this output.")
+    print("    And the swap number is NOT evidence that the weights are")
+    print("    decorative. The two keys agreeing means the choice is insensitive")
+    print("    to which is used, and the reason is P13: one partner wins under")
+    print("    both, so almost nothing is being ordered at all. Since coverage")
+    print("    was removed from selection the winner changed but the")
+    print("    concentration did not, which is section 6.5c: a partner scoring")
+    print("    near zero in every organ minimises min(A,B) for every A, so any")
+    print("    rule minimising combined risk picks it for everyone.")
 
     print()
     print("  Coverage and the escape population")
@@ -457,8 +484,15 @@ def _report_measurements(pool, pairs, decisions, duals) -> None:
     print("    transcripts, so the true intersection is higher and the true")
     print("    escape lower. The direction is known; the magnitude is not.")
     print()
+    print("    Two coverage numbers, and both are needed. f_AB is the fraction")
+    print("    itself; span %ile is where that fraction sits among measured pairs")
+    print("    of similar gene length. Detection tracks span more strongly than it")
+    print("    tracks expression, so a high f_AB on two long genes and a high one")
+    print("    on two short genes do not mean the same thing. Neither number")
+    print("    gates anything: coverage was removed from partner selection.")
+    print()
     print(f"    {'A':<10}{'B':<10}{'A alone':>9}{'B alone':>9}{'OR':>8}"
-          f"{'AND':>8}{'escape':>9}{'cost':>7}")
+          f"{'AND':>8}{'escape':>9}{'cost':>7}{'span kb':>9}{'span %ile':>10}")
 
     watch_pairs = [
         p for p in pairs
@@ -471,8 +505,11 @@ def _report_measurements(pool, pairs, decisions, duals) -> None:
     for p in watch_pairs + [b for b in best if b not in watch_pairs]:
         c = p.coverage
         cost = f"{c.coverage_cost:.1f}x" if c.coverage_cost else "n/a"
+        span = f"{c.span_geomean_kb:.0f}" if c.span_geomean_kb else "n/a"
+        pct = f"{c.span_percentile:.0%}" if c.span_percentile is not None else "n/a"
         print(f"    {p.gene_a:<10}{p.gene_b:<10}{c.f_a:>9.4f}{c.f_b:>9.4f}"
-              f"{c.or_gate:>8.4f}{c.f_ab:>8.4f}{c.escape:>9.4f}{cost:>7}")
+              f"{c.or_gate:>8.4f}{c.f_ab:>8.4f}{c.escape:>9.4f}{cost:>7}"
+              f"{span:>9}{pct:>10}")
 
     print()
     print("    The best-covering pairs above are all high-abundance genes. That")
