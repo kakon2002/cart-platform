@@ -578,14 +578,29 @@ no calibration is involved at all:
 
 | class | n | breadth Q1 / median / Q3 | median peak TPM |
 | --- | --- | --- | --- |
-| `PROTEIN_CONFIRMED` | 1,935 | 19 / **51** / 67 | 61.81 |
-| `RNA_SUPPORTED` | 1,479 | 0 / **7** / 35 | 7.74 |
+| `PROTEIN_CONFIRMED` | 1,925 | 19 / **51** / 67 | 61.23 |
+| `RNA_SUPPORTED` | 1,475 | 0 / **7** / 35 | 7.71 |
 
 Breadth is the count of the 68 baseline tissues at or above 1 TPM. The probability
-that a protein-confirmed gene is broader than an RNA-supported one is **0.780**;
+that a protein-confirmed gene is broader than an RNA-supported one is **0.779**;
 0.500 would mean the populations were interchangeable. Nearly a third of the
-RNA-supported class — 471 of 1,479 — is below 1 TPM in *every* tissue, and all of
+RNA-supported class — 471 of 1,475 — is below 1 TPM in *every* tissue, and all of
 it clears trivially. R13 was measuring which proteins have been studied.
+
+Stratifying by breadth does not close the gap, which is why the selection effect
+is necessary to the explanation and not sufficient on its own:
+
+| breadth band | PC n | PC clears | RS n | RS clears |
+| --- | --- | --- | --- | --- |
+| 0 | 24 | 4.2% | 471 | **100.0%** |
+| 1–4 | 126 | 7.9% | 216 | 63.9% |
+| 5–14 | 236 | 0.0% | 216 | 9.7% |
+| 15–29 | 259 | 0.0% | 180 | 2.8% |
+| 30–68 | 1,280 | 0.0% | 392 | 0.0% |
+
+The first row is the one that matters. At breadth 0 the transcript axis is silent
+everywhere, so it contributes nothing and the entire difference between 4.2% and
+100% is the second source being present for one class and absent for the other.
 
 **A second reason, structural and unfixable by calibration.** §"Combining the two
 measurements per organ" takes the **maximum** of the staining-derived and
@@ -597,6 +612,19 @@ measured once has one. **The gate rewards being unmeasured**, and the effect
 concentrates exactly on low-expressed proteins, which are the ones worth finding.
 Measured: of protein-confirmed proteins that clear on transcript alone, 72 of 83
 are blocked once staining is added.
+
+**And no combination rule fixes it**, which is the check that makes the withdrawal
+a conclusion rather than a preference. Clearance under each candidate rule:
+
+| rule | PC clears | RS clears | ratio | known targets clearing |
+| --- | --- | --- | --- | --- |
+| max (current) | 0.57% | 43.05% | 75.3× | none |
+| transcript only | 4.31% | 43.05% | 10.0× | none |
+| staining preferred | 2.29% | 43.05% | 18.8× | none |
+| mean of available | 1.77% | 43.05% | 24.4× | none |
+
+Nothing reaches the 5× limit, and no rule lets a single known target for this
+indication clear. The ratio is not a property of how the two sources are combined.
 
 **What R13′ tests instead, and why it can fail.** The calibration's actual job is
 to put the two axes on one scale. That is a paired question — same protein, same
