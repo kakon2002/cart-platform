@@ -170,6 +170,15 @@ class Coverage:
     patients_evaluable: int = 0
     reason: str = ""
 
+    #: Genomic span context. `f_ab` tracks how long the two genes are more
+    #: strongly than how much of them is expressed (§6.5b), so the raw fraction
+    #: cannot be read on its own. `span_percentile` is where this pair's `f_ab`
+    #: falls among measured pairs of similar span: 0.50 means typical for genes
+    #: this long, which is a different statement from the fraction itself.
+    #: Both are reported and neither gates anything.
+    span_geomean_kb: float | None = None
+    span_percentile: float | None = None
+
     @property
     def patient_fraction(self) -> float:
         if not self.patients_evaluable:
@@ -347,7 +356,24 @@ class Pair:
 
     @property
     def admissible(self) -> bool:
-        return self.cleared and self.coverage_ok
+        """Risk-gated and measurable. Coverage does not gate.
+
+        `f_ab` is confounded with genomic span: over the pool its rank
+        correlation with span is +0.68 against +0.20 with bulk expression, the
+        confound reaches the joint quantity (+0.63 for `f_ab` itself against
+        +0.08 for expression), and it survives stratification by expression. A
+        threshold on it therefore admits and rejects partners substantially on
+        how long their genes are.
+
+        `coverage.measured` is still required, and is a different question: it
+        asks whether the co-expression was observable at all, not whether it
+        cleared a number. An unmeasured pair cannot be recommended.
+
+        What this gives up is stated rather than hidden: nothing now stops a pair
+        with negligible overlap being recommended, so `f_ab` and its span
+        percentile are reported per pair and a reader has to look at them.
+        """
+        return self.cleared and self.coverage.measured
 
 
 def build_pool(rows: list[Ranked], size: int = POOL_SIZE) -> list[Ranked]:
@@ -487,6 +513,70 @@ class Decision:
     pool_index: int = -1
 
 
+#: Span buckets for the percentile. Quintiles: enough to separate a 7 kb gene
+#: from a 1.1 Mb one without slicing the pool so finely that a bucket holds too
+#: few pairs to rank within.
+SPAN_BUCKETS = 5
+
+#: Names what admits and orders a partner, so a change to either shows up in the
+#: configuration hash rather than being invisible to it.
+SELECTION_RULE = "risk-cleared-and-measured;order:combined_risk,partner_name;v2"
+
+
+def annotate_span_context(pairs: list[Pair], spans: dict[str, int]) -> int:
+    """Attach each measured pair's span and its within-span percentile.
+
+    Reporting only. The percentile answers "is this overlap high for genes this
+    long", which is the question the raw fraction cannot answer while detection
+    tracks span. A pair whose members have no span on record is left with both
+    fields None rather than assigned a middle value.
+
+    Returns the number of pairs annotated.
+    """
+    import numpy as np
+
+    scored = []
+    for pair in pairs:
+        cov = pair.coverage
+        if not cov.measured or cov.f_ab is None:
+            continue
+        a, b = spans.get(pair.gene_a), spans.get(pair.gene_b)
+        if not a or not b:
+            continue
+        cov.span_geomean_kb = round(float(np.sqrt(float(a) * float(b))) / 1000.0, 3)
+        scored.append(pair)
+
+    if not scored:
+        return 0
+
+    geo = np.array([p.coverage.span_geomean_kb for p in scored], dtype=float)
+    edges = np.percentile(geo, [100 * i / SPAN_BUCKETS for i in range(1, SPAN_BUCKETS)])
+    bucket = np.digitize(geo, edges)
+    fab = np.array([p.coverage.f_ab for p in scored], dtype=float)
+
+    for b in range(SPAN_BUCKETS):
+        mask = bucket == b
+        if not mask.any():
+            continue
+        values = fab[mask]
+        order = values.argsort(kind="mergesort")
+        ranks = np.empty(len(values), dtype=float)
+        # Average rank across ties, so a block of identical f_AB values does not
+        # get an ordering the data does not support.
+        i = 0
+        srt = values[order]
+        while i < len(srt):
+            j = i
+            while j + 1 < len(srt) and srt[j + 1] == srt[i]:
+                j += 1
+            ranks[order[i:j + 1]] = (i + j) / 2
+            i = j + 1
+        pct = ranks / max(len(values) - 1, 1)
+        for pair, value in zip([p for p, m in zip(scored, mask) if m], pct):
+            pair.coverage.span_percentile = round(float(value), 4)
+    return len(scored)
+
+
 def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
     by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
     for p in pairs:
@@ -499,9 +589,14 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
     for index, r in enumerate(pool):
         mine = by_gene[r.gene]
         admissible = [p for p in mine if p.admissible]
-        # Among partners that clear, safety is settled for all of them, so what
-        # separates them is how much of the tumour the gate still kills.
-        admissible.sort(key=lambda p: (-p.coverage.f_ab, p.risk.combined))
+        # Ordered by how far under the ceiling the pair sits, then by partner
+        # name so the choice is deterministic. This used to order by co-expression
+        # — how much of the tumour the gate still kills — which is the better
+        # question and the one `f_ab` cannot currently answer: it is confounded
+        # with genomic span (see `admissible`). Ordering on the risk margin is a
+        # weaker criterion honestly measured, rather than a stronger one measured
+        # on an artefact.
+        admissible.sort(key=lambda p: (p.risk.combined, _other(p, r.gene)))
 
         if cleared[r.gene]:
             best = admissible[0] if admissible else None
@@ -535,18 +630,30 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
             )
             continue
 
+        # Which wall each target hit, and the coverage row is now what it says.
+        # It counts pairs that cleared risk and were measured but fell under the
+        # reported floor — which no longer excludes anything, so a non-zero count
+        # here is information about the pair, not a reason it was rejected. Left
+        # separate from `unmeasured` rather than folded into it: a pair nobody
+        # could measure and a pair measured and found thin are different facts.
         failed = {
             "risk": sum(1 for p in mine if not p.cleared),
-            "coverage": sum(1 for p in mine if p.cleared and not p.coverage_ok),
+            "coverage_below_floor": sum(
+                1 for p in mine
+                if p.cleared and p.coverage.measured and not p.coverage_ok
+            ),
             "unmeasured": sum(1 for p in mine if not p.coverage.measured),
         }
+        # `coverage.measured`, not `coverage_ok`: the coverage floor no longer
+        # selects (§6.5b), and leaving it here would decide NO_DESIGN against
+        # UNRESOLVED on a threshold the stage has stopped applying anywhere else.
         salvageable = [
             p
             for p in mine
             if p.risk.risk_unresolved
             and p.risk.optimistic is not None
             and p.risk.optimistic <= p.ceiling
-            and p.coverage_ok
+            and p.coverage.measured
         ]
         out.append(
             Decision(
@@ -580,10 +687,18 @@ def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
         "pool_size": POOL_SIZE,
         "pool": pool_genes,
         "detection_counts": DETECTION_COUNTS,
+        # Retained because both still bound the reported coverage numbers, even
+        # though neither selects any more.
         "coverage_floor": COVERAGE_FLOOR,
         "patient_fraction_floor": PATIENT_FRACTION_FLOOR,
         "min_malignant_cells": MIN_MALIGNANT_CELLS,
         "min_detected_cells": MIN_DETECTED_CELLS,
+        # What admits and orders a partner. Without this a run from before
+        # coverage was removed from selection hashes identically to one after,
+        # and `read_decisions(expect_stage4_hash=...)` would accept the old
+        # artifact as current — the one thing carrying the hash is meant to stop.
+        "selection_rule": SELECTION_RULE,
+        "span_buckets": SPAN_BUCKETS,
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
