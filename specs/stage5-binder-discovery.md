@@ -365,7 +365,7 @@ the proteome cache and re-fetches all 20,431 entries.
 **Isoform sequences are not a column at all**, and this is the sharper problem.
 They are not obtainable by adding a field; they require requesting isoforms in the
 query, which **changes the entry set itself** — so the 20,431 reviewed entries and
-the 3,480 surface proteins derived from them stop being the same numbers, and every
+the 3,466 surface proteins derived from them stop being the same numbers, and every
 count this project reports against them moves. Isoform sequences must therefore be
 fetched as a **separate, additively-cached entry keyed on the accessions that need
 them**, not by widening the proteome query. Which accessions qualify is **not** circular: the count of isoforms per entry and
@@ -438,7 +438,7 @@ size term for a score**, not a membership test, and `_score_c5` returns 1.0 or 0
   contains the anchor gives 296–598. Emit the chosen chain id so the choice is
   auditable, and report the count of proteins where more than one chain contained
   the anchor, because that count is how often this rule was load-bearing rather
-  than incidental. Measured: 190 of the 3,480 surface proteins carry more than one
+  than incidental. Measured: 190 of the 3,466 surface proteins carry more than one
   chain. Any candidate whose antigen range overlaps a chain annotated secreted is
   flagged `SHED_ANTIGEN`, never passed.
 
@@ -1016,7 +1016,7 @@ entries. The last is the expensive one and should be sequenced first, because ev
 other change is cheap to redo and that one is not.
 
 Isoform sequences are **not** part of this: they are fetched as a separate
-accession-keyed cache entry precisely so the entry set and the 20,431 / 3,480
+accession-keyed cache entry precisely so the entry set and the 20,431 / 3,466
 counts do not move. And `BinderFormat` is **not** widened — see §1.
 
 **One upstream spec also needs a correction, not just code.** Stage 3 §5 states
@@ -1064,7 +1064,7 @@ itself as the corrected one has the most to gain from hiding its own defects:
 | 16 | GPI pass rule deleted with the wrong wording that carried it | every anchored target would return `NOT_MEASURED` and trip B2 | §4.1 |
 | 18 | B10 tripping on any accession mismatch | halts on the cross-species case B16 exists to warn about | B10 |
 | 19 | "overstated 2x to 8x" | one count was exact and one was too low | §2.6 |
-| 20 | isoform sequences as a proteome field | they change the entry set, moving 20,431 and 3,480 | §4.1 |
+| 20 | isoform sequences as a proteome field | they change the entry set, moving 20,431 and 3,466 | §4.1 |
 | 21 | only the dual construct costed | 187 of 200 targets are single and B9 applies to them | §4.3 |
 | 22 | `Fab` added to `BinderFormat` | that enum types a project *input*, not a Stage 5 output | §1 |
 | 23 | design verdict keyed on `partner is not None` | prices two binders for a single-antigen design | §4.5 |

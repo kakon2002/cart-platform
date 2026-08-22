@@ -12,7 +12,7 @@ are released rather than held at the surface, and a binder raised against a
 released chain meets its antigen in plasma rather than on a cell. The surface
 filter itself does not consult this field — attachment and orientation are
 decided by the membrane evidence alone — so adding it left the surface set
-identical, 3,480 before and after. It is not free even so: the field list is
+identical. It is not free even so: the field list is
 inside the cache fingerprint, so adding it invalidated the proteome cache and
 re-fetched all 20,431 entries. The field is carried so that a later stage can
 tell the anchored chain from the shed one instead of treating the precursor as
@@ -68,6 +68,39 @@ _GPI = re.compile(r"GPI-anchor", re.IGNORECASE)
 # itself. Matched case-insensitively as substrings of the localisation text so
 # that polarised variants ("Apical cell membrane") are covered.
 _PLASMA_MEMBRANE_TERMS = ("cell membrane", "cell surface")
+
+# The subcellular field is a list of location statements optionally followed by a
+# free-text note. A statement asserts where the protein is; a note is prose, and
+# the phrases above are common English inside it. Read across all fourteen entries
+# where a plasma-membrane phrase appears ONLY in a note, the note says:
+#
+#   * that the protein is there            "Located on cell surface microvilli."
+#   * that it is NOT there                 "Integral membrane protein not
+#                                           detected at the cell membrane."
+#   * that it passes through               "Cycles via the cell surface and
+#                                           endosomes upon lumenal pH disruption."
+#   * something about lipids               "Preferentially binds to cardiolipin
+#                                           relative to other common cell
+#                                           membrane lipids."
+#
+# A substring test reads all four the same way. Matching notes admitted the
+# negation; dropping notes discards the assertion. Neither direction is safe, so
+# notes decide nothing: admission reads location statements only, and an entry
+# whose sole plasma-membrane evidence sits in a note is recorded in a third state
+# rather than silently resolved either way.
+_NOTE_FIELD = "Note="
+_LOCATION_BLOCK = "SUBCELLULAR LOCATION:"
+
+
+def location_statements(subcellular: str) -> str:
+    """The localisation text with every free-text note removed."""
+    kept = []
+    for block in subcellular.split(_LOCATION_BLOCK):
+        if not block.strip():
+            continue
+        cut = block.find(_NOTE_FIELD)
+        kept.append(block if cut == -1 else block[:cut])
+    return " ".join(kept)
 
 # The one topological note that means the outward face of the cell. Matched
 # exactly: "Lumenal" and "Perinuclear space" sit on the same side of the bilayer
@@ -140,6 +173,14 @@ class ProteinRecord:
     attached: bool = False
     outward: bool = False
     membrane_class: str | None = None
+
+    #: The only plasma-membrane evidence for this entry sits in a free-text note,
+    #: which cannot be read either way (see the note above `location_statements`).
+    #: Such an entry is NOT admitted — an unreachable target is the dangerous
+    #: direction — but it is enumerated by name in the output rather than dropped
+    #: quietly, because the annotation is genuinely ambiguous and the set is small
+    #: enough to audit.
+    outward_note_only: bool = False
 
     @property
     def is_surface(self) -> bool:
@@ -302,12 +343,15 @@ def parse_row(row: list[str]) -> ProteinRecord:
     # look for rather than compartments to exclude: that is what keeps out the
     # multi-pass proteins of internal compartments, which are topologically
     # outward facing but unreachable from outside the cell.
-    localisation = subcellular.lower()
+    statements = location_statements(subcellular).lower()
     rec.outward = (
         gpi
         or _OUTWARD_NOTE in notes
-        or any(term in localisation for term in _PLASMA_MEMBRANE_TERMS)
+        or any(term in statements for term in _PLASMA_MEMBRANE_TERMS)
     )
+    if not rec.outward and rec.attached:
+        full = subcellular.lower()
+        rec.outward_note_only = any(t in full for t in _PLASMA_MEMBRANE_TERMS)
 
     if rec.is_surface:
         if gpi:
@@ -411,6 +455,7 @@ class UniProtSource(DataSource):
 
 def summarise(records: list[ProteinRecord]) -> dict:
     surface = [r for r in records if r.is_surface]
+    note_only = [r for r in records if r.outward_note_only]
     attached = [r for r in records if r.attached]
     withheld = [r for r in attached if not r.outward]
 
@@ -434,6 +479,7 @@ def summarise(records: list[ProteinRecord]) -> dict:
         ),
         "internal_anchored": len(internal),
         "compartment_unresolved": len(unresolved),
+        "outward_note_only": len(note_only),
     }
 
 
@@ -452,12 +498,13 @@ if __name__ == "__main__":
     # are reproducible and a difference means something changed.
     expected = {
         "entries": 20431,
-        "surface": 3480,
-        "single_pass": 1455,
-        "multi_pass": 1889,
+        "surface": 3466,
+        "single_pass": 1446,
+        "multi_pass": 1884,
         "gpi_anchored": 136,
-        "internal_anchored": 1349,
-        "compartment_unresolved": 533,
+        "internal_anchored": 1362,
+        "compartment_unresolved": 534,
+        "outward_note_only": 14,
     }
     for k, v in stats.items():
         exp = expected[k]

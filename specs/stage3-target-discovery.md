@@ -42,14 +42,36 @@ in the dangerous direction.
 
 ## 3. Universe
 
-The surface set as it stands after step 5: **3,480 proteins** (reference run:
-3,496). Evidence classes as built in step 11:
+The surface set as it stands after step 5: **3,466 proteins**. It was 3,480
+until the localisation gate was corrected to read location statements only:
+fourteen entries were being admitted because a plasma-membrane phrase appeared in
+a free-text note rather than in a statement of where the protein sits. Two of the
+fourteen had reached the top 200. The 3,496 recorded here previously was a figure
+reconstructed from an early run rather than an output of this code, and is
+withdrawn.
 
-| class | count | reference |
-| --- | --- | --- |
-| PROTEIN_CONFIRMED | 1,935 | 1,945 |
-| RNA_SUPPORTED | 1,483 | 1,491 |
-| DATA_INSUFFICIENT | 62 | 60 |
+**The fourteen are held in a third state, not discarded.** A note can assert the
+protein is at the surface, deny it, describe it passing through, or mention the
+membrane for an unrelated reason — all four occur among these fourteen, and a
+substring test reads them alike. Matching notes admitted the denial: ASTN2's reads
+"Integral membrane protein not detected at the cell membrane", and the previous
+rule admitted it on that sentence. Dropping notes discards the assertions:
+TMEM205's reads "Located on cell surface microvilli". So notes decide nothing, the
+entries are excluded because an unreachable target is the dangerous direction, and
+all fourteen are printed by name every run so the exclusion is visible and can be
+overridden deliberately rather than discovered.
+
+Evidence classes as built in step 11:
+
+| class | count |
+| --- | --- |
+| PROTEIN_CONFIRMED | 1,925 |
+| RNA_SUPPORTED | 1,479 |
+| DATA_INSUFFICIENT | 62 |
+
+These sum to 3,466. The reference column previously carried here summed to 3,480
+and is withdrawn with the 3,496 figure above, for the same reason: it was
+reconstructed rather than measured.
 
 Ranking is reported within evidence class ("tier"). Cross-tier comparison of
 composites is not meaningful and is not presented as though it were.
@@ -74,8 +96,9 @@ A protein cannot buy its way past an unmanageable tissue by scoring well here.
 
 ### Why the dependency screens carry the lowest weight
 
-Measured, not assumed: only **16 of 3,480** surface proteins (reference: 17 of
-3,496) reach a median gene effect at or below −0.5 in this lineage. The
+Measured, not assumed: fewer than 20 of the surface set reach a median gene
+effect at or below −0.5 in this lineage — the run prints the exact count against
+the current universe. The
 component cannot discriminate for 99.5% of the universe, so it cannot carry
 real weight.
 
