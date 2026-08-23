@@ -181,6 +181,7 @@ def build_parts(store: dict[str, dict] | None = None) -> dict[str, Part]:
     bb_tail = _feature(bb, "Topological domain", "cytoplasmic")
     zeta_tail = _feature(zeta, "Topological domain", "cytoplasmic")
     card = _feature(casp, "Domain", "card")
+    fkbp_chain = _feature(fkbp, "Chain")
 
     out = {
         "leader": Part(
@@ -204,9 +205,13 @@ def build_parts(store: dict[str, dict] | None = None) -> dict[str, Part]:
         # The switch is FKBP12 fused to caspase-9 with its CARD removed, which is
         # what makes it dimeriser-inducible rather than constitutively active.
         # The CARD boundary is read from the entry, not assumed.
+        # Read from the annotated chain rather than assumed to be the whole
+        # entry: the mature protein starts after the initiator methionine, and
+        # this was the one part bypassing the feature lookup every other uses.
         "switch_fkbp": Part(
-            "FKBP12", PROTEOME, fkbp["sequence"],
-            PARTS["FKBP1A"], "chain", 1, len(fkbp["sequence"])),
+            "FKBP12", PROTEOME,
+            _slice(fkbp, fkbp_chain["start"], fkbp_chain["end"]),
+            PARTS["FKBP1A"], "Chain", fkbp_chain["start"], fkbp_chain["end"]),
         "switch_caspase": Part(
             "caspase-9 without CARD", PROTEOME,
             _slice(casp, card["end"] + 1, len(casp["sequence"])),

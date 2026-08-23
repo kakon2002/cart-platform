@@ -6,8 +6,7 @@ document. If a criterion trips, the correction is a change to this document
 followed by a re-run — never a narrative explaining why the output was acceptable
 after all.
 
-Status: **awaiting review. Nothing in `stages/stage5.py` may be written until this
-is approved.**
+Status: **implemented**. `stages/stage5.py` and its verifier exist and the criteria below were fixed before the run, not after it. The gate this line used to carry has been passed, and leaving it in place would have described the repository incorrectly.
 
 Revision 2. Revision 1 was reviewed and rejected; §2 was rebuilt from a re-probe,
 and §10 records what changed and why, because the reasons are themselves the

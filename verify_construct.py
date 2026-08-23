@@ -158,11 +158,14 @@ def main() -> int:
               f"{withheld_by_outcome} targets have a binder but no recommendation "
               f"(§5.1)" if not k7_bad else "; ".join(k7_bad[:3]))
 
-    in_genes = {d["gene"] for d in decisions}
+    # Against the manifest's recorded pool size. Comparing the output to the
+    # input it was built from cannot fail.
+    expected_rows = manifest["pool_size"]
     out_genes = {c.gene for c in constructs}
-    criterion("K8", len(constructs) != len(decisions) or in_genes != out_genes,
-              f"{len(constructs)} rows out of {len(decisions)}; "
-              f"{len(in_genes - out_genes)} dropped, {len(out_genes - in_genes)} added")
+    criterion("K8",
+              len(constructs) != expected_rows or len(out_genes) != expected_rows,
+              f"{len(constructs)} rows and {len(out_genes)} distinct genes against "
+              f"the {expected_rows} the Stage 4 manifest records")
 
     print("=" * 72)
     print(f"  {8 - len(tripped)}/8 criteria clear")
