@@ -5,8 +5,7 @@ mechanical where 3 and 4 were not. It assembles parts whose choice is already
 fixed upstream and reports whether the result fits a budget that is also fixed
 upstream. Nothing here is re-derived.
 
-Status: **awaiting review. Nothing in `stages/stage6.py` may be written until this
-is approved.**
+Status: **implemented**. `stages/stage6.py` and its verifier exist and the criteria below were fixed before the run, not after it. The gate this line used to carry has been passed, and leaving it in place would have described the repository incorrectly.
 
 ---
 
