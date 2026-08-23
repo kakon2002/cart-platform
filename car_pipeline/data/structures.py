@@ -33,6 +33,8 @@ DATABASE_ATTRIBUTE = (
     ".reference_sequence_identifiers.database_name"
 )
 USER_AGENT = "car-platform/stage5"
+#: Page size. Exceeding it raises rather than truncating.
+PAGE_ROWS = 500
 TIMEOUT = 60
 
 
@@ -67,7 +69,7 @@ def _query_body(accession: str) -> dict:
             ],
         },
         "return_type": "entry",
-        "request_options": {"paginate": {"start": 0, "rows": 200}},
+        "request_options": {"paginate": {"start": 0, "rows": PAGE_ROWS}},
     }
 
 
@@ -108,7 +110,17 @@ def entries_for(accession: str) -> list[str]:
             f"{accession}: HTTP {status} with an empty body; only 204 may be empty"
         )
     parsed = json.loads(payload)
-    return [row["identifier"] for row in parsed.get("result_set", [])]
+    rows = [row["identifier"] for row in parsed.get("result_set", [])]
+    total = parsed.get("total_count")
+    # A page cap that quietly drops results would undercount both the entries and
+    # the candidates drawn from them, and would look like a protein with fewer
+    # structures rather than like a truncated read.
+    if total is not None and total > len(rows):
+        raise RetrievalError(
+            f"{accession}: {total} entries but only {len(rows)} returned; the "
+            f"page size of {PAGE_ROWS} truncated the result"
+        )
+    return rows
 
 
 def entry_summary(entry_id: str) -> dict:

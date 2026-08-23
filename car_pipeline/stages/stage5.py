@@ -98,6 +98,10 @@ class TargetBinders:
     #: Reported because "the protein has structures" and "the protein has a
     #: binder" are different claims and the gap between them is the point.
     entries_without_antibody: int = 0
+    #: Entries dropped because their coordinates are computed rather than
+    #: measured. Kept apart from the row above: "no antibody in it" and "not an
+    #: experiment" are different reasons to discard an entry.
+    entries_excluded_as_model: int = 0
 
     @property
     def verdict(self) -> str:
@@ -168,7 +172,9 @@ def retrieve(
                 continue
             summary = entry_summary(entry_id)
             if summary["is_model"]:
-                # A computed model is not retrieved evidence.
+                # A computed model is not retrieved evidence. Counted, so the
+                # structures-versus-binders gap reported downstream stays exact.
+                record.entries_excluded_as_model += 1
                 continue
             for inst in instances:
                 record.structure.append(

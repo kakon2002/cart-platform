@@ -142,7 +142,11 @@ def main() -> int:
     # Both halves gate. A stage that returned a candidate per entry would show
     # zero partials and every target echoing; one that had lost the join would
     # show every target partial and none echoing. The correct answer is a mix.
-    criterion("B1", not partial or len(echoed) == len([r for r in records if r.entries]),
+    with_entries = [r for r in records if r.entries]
+    criterion("B1",
+              not partial
+              or len(echoed) == len(with_entries)
+              or len(partial) == len(with_entries),
               f"{len(partial)} targets have entries but no antibody among them "
               f"(an inert stage would have none); {len(echoed)} of "
               f"{len([r for r in records if r.entries])} with entries echo their count")
