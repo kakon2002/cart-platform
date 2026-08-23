@@ -168,10 +168,22 @@ def main() -> int:
     # genomic span.
     primary = cohort.sample_types == PRIMARY_TUMOUR
     tumour_tpm: dict[str, float] = {}
+    non_finite: list[str] = []
     for r in pool:
         cj = cohort_join.get(r.accession)
-        if cj is not None:
-            tumour_tpm[r.gene] = float(np.median(cohort.values[primary, cj[0]]))
+        if cj is None:
+            continue
+        value = float(np.median(cohort.values[primary, cj[0]]))
+        # A non-finite median is not a low one. Stored, it would make the gene
+        # ineligible while still counting as having a measurement, which reads
+        # as "measured and found absent" rather than "not measured".
+        if not np.isfinite(value):
+            non_finite.append(r.gene)
+            continue
+        tumour_tpm[r.gene] = value
+    if non_finite:
+        print(f"  {len(non_finite)} pool genes have a non-finite tumour median and "
+              f"are held out of partner eligibility: {non_finite[:5]}")
     eligible = sum(1 for g in tumour_tpm
                    if tumour_tpm[g] >= stage4.PARTNER_MIN_TUMOUR_TPM)
     print(f"  partner eligibility at {stage4.PARTNER_MIN_TUMOUR_TPM} TPM: "
@@ -397,6 +409,7 @@ def main() -> int:
         for d in stage4.decide(
             half,
             stage4.evaluate(half, per_organ, model, ceiling, half_cells),
+            tumour_tpm,
         )
         if d.outcome == stage4.DUAL
     }
@@ -468,7 +481,14 @@ def _report_measurements(pool, pairs, decisions, duals) -> None:
         by_gene[p.gene_b].append(p)
     differ = 0
     for gene in duals:
-        adm = [p for p in by_gene[gene] if p.admissible]
+        # Same eligibility the stage applies, or this describes an ordering over
+        # pairs decide() cannot pick.
+        adm = [
+            p for p in by_gene[gene]
+            if p.admissible
+            and tumour_tpm.get(stage4._other(p, gene), 0.0)
+            >= stage4.PARTNER_MIN_TUMOUR_TPM
+        ]
         if not adm:
             continue
         by_risk = min(adm, key=lambda p: (p.risk.combined, stage4._other(p, gene)))
