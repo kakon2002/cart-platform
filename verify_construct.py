@@ -219,6 +219,82 @@ def main() -> int:
             print("      single-domain binder in 720 candidates, so the smaller")
             print("      format that would fit has no inventory to draw on.")
 
+    # ---------------- the chain, and what each exit costs ----------------
+    print()
+    print("=" * 72)
+    print("WHY NOTHING FITS — THE CHAIN, STATED AS A FINDING")
+    print("=" * 72)
+    switch_names = ("T2A skip peptide", "FKBP12", "SGGGS linker",
+                    "caspase-9 without CARD")
+    example_dual = next((c for c in built if c.outcome == "DUAL"), None)
+    if example_dual is not None:
+        switch_bp = sum(s.bp_end - s.bp_start for s in example_dual.segments
+                        if s.name in switch_names and s.name != "T2A skip peptide")
+        cassette_bp = sum(s.bp_end - s.bp_start for s in example_dual.segments
+                          if s.name in switch_names)
+        over = -example_dual.headroom_bp
+        binder_bp = sum(s.bp_end - s.bp_start for s in example_dual.segments
+                        if s.provenance == "stage5")
+        print(f"    1. Stage 1's conservative tolerance requires a safety switch.")
+        print(f"    2. The switch costs {switch_bp} bp, {cassette_bp} bp with the")
+        print(f"       skip peptide that carries it.")
+        print(f"    3. Two single-chain binders ({binder_bp} bp) plus that switch")
+        print(f"       reach {example_dual.total_bp} bp against a "
+              f"{stage6.BUDGET_BP} bp budget, over by {over}.")
+        print(f"    4. Single-domain binders would fit: they replace the two")
+        print(f"       variable regions and their linker with one domain each.")
+        print(f"    5. Stage 5 retrieved ONE single-domain candidate in 720.")
+        print()
+        print("    The format that fits has no inventory. That is the finding, and")
+        print("    it is not a shortfall in the budget — the budget is doing what")
+        print("    it exists for.")
+
+        print()
+        print("=" * 72)
+        print("WHAT EACH EXIT WOULD COST, AS NUMBERS")
+        print("=" * 72)
+        print(f"    a smaller safety switch would have to free      {over} bp")
+        print(f"       leaving it at most                            "
+              f"{switch_bp - over} bp ({(switch_bp - over) // 3} residues), "
+              f"{100 * (switch_bp - over) / switch_bp:.0f}% of its current size")
+        payload = example_dual.total_bp
+        backbone = 1200
+        print(f"    a vector large enough for the current design    "
+              f"{(payload + backbone) / 1000:.2f} kb")
+        print(f"       against the {(stage6.BUDGET_BP + backbone) / 1000:.1f} kb "
+              f"assumed in Stage 1, a {100 * (payload + backbone) / (stage6.BUDGET_BP + backbone) - 100:.0f}% increase")
+
+    single_domain = []
+    for gene, record in binders.items():
+        structural = [c for c in record.structure if "single" in c.fmt.lower()]
+        sequenced = [c for c in record.sequence if "single domain" in c.fmt.lower()]
+        if structural or sequenced:
+            single_domain.append((gene, len(structural), len(sequenced)))
+    print(f"    pool targets with ANY single-domain binder      "
+          f"{len(single_domain)} of {len(binders)}")
+    for gene, ns, nq in sorted(single_domain):
+        record = binders[gene]
+        outcome = record.outcome
+        names = [c.name for c in record.sequence if "single domain" in c.fmt.lower()]
+        print(f"       {gene:10s} structure {ns}, sequence {nq}"
+              f"   Stage 4 outcome {outcome}   {', '.join(names)}")
+        for c in record.sequence:
+            if "single domain" not in c.fmt.lower():
+                continue
+            unusable = stage6.assemblable(c.heavy_sequence + c.light_sequence)
+            if unusable:
+                print(f"         and it is not assemblable: the light-chain field "
+                      f"holds {c.light_sequence!r}, a placeholder rather than a")
+                print(f"         sequence, so the residues {sorted(unusable)} are not "
+                      "residues at all")
+    if not single_domain:
+        print("       none")
+    print()
+    print("    So the nanobody route is empty rather than thin. The single")
+    print("    candidate sits on a target the pairing stage did not recommend, and")
+    print("    its light-chain field is a placeholder. There is no exit here to")
+    print("    take, and reporting one would be inventing inventory.")
+
     print()
     print(f"  configuration hash "
           f"{stage6.configuration_hash(stage5_hash, [c.gene for c in constructs])}")
