@@ -450,7 +450,7 @@ def main() -> int:
     # what the atlas contains rather than what should be built, so withholding
     # them behind a passing run would hide the strongest thing this stage has to
     # say about the architecture.
-    _report_measurements(pool, pairs, decisions, duals)
+    _report_measurements(pool, pairs, decisions, duals, tumour_tpm)
 
     if tripped:
         print()
@@ -463,7 +463,7 @@ def main() -> int:
     return 0
 
 
-def _report_measurements(pool, pairs, decisions, duals) -> None:
+def _report_measurements(pool, pairs, decisions, duals, tumour_tpm) -> None:
     print()
     print("=" * 72)
     print("WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)")
