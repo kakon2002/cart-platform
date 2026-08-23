@@ -671,6 +671,65 @@ now correctly attributed: it is a property of minimising a min-based risk withou
 a usable coverage term, not a property of the coverage gate that used to precede
 it.
 
+### 6.5d Partner eligibility, and the state this stage closes in
+
+**A partner must carry at least 5 TPM of its antigen in the tumour**, measured on
+bulk primary-tumour transcript level. Applied to the partner only. The asymmetry
+is deliberate: a target earns its place through the tumour-side composite, which
+already scores expression and prevalence, while a partner is selected purely on
+risk and was therefore being rewarded for being absent. An AND gate fires only
+where both antigens are present, so a partner absent from the tumour contributes
+nothing to killing it and everything to the pair appearing safe.
+
+Bulk, not per-cell, because bulk is the axis **not** confounded with genomic span
+(§6.5b). Using the per-cell measure here would reintroduce the artefact the
+threshold exists to route around.
+
+**5.0 rather than 3.0, and not for margin.** The concentration came from one
+protein sitting far below every other candidate — 0.0277 against 0.2272 for the
+next lowest, an eightfold gap. At 3 TPM the lowest eligible partner still leads
+the next by 0.0489. At 5 TPM the leaders cluster within 0.0036, so no single gene
+can win for every target. The threshold sits at roughly the pool's 8th percentile,
+retains **182 of 200**, and every known target for this indication is between 152
+and 1,194 TPM — orders of magnitude clear of it.
+
+**It worked, and it worked on the mechanism rather than on two names.**
+
+| | before | after |
+| --- | --- | --- |
+| dominant partner share | 95.7% (NPSR1) | **38.5% (LAMP5)** — P13 clears |
+| P12, count sensitivity | 84.6% at 13 duals | **30.8%** — clears |
+| dual recommendations | 70 | 13 |
+| criteria clear | 9 of 14 | **10 of 14** |
+
+**What it did not do, and this is the part that must travel.** The threshold
+removed the outlier the mechanism latched onto. It did not remove the mechanism.
+Combined risk is a maximum over organs of `min(score_A, score_B)`, so a partner
+low everywhere still minimises it for every target; the eligible candidates now
+merely cluster tightly enough that the winner varies. **If the pool changes, a new
+outlier can reappear and the concentration returns.** P15 tripping at 71.4% — most
+shared dual targets change partner when the pool is halved — is that fragility
+showing directly.
+
+#### Stage 4 closes complete-with-limitations
+
+Four criteria trip and are recorded as limitations rather than fixed. The stage is
+usable for what it measures and is not a result in the sense §0 requires.
+
+| criterion | measured | why it is a limitation and not a bug |
+| --- | --- | --- |
+| **P4** | `f_AB` vs `f_A x f_B`, rho 0.9934 against a 0.98 limit | Co-expression is barely distinguishable from independence. That is what the assay can resolve, not what the biology is: the same span-driven capture artefact (§6.5b) dominates both sides of the comparison. Resolving it needs the exon-only requantification in §6.5b, not a change here. |
+| **P7** | one cleared pair contains HLA-A | A ubiquitous immune protein reaching a cleared pair means the risk gate does not encode "this antigen is on every cell that matters". The gate is organ-level; HLA-A's problem is cell-type-level within every organ. A cell-type-aware risk term is a Stage 3 change. |
+| **P8** | 108 of 222 cleared pairs (48.6%) stop clearing if the unmeasured antigen saturates its organ, against a 10% limit | Nearly half of clearances depend on an organ nobody measured for one member. This is honest reporting of missing data, not an error: the conservative arm already charges the measured member's score there. It cannot fall without per-organ measurements this project does not have. |
+| **P15** | 5 of 7 shared dual targets change partner when the pool is halved (71.4%) | The instability described above. With eligible partners clustered within 0.004 of each other, small pool changes reorder them. A tight cluster is what dissolved P13; the same tightness makes the specific choice unstable. **The set of admissible partners is meaningful; the single named partner is not.** |
+
+**The one conclusion a reader should take from this stage.** Dual-antigen pairing
+does reduce modelled normal-tissue risk substantially and does rescue targets that
+cannot clear alone — 99 of them. But the *specific partner* it names is not a
+robust recommendation, and the coverage a pair would achieve cannot currently be
+measured on this assay. The output supports "a dual design is worth pursuing for
+this target" and does not support "pair it with this gene".
+
 ### 6.6 Mandatory sanity check on the derivation
 
 Run before any pairing. **MSLN, CLDN18 and CEACAM6 must each be detected in a

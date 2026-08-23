@@ -21,7 +21,11 @@ from car_pipeline.data.genespan import GeneSpanSource
 from car_pipeline.data.gtex import GTExSource
 from car_pipeline.data.hpa import HPASource, index as atlas_index
 from car_pipeline.data.singlecell import SingleCellSource, match_surface as cell_match
-from car_pipeline.data.tcga import TCGASource, match_surface as tcga_match
+from car_pipeline.data.tcga import (
+    PRIMARY_TUMOUR,
+    TCGASource,
+    match_surface as tcga_match,
+)
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import stage3, stage4
 from car_pipeline.stages.stage1 import build_spec
@@ -159,7 +163,22 @@ def main() -> int:
               "be reported without it")
         spans = {}
     annotated = stage4.annotate_span_context(pairs, spans)
-    decisions = stage4.decide(pool, pairs)
+    # Bulk tumour level per pool gene, primary tumours only. This is the axis
+    # partner eligibility is measured on, and it is the one not confounded with
+    # genomic span.
+    primary = cohort.sample_types == PRIMARY_TUMOUR
+    tumour_tpm: dict[str, float] = {}
+    for r in pool:
+        cj = cohort_join.get(r.accession)
+        if cj is not None:
+            tumour_tpm[r.gene] = float(np.median(cohort.values[primary, cj[0]]))
+    eligible = sum(1 for g in tumour_tpm
+                   if tumour_tpm[g] >= stage4.PARTNER_MIN_TUMOUR_TPM)
+    print(f"  partner eligibility at {stage4.PARTNER_MIN_TUMOUR_TPM} TPM: "
+          f"{eligible} of {len(pool)} pool members eligible "
+          f"({len(pool) - len(tumour_tpm)} without a tumour column)")
+
+    decisions = stage4.decide(pool, pairs, tumour_tpm)
     measurable = sum(1 for p in pairs if p.coverage.measured and p.coverage.f_ab is not None)
     print(f"  span context attached to {annotated:,} pairs of {measurable:,} measured")
 
@@ -345,7 +364,7 @@ def main() -> int:
     duals = {d.gene: d.partner for d in decisions if d.outcome == stage4.DUAL}
     alt = stage4.evaluate(pool, per_organ, model, ceiling, cells, threshold=2)
     alt_dual = {d.gene: d.partner
-                for d in stage4.decide(pool, alt) if d.outcome == stage4.DUAL}
+                for d in stage4.decide(pool, alt, tumour_tpm) if d.outcome == stage4.DUAL}
     changed = sum(1 for g, q in duals.items() if alt_dual.get(g) != q)
     base = max(len(duals), 1)
     criterion("P12", changed / base > 0.5,

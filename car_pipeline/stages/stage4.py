@@ -518,9 +518,33 @@ class Decision:
 #: few pairs to rank within.
 SPAN_BUCKETS = 5
 
+#: A partner must carry this much of the antigen in the tumour itself. Applied to
+#: the partner only, and the asymmetry is the point: a target earns its place
+#: through the tumour-side composite, which already scores expression and
+#: prevalence, while a partner is chosen purely on risk and would otherwise be
+#: rewarded for being absent. An AND gate fires only where both antigens are
+#: present, so a partner absent from the tumour contributes nothing to killing it
+#: while contributing everything to the pair looking safe.
+#:
+#: Measured on bulk tumour transcript level, which is the axis that is NOT
+#: confounded with genomic span — the per-cell measure is (§6.5b), and using it
+#: here would reintroduce the artefact this exists to work around.
+#:
+#: 5.0 rather than 3.0, and the reason is not margin. The concentration this
+#: addresses came from one protein sitting far below every other candidate:
+#: 0.0277 against 0.2272 for the next lowest. At a 3 TPM threshold the lowest
+#: eligible partner still leads the next by 0.0489. At 5 TPM the leaders cluster
+#: within 0.0036 of each other, so no single gene can win for every target. The
+#: threshold sits at roughly the pool's 8th percentile and retains 182 of 200; it
+#: is not fitted to exclude two named genes.
+PARTNER_MIN_TUMOUR_TPM = 5.0
+
 #: Names what admits and orders a partner, so a change to either shows up in the
 #: configuration hash rather than being invisible to it.
-SELECTION_RULE = "risk-cleared-and-measured;order:combined_risk,partner_name;v2"
+SELECTION_RULE = (
+    "risk-cleared-and-measured;partner_min_tumour_tpm;"
+    "order:combined_risk,partner_name;v3"
+)
 
 
 def annotate_span_context(pairs: list[Pair], spans: dict[str, int]) -> int:
@@ -577,7 +601,21 @@ def annotate_span_context(pairs: list[Pair], spans: dict[str, int]) -> int:
     return len(scored)
 
 
-def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
+def decide(
+    pool: list[Ranked],
+    pairs: list[Pair],
+    tumour_tpm: dict[str, float] | None = None,
+) -> list[Decision]:
+    """Single, dual, unresolved or no design, per pool member.
+
+    `tumour_tpm` supplies bulk tumour transcript level per gene and gates partner
+    eligibility at `PARTNER_MIN_TUMOUR_TPM`. A gene with no measurement is not
+    eligible as a partner: absence of evidence that the partner is on the tumour
+    is exactly the case the threshold exists for, and treating it as a pass would
+    put the missing-is-a-third-state rule the wrong way round. Passing None
+    disables the filter entirely, which is for measuring what it does, not for
+    running without it.
+    """
     by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
     for p in pairs:
         by_gene[p.gene_a].append(p)
@@ -585,10 +623,20 @@ def decide(pool: list[Ranked], pairs: list[Pair]) -> list[Decision]:
 
     cleared = {r.gene: r.cleared for r in pool}
     accession_of = {r.gene: r.accession for r in pool}
+
+    def eligible_partner(gene: str) -> bool:
+        if tumour_tpm is None:
+            return True
+        value = tumour_tpm.get(gene)
+        return value is not None and value >= PARTNER_MIN_TUMOUR_TPM
+
     out: list[Decision] = []
     for index, r in enumerate(pool):
         mine = by_gene[r.gene]
-        admissible = [p for p in mine if p.admissible]
+        admissible = [
+            p for p in mine
+            if p.admissible and eligible_partner(_other(p, r.gene))
+        ]
         # Ordered by how far under the ceiling the pair sits, then by partner
         # name so the choice is deterministic. This used to order by co-expression
         # — how much of the tumour the gate still kills — which is the better
@@ -698,6 +746,7 @@ def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
         # and `read_decisions(expect_stage4_hash=...)` would accept the old
         # artifact as current — the one thing carrying the hash is meant to stop.
         "selection_rule": SELECTION_RULE,
+        "partner_min_tumour_tpm": PARTNER_MIN_TUMOUR_TPM,
         "span_buckets": SPAN_BUCKETS,
     }
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
