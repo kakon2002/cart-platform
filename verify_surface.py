@@ -137,10 +137,15 @@ def main() -> int:
     print(f"  {rejected}/{len(NEGATIVE_CONTROLS)} rejected   expected 12")
 
     print("\nrejection reasons")
+    # `not outward` alone is now satisfied by the note-only state as well, so the
+    # topology check has to exclude it or it stops isolating the gate it names.
     on_topology = [
         g
         for g in TOPOLOGY_REJECTS
-        if (r := by_gene.get(g)) is not None and r.attached and not r.outward
+        if (r := by_gene.get(g)) is not None
+        and r.attached
+        and not r.outward
+        and not r.outward_note_only
     ]
     print(
         f"  rejected on topology rather than anchor: {sorted(on_topology)}"

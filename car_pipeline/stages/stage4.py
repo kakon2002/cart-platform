@@ -691,10 +691,22 @@ def decide(
                 if p.cleared and p.coverage.measured and not p.coverage_ok
             ),
             "unmeasured": sum(1 for p in mine if not p.coverage.measured),
+            # Pairs that cleared everything and were rejected only because the
+            # partner is not expressed enough in the tumour. Without this row a
+            # target excluded entirely on partner eligibility is persisted with
+            # every counter at zero — a rejection with no stated reason.
+            "partner_ineligible": sum(
+                1 for p in mine
+                if p.admissible and not eligible_partner(_other(p, r.gene))
+            ),
         }
         # `coverage.measured`, not `coverage_ok`: the coverage floor no longer
         # selects (§6.5b), and leaving it here would decide NO_DESIGN against
         # UNRESOLVED on a threshold the stage has stopped applying anywhere else.
+        # Eligibility applies here as well. A target whose only salvageable
+        # pairs run through partners the tumour-expression gate rejects is not
+        # salvageable: resolving the organ would not make that partner usable,
+        # so reporting UNRESOLVED would promise a design that cannot follow.
         salvageable = [
             p
             for p in mine
@@ -702,6 +714,7 @@ def decide(
             and p.risk.optimistic is not None
             and p.risk.optimistic <= p.ceiling
             and p.coverage.measured
+            and eligible_partner(_other(p, r.gene))
         ]
         out.append(
             Decision(
