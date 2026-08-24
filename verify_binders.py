@@ -261,7 +261,9 @@ def main() -> int:
         print(f"    {gene:9s} {r.verdict:24s} entries {len(r.entries):3d}  "
               f"structure {len(r.structure):3d}  sequence {len(r.sequence):3d}")
 
+    written = stage5.write_binders(records, manifest["stage4_hash"])
     print()
+    print(f"  binders written to {written}")
     print(f"  configuration hash {stage5.configuration_hash(manifest['stage4_hash'], [r.gene for r in records])}")
     print("  affinity: NOT_CONNECTED for every candidate, and that is measured")
 
