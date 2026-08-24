@@ -18,6 +18,7 @@ accepted representation of zero; anything else is an error and is raised.
 from __future__ import annotations
 
 import json
+import time
 import urllib.error
 import urllib.request
 from typing import Iterable
@@ -36,6 +37,9 @@ USER_AGENT = "car-platform/stage5"
 #: Page size. Exceeding it raises rather than truncating.
 PAGE_ROWS = 500
 TIMEOUT = 60
+#: Transport failures are retried; an answer is never invented from one.
+RETRIES = 3
+RETRY_BACKOFF = 2.0
 
 
 class RetrievalError(RuntimeError):
@@ -87,16 +91,30 @@ def entries_for(accession: str) -> list[str]:
         data=body,
         headers={"Content-Type": "application/json", "User-Agent": USER_AGENT},
     )
-    try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
-            status = response.status
-            payload = response.read()
-    except urllib.error.HTTPError as exc:
-        if exc.code == 204:
-            return []
+    # A dropped connection is a transport failure, not an answer. Retried a
+    # fixed number of times, then raised — never converted into an empty list,
+    # which downstream would record as "the literature holds nothing".
+    last: Exception | None = None
+    for attempt in range(RETRIES):
+        try:
+            with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+                status = response.status
+                payload = response.read()
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code == 204:
+                return []
+            raise RetrievalError(
+                f"{accession}: search returned HTTP {exc.code}"
+            ) from exc
+        except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as exc:
+            last = exc
+            if attempt + 1 < RETRIES:
+                time.sleep(RETRY_BACKOFF * (attempt + 1))
+    else:
         raise RetrievalError(
-            f"{accession}: search returned HTTP {exc.code}"
-        ) from exc
+            f"{accession}: {RETRIES} attempts failed, last {type(last).__name__}"
+        ) from last
 
     if status == 204:
         if payload:
