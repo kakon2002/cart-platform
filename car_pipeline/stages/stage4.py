@@ -798,6 +798,11 @@ def _decision_payload(d: Decision) -> dict:
     }
 
 
+def decision_rows(decisions: list[Decision]) -> list[dict]:
+    """Decisions as plain rows, the same shape `read_decisions` returns."""
+    return [_decision_payload(d) for d in decisions]
+
+
 def write_decisions(
     decisions: list[Decision],
     pool_genes: list[str],
