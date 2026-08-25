@@ -21,6 +21,11 @@ holds for `load_malignant()`. **The 8.3 GB file is a build-time input, not a
 serve-time one.** A deployed service that never invalidates those fingerprints
 never opens it.
 
+Measured rather than reasoned: with `totaldata-final-toshare.h5ad` renamed out
+of the way, a full screen completed in **7.3 seconds** — all eight stages,
+3,466 ranked, a pool of 200, and the same `NO_DESIGN_REACHES_THE_END`. Nothing
+in the serving path touched it.
+
 The fingerprint that matters is in `malignant_entry()`: it includes a digest of
 the gene set. **A different indication produces a different pool, a different
 digest, a cache miss, and an 8.3 GB stream.** So the matrix has to live
