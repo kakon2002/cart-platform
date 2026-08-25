@@ -1,0 +1,889 @@
+<title>Full Run Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+:root {
+  --paper:#EDEFF1; --surface:#F8F9FA; --sunk:#E3E7EA;
+  --ink:#131C2B; --ink-soft:#515E70; --ink-faint:#7A879A;
+  --rule:#D2D8DE; --rule-soft:#E1E6EA;
+  --madder:#94301D; --madder-soft:#B8593F;
+  --clear:#2C6046; --tripped:#8C5A0C;
+  --clear-bg:#DFEAE3; --tripped-bg:#F2E7CF; --madder-bg:#F3DFDA;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0D131B; --surface:#161E29; --sunk:#111925;
+    --ink:#E3E8EE; --ink-soft:#9AA6B6; --ink-faint:#6E7C8D;
+    --rule:#28323F; --rule-soft:#1D2631;
+    --madder:#DE7A63; --madder-soft:#C4614A;
+    --clear:#71C398; --tripped:#D6A445;
+    --clear-bg:#152A21; --tripped-bg:#2A2213; --madder-bg:#331A15;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0D131B; --surface:#161E29; --sunk:#111925;
+  --ink:#E3E8EE; --ink-soft:#9AA6B6; --ink-faint:#6E7C8D;
+  --rule:#28323F; --rule-soft:#1D2631;
+  --madder:#DE7A63; --madder-soft:#C4614A;
+  --clear:#71C398; --tripped:#D6A445;
+  --clear-bg:#152A21; --tripped-bg:#2A2213; --madder-bg:#331A15;
+}
+
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:1080px; margin:0 auto; padding:0 28px 96px; }
+.prose { max-width:68ch; }
+
+/* ---- masthead ---------------------------------------------------------- */
+.mast {
+  border-bottom:2px solid var(--ink);
+  padding:56px 0 22px; margin-bottom:36px;
+  display:flex; flex-wrap:wrap; gap:28px; align-items:flex-end;
+  justify-content:space-between;
+}
+.mast__t {
+  font-family:"Instrument Serif",Georgia,"Times New Roman",serif;
+  font-weight:400; font-size:clamp(2.6rem,6vw,4.1rem); line-height:1.02;
+  margin:0; letter-spacing:-0.012em; text-wrap:balance;
+}
+.mast__sub {
+  margin:12px 0 0; color:var(--ink-soft); max-width:52ch; font-size:1.02rem;
+}
+.tally { text-align:right; flex-shrink:0; }
+.tally__n {
+  font-family:"Instrument Serif",Georgia,serif;
+  font-size:clamp(3rem,8vw,4.6rem); line-height:0.9; display:block;
+  font-variant-numeric:tabular-nums; color:var(--madder);
+}
+.tally__l {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.7rem; letter-spacing:0.13em; text-transform:uppercase;
+  color:var(--ink-faint); display:block; margin-top:10px;
+}
+
+/* ---- shared ------------------------------------------------------------ */
+.eyebrow {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase;
+  color:var(--madder); margin:0 0 6px;
+}
+h2 {
+  font-family:"Instrument Serif",Georgia,serif; font-weight:400;
+  font-size:2rem; line-height:1.12; margin:0 0 10px; text-wrap:balance;
+}
+.block { margin-top:64px; }
+.lede { color:var(--ink-soft); margin:0 0 24px; max-width:64ch; }
+
+/* ---- ledger ------------------------------------------------------------ */
+.scroll { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; min-width:560px; }
+thead th {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:400; text-align:left;
+  padding:0 12px 9px; border-bottom:1px solid var(--rule);
+}
+tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
+.num {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; color:var(--ink-faint);
+  width:1%; white-space:nowrap; font-size:0.85rem;
+}
+.nm { font-weight:500; }
+.frac {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; font-size:0.92rem;
+}
+.tm {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; color:var(--ink-faint);
+  font-size:0.82rem; font-variant-numeric:tabular-nums; text-align:right;
+}
+.row--absent td { color:var(--ink-faint); }
+.row--absent .nm { font-weight:400; font-style:italic; }
+.row--absent .tm { text-align:right; font-style:italic; }
+.pill {
+  display:inline-block; padding:2px 9px; border-radius:2px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.7rem; letter-spacing:0.05em; white-space:nowrap;
+}
+.pill--clear { background:var(--clear-bg); color:var(--clear); }
+.pill--tripped { background:var(--tripped-bg); color:var(--tripped); }
+.pill--absent { border:1px solid var(--rule); color:var(--ink-faint); }
+
+/* ---- attrition --------------------------------------------------------- */
+.gates { list-style:none; margin:0; padding:0; display:flex;
+  flex-direction:column; gap:20px; max-width:640px; }
+.gate__head { display:flex; justify-content:space-between; align-items:baseline;
+  gap:16px; margin-bottom:6px; }
+.gate__name { font-weight:500; }
+.gate__drop {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; color:var(--madder); font-size:0.95rem;
+}
+.gate__bar { height:9px; background:var(--sunk); border-radius:1px; overflow:hidden; }
+.gate__bar span { display:block; height:100%; background:var(--madder);
+  min-width:2px; }
+.gate__rem {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.76rem;
+  color:var(--ink-faint); margin-top:5px; font-variant-numeric:tabular-nums;
+}
+
+/* ---- endings ----------------------------------------------------------- */
+.endings { display:grid; gap:20px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); }
+.ending {
+  background:var(--surface); border:1px solid var(--rule);
+  border-left:3px solid var(--madder); padding:20px 22px; border-radius:2px;
+}
+.ending__ep {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.76rem;
+  color:var(--ink-faint); margin:0 0 8px; letter-spacing:0.04em;
+}
+.ending__st {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.95rem;
+  font-weight:500; color:var(--madder); margin:0; word-break:break-word;
+}
+.ending__why { margin:14px 0 0; padding-left:18px; color:var(--ink-soft);
+  font-size:0.9rem; display:flex; flex-direction:column; gap:7px; }
+
+/* ---- criteria ---------------------------------------------------------- */
+.stage { margin-top:40px; }
+.stage__h {
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+  font-family:"Instrument Serif",Georgia,serif; font-weight:400;
+  font-size:1.5rem; margin:0 0 14px; padding-bottom:9px;
+  border-bottom:1px solid var(--rule);
+}
+.stage__label {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.7rem;
+  letter-spacing:0.12em; text-transform:uppercase; color:var(--madder);
+}
+.stage__score {
+  margin-left:auto; font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.85rem; color:var(--ink-faint); font-variant-numeric:tabular-nums;
+}
+.crits { list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column; gap:2px; }
+.crit {
+  display:grid; grid-template-columns:82px 1fr; gap:14px;
+  padding:7px 10px 7px 12px; border-left:2px solid transparent;
+  align-items:baseline;
+}
+.crit--clear { border-left-color:var(--rule); }
+.crit--accepted { border-left-color:var(--tripped); background:var(--tripped-bg); }
+.crit--regression { border-left-color:var(--madder); background:var(--madder-bg); }
+.crit__id {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:0.78rem;
+  color:var(--ink-faint);
+}
+.crit--accepted .crit__id { color:var(--tripped); font-weight:500; }
+.crit--regression .crit__id { color:var(--madder); font-weight:500; }
+.crit__detail { font-size:0.9rem; color:var(--ink-soft); }
+.crit--accepted .crit__detail, .crit--regression .crit__detail { color:var(--ink); }
+.crit__note {
+  display:block; margin-top:5px; font-size:0.82rem; color:var(--ink-faint);
+  border-left:2px solid var(--rule); padding-left:10px;
+}
+.crit__note--new { color:var(--madder); border-left-color:var(--madder);
+  font-weight:500; }
+
+.foot {
+  margin-top:80px; padding-top:22px; border-top:1px solid var(--rule);
+  color:var(--ink-faint); font-size:0.83rem;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (max-width:620px) {
+  .crit { grid-template-columns:1fr; gap:3px; }
+  .mast { padding-top:36px; }
+  .tally { text-align:left; }
+}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1 class="mast__t">Full run ledger</h1>
+      <p class="mast__sub">Every stage of the design platform, run end to end in
+      one command against the cached sources. </p>
+    </div>
+    <div class="tally">
+      <span class="tally__n">98<span style="color:var(--ink-faint)">/103</span></span>
+      <span class="tally__l">criteria clear &middot; 6.9 min</span>
+    </div>
+  </header>
+
+  <section class="block" style="margin-top:0">
+    <p class="eyebrow">Stage ledger</p>
+    <h2>What ran, and what it cost</h2>
+    <p class="lede">Each stage is verified by its own process against criteria
+    written before the run. 5 criteria are tripped. Every one has a decision on record, shown against it — a tripped criterion here is a recorded limitation, not a silenced one.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Stage</th><th>Criteria</th><th>State</th><th>Time</th>
+        </tr></thead>
+        <tbody>
+        <tr class="row row--clear">
+          <td class="num">1</td>
+          <td class="nm">Design spec</td>
+          <td class="ct"><span class="frac">31/31</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">0.5s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">2</td>
+          <td class="nm">Surface proteome</td>
+          <td class="ct"><span class="frac">2/2</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">0.5s</td>
+        </tr>
+        <tr class="row row--tripped">
+          <td class="num">3</td>
+          <td class="nm">Target discovery</td>
+          <td class="ct"><span class="frac">12/13</span></td>
+          <td class="st"><span class="pill pill--tripped">1 tripped</span></td>
+          <td class="tm">19.9s</td>
+        </tr>
+        <tr class="row row--tripped">
+          <td class="num">4</td>
+          <td class="nm">Target pairing</td>
+          <td class="ct"><span class="frac">10/14</span></td>
+          <td class="st"><span class="pill pill--tripped">4 tripped</span></td>
+          <td class="tm">8.9s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">5</td>
+          <td class="nm">Binder discovery</td>
+          <td class="ct"><span class="frac">7/7</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">366.6s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">6</td>
+          <td class="nm">Construct assembly</td>
+          <td class="ct"><span class="frac">8/8</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">0.6s</td>
+        </tr>
+        <tr class="row row--absent">
+          <td class="num">7</td>
+          <td class="nm">Manufacturing</td>
+          <td class="ct">—</td>
+          <td class="st"><span class="pill pill--absent">not implemented</span></td>
+          <td class="tm">schema only; not on the path to the end state</td>
+        </tr>
+        <tr class="row row--absent">
+          <td class="num">8</td>
+          <td class="nm">Trial design</td>
+          <td class="ct">—</td>
+          <td class="st"><span class="pill pill--absent">not implemented</span></td>
+          <td class="tm">schema only; not on the path to the end state</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">9</td>
+          <td class="nm">Safety gate</td>
+          <td class="ct"><span class="frac">7/7</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">3.9s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">10</td>
+          <td class="nm">Developability</td>
+          <td class="ct"><span class="frac">6/6</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">0.6s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">11</td>
+          <td class="nm">Final ranking</td>
+          <td class="ct"><span class="frac">6/6</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">4.0s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">API</td>
+          <td class="nm">HTTP surface</td>
+          <td class="ct"><span class="frac">9/9</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">10.9s</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="eyebrow">The result</p>
+    <h2>Where 200 candidate targets stop</h2>
+    <p class="lede">Every candidate is attributed to the first gate it fails, so
+    the drops sum to the pool rather than overlapping. Nothing reaches the end,
+    and that is a measurement of the constraints — not a failure of the run.</p>
+    <ol class="gates">
+        <li class="gate">
+          <div class="gate__head">
+            <span class="gate__name">blocked on normal tissue risk</span>
+            <span class="gate__drop">&minus;199</span>
+          </div>
+          <div class="gate__bar"><span style="width:99.5000%"></span></div>
+          <div class="gate__rem">1 remain</div>
+        </li>
+        <li class="gate">
+          <div class="gate__head">
+            <span class="gate__name">no design recommended</span>
+            <span class="gate__drop">&minus;0</span>
+          </div>
+          <div class="gate__bar"><span style="width:0.0000%"></span></div>
+          <div class="gate__rem">1 remain</div>
+        </li>
+        <li class="gate">
+          <div class="gate__head">
+            <span class="gate__name">no binder retrieved</span>
+            <span class="gate__drop">&minus;1</span>
+          </div>
+          <div class="gate__bar"><span style="width:0.5000%"></span></div>
+          <div class="gate__rem">0 remain</div>
+        </li>
+        <li class="gate">
+          <div class="gate__head">
+            <span class="gate__name">no construct assembled</span>
+            <span class="gate__drop">&minus;0</span>
+          </div>
+          <div class="gate__bar"><span style="width:0.0000%"></span></div>
+          <div class="gate__rem">0 remain</div>
+        </li>
+        <li class="gate">
+          <div class="gate__head">
+            <span class="gate__name">construct over budget</span>
+            <span class="gate__drop">&minus;0</span>
+          </div>
+          <div class="gate__bar"><span style="width:0.0000%"></span></div>
+          <div class="gate__rem">0 remain</div>
+        </li></ol>
+  </section>
+
+  <section class="block">
+    <p class="eyebrow">Served over HTTP</p>
+    <h2>An empty pipeline answers 200</h2>
+    <p class="lede">The endpoints return a named status with the reasons
+    computed from this run — never a 404, a 500, or a bare empty list. An empty
+    list would read as having looked and found nothing to say.</p>
+    <div class="endings">
+        <div class="ending">
+          <p class="ending__ep">GET /constructs</p>
+          <p class="ending__st">NO_BUILDABLE_CONSTRUCT</p>
+          <ul class="ending__why"><li>Conservative safety tolerance mandates a safety switch (1308 bp).</li><li>The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.</li><li>Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.</li><li>This is a constraint result, not a pipeline failure. The budget is Stage 1&#x27;s and is doing what it exists for.</li></ul>
+        </div>
+        <div class="ending">
+          <p class="ending__ep">GET /result</p>
+          <p class="ending__st">NO_DESIGN_REACHES_THE_END</p>
+          
+        </div></div>
+  </section>
+
+  <section class="block">
+    <p class="eyebrow">Every criterion</p>
+    <h2>The full ledger</h2>
+    <p class="lede">All 103 criteria, in pipeline order, exactly as
+    each verifier reported them.</p>
+    
+      <section class="stage" id="s1">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 1</span>
+          Design spec
+          <span class="stage__score">31/31</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">check 1</span>
+            <span class="crit__detail">discovery_mode — got &#x27;B&#x27;, expected &#x27;B&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 2</span>
+            <span class="crit__detail">target_antigen — got None, expected None</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 3</span>
+            <span class="crit__detail">cancer_type — got &#x27;Pancreatic Ductal Adenocarcinoma&#x27;, expected &#x27;Pancreatic Ductal Adenocarcinoma&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 4</span>
+            <span class="crit__detail">malignancy_type — got &#x27;solid&#x27;, expected &#x27;solid&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 5</span>
+            <span class="crit__detail">product_type — got &#x27;autologous&#x27;, expected &#x27;autologous&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 6</span>
+            <span class="crit__detail">car_format — got &#x27;auto&#x27;, expected &#x27;auto&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 7</span>
+            <span class="crit__detail">safety_tolerance — got &#x27;conservative&#x27;, expected &#x27;conservative&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 8</span>
+            <span class="crit__detail">vector_payload_limit_kb — got 4.7, expected 4.7</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 9</span>
+            <span class="crit__detail">max_genetic_edits — got 2, expected 2</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 10</span>
+            <span class="crit__detail">pancreas override tier — got 2, expected 2</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 11</span>
+            <span class="crit__detail">mistyped field rejected — got True, expected True</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 12</span>
+            <span class="crit__detail">blank antigen -&gt; None — got None, expected None</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 13</span>
+            <span class="crit__detail">blank antigen -&gt; mode B — got &lt;DiscoveryMode.DISCOVER: &#x27;B&#x27;&gt;, expected &lt;DiscoveryMode.DISCOVER: &#x27;B&#x27;&gt;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 14</span>
+            <span class="crit__detail">supplied antigen -&gt; mode A — got &#x27;A&#x27;, expected &#x27;A&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 15</span>
+            <span class="crit__detail">blank cancer_type rejected — got True, expected True</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 16</span>
+            <span class="crit__detail">override without rationale rejected — got True, expected True</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 17</span>
+            <span class="crit__detail">spec discovery_mode — got &#x27;B&#x27;, expected &#x27;B&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 18</span>
+            <span class="crit__detail">datasets — got 10, expected 10</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 19</span>
+            <span class="crit__detail">blocking datasets — got 8, expected 8</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 20</span>
+            <span class="crit__detail">construct budget kb — got 3.5, expected 3.5</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 21</span>
+            <span class="crit__detail">safety switch required — got True, expected True</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 22</span>
+            <span class="crit__detail">risk ceiling — got 0.15, expected 0.15</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 23</span>
+            <span class="crit__detail">allowed formats — got 5, expected 5</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 24</span>
+            <span class="crit__detail">auto excluded — got True, expected True</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 25</span>
+            <span class="crit__detail">spec target_antigen — got None, expected None</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 26</span>
+            <span class="crit__detail">unresolved availability score — got 0.0, expected 0.0</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 27</span>
+            <span class="crit__detail">resolved availability score — got 0.75, expected 0.75</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 28</span>
+            <span class="crit__detail">validation datasets — got 7, expected 7</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 29</span>
+            <span class="crit__detail">validation blocking — got 5, expected 5</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 30</span>
+            <span class="crit__detail">input not mutated by build — got None, expected None</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">check 31</span>
+            <span class="crit__detail">project id unique — got True, expected True</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s2">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 2</span>
+          Surface proteome
+          <span class="stage__score">2/2</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">validation sets</span>
+            <span class="crit__detail">pass</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">count drift</span>
+            <span class="crit__detail">yes</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s3">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 3</span>
+          Target discovery
+          <span class="stage__score">12/13</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">R1</span>
+            <span class="crit__detail">outside top decile: none</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R2</span>
+            <span class="crit__detail">cleared the ceiling: none (across 4 accessions)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R3</span>
+            <span class="crit__detail">CEACAM5 composite=0.8769 measured_weight=0.55 tier_rank=1</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R4</span>
+            <span class="crit__detail">non-surface entries present: 0</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R5</span>
+            <span class="crit__detail">highest |rho| tumour_vs_normal=0.815 (over measured targets only)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R6</span>
+            <span class="crit__detail">worst retention 94% at malignant_expression x0.8</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R7</span>
+            <span class="crit__detail">cleared 646 of 3,466</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R8</span>
+            <span class="crit__detail">most repeated composite 0.1273 occurs 17x (0.50%)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R9</span>
+            <span class="crit__detail">best unresolved None vs best protein-confirmed 0.8769</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R10</span>
+            <span class="crit__detail">0 of 100 reached only after a symbol failed</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R11</span>
+            <span class="crit__detail">22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">R12</span>
+            <span class="crit__detail">worst retention 82% at c3_fold x0.5</span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">R13</span>
+            <span class="crit__detail">clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x<span class="crit__note">Accepted — Withdrawn. The two populations differ by construction (breadth 51 vs 7) and the max-over-sources gate rewards being unmeasured, so no combination rule reaches the 5x limit. Replaced by R13-prime, which clears.</span></span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s4">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 4</span>
+          Target pairing
+          <span class="stage__score">10/14</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">P1</span>
+            <span class="crit__detail">combined risk vs min of members, rho=0.7926 (limit 0.95)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P2</span>
+            <span class="crit__detail">6,328 of 19,900 (31.80%) beat the better member by more than 0.05 (limit 1%)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P3</span>
+            <span class="crit__detail">99 blocked targets rescued by some pair: ACSL5, ADAM9, ADGRF1, AMIGO2, AMN, ANO1, ANTXR1, AQP5</span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">P4</span>
+            <span class="crit__detail">f_AB vs f_A x f_B over 14,535 measured pairs, rho=0.9934 (limit 0.98)<span class="crit__note">Accepted — Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.</span></span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P5</span>
+            <span class="crit__detail">0 pairs marked cleared on the optimistic arm</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P6</span>
+            <span class="crit__detail">0 recommended pairs are unmeasured</span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">P7</span>
+            <span class="crit__detail">1 cleared pairs contain a ubiquitous immune protein (in pool: [&#x27;HLA-A&#x27;]) [&#x27;NPSR1+HLA-A&#x27;]<span class="crit__note">Accepted — One cleared pair contains HLA-A. Recorded rather than filtered, because the pool is not curated by hand.</span></span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">P8</span>
+            <span class="crit__detail">108 of 222 cleared pairs (48.6%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)<span class="crit__note">Accepted — 48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.</span></span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P10</span>
+            <span class="crit__detail">0 targets recommended dual despite clearing alone</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P11</span>
+            <span class="crit__detail">outcome spread {&#x27;NO_DESIGN&#x27;: 185, &#x27;DUAL&#x27;: 13, &#x27;UNRESOLVED&#x27;: 1, &#x27;SINGLE&#x27;: 1}, largest 92.5% (limit 95%)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P12</span>
+            <span class="crit__detail">4 of 13 dual recommendations change at 2 counts (30.8%, limit 50%)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P13</span>
+            <span class="crit__detail">most common partner takes 38.5% of dual recommendations (LAMP5)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">P14</span>
+            <span class="crit__detail">top pair is NPSR1+PTPRN2, top two singles are CEACAM5+TMC5</span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">P15</span>
+            <span class="crit__detail">pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)<span class="crit__note">Accepted — Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.</span></span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s5">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 5</span>
+          Binder discovery
+          <span class="stage__score">7/7</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">B1</span>
+            <span class="crit__detail">73 targets have entries but no antibody among them (an inert stage would have none); 6 of 127 with entries echo their count</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B3</span>
+            <span class="crit__detail">known answers hold: 5 sequence targets, 2 pinned structure targets, 2 documented negatives, and CEACAM5 at 1 structure entries of 6 (expected 1)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B8</span>
+            <span class="crit__detail">5 of 5 known targets return a binder on some route</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B5</span>
+            <span class="crit__detail">0 candidates carry an affinity value (the source does not have one)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B7</span>
+            <span class="crit__detail">pool order carried through unchanged</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B13</span>
+            <span class="crit__detail">200 records out of 200 decisions in; 0 genes dropped, 0 added</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">B11</span>
+            <span class="crit__detail">0 candidates claim a resolved isoform (neither route can determine one)</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s6">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 6</span>
+          Construct assembly
+          <span class="stage__score">8/8</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">K1</span>
+            <span class="crit__detail">2 constructs translate back to their own sequence</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K2</span>
+            <span class="crit__detail">2 constructs carry their binders verbatim, including the pinned MUC16, MUC17</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K3</span>
+            <span class="crit__detail">domain boundaries partition every construct exactly</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K4</span>
+            <span class="crit__detail">every part of every construct names its source (19 parts in the first construct)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K5</span>
+            <span class="crit__detail">part costs sum to the printed total for every construct</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K6</span>
+            <span class="crit__detail">every buildable construct carries the mandatory safety switch</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K7</span>
+            <span class="crit__detail">every owed construct was built and none was built without a binder; 26 targets have a binder but no recommendation (§5.1)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">K8</span>
+            <span class="crit__detail">200 rows and 200 distinct genes against the 200 the Stage 4 manifest records</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s9">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 9</span>
+          Safety gate
+          <span class="stage__score">7/7</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">S1</span>
+            <span class="crit__detail">registry returns trials for both pins (MSLN=169, CLDN18=3)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S2</span>
+            <span class="crit__detail">pinned names classify as expected (Amatuximab=chimeric, Zolbetuximab=chimeric)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S3</span>
+            <span class="crit__detail">every target with a binder carries a Stage 3 risk</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S4</span>
+            <span class="crit__detail">no target over the ceiling escapes BLOCKED</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S5</span>
+            <span class="crit__detail">epitope immunogenicity is NOT_CONNECTED on every row</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S6</span>
+            <span class="crit__detail">200 rows and 200 distinct genes against the 200 the Stage 4 manifest records</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">S7</span>
+            <span class="crit__detail">every target with stopped trials is flagged or blocked</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s10">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 10</span>
+          Developability
+          <span class="stage__score">6/6</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">D1</span>
+            <span class="crit__detail">poly-K pI 11.463, poly-E pI 2.623 — the charge model orders the two known answers correctly</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">D2</span>
+            <span class="crit__detail">NST yields 1 sequon, NPT yields 0 — the proline exclusion holds</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">D3</span>
+            <span class="crit__detail">a 3-cysteine control reports parity &#x27;odd&#x27;, and never &#x27;unpaired: 0&#x27;</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">D4</span>
+            <span class="crit__detail">every scored binder has a pI in 1..14 and 0..5 flags</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">D5</span>
+            <span class="crit__detail">113 rows against 113 binders carrying a sequence</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">D6</span>
+            <span class="crit__detail">no liability is summed into a single score; flags are counted and listed</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="s11">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 11</span>
+          Final ranking
+          <span class="stage__score">6/6</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">N1</span>
+            <span class="crit__detail">a dominated point is excluded from the front</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">N2</span>
+            <span class="crit__detail">both non-dominated points are on the front</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">N3</span>
+            <span class="crit__detail">attrition accounts for 200 of 200</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">N4</span>
+            <span class="crit__detail">no weighted or summed score across objectives is emitted</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">N5</span>
+            <span class="crit__detail">status NO_DESIGN_REACHES_THE_END matches the survivor count 0</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">N6</span>
+            <span class="crit__detail">200 rows against the 200 the Stage 4 manifest records</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="sAPI">
+        <h3 class="stage__h">
+          <span class="stage__label">API</span>
+          HTTP surface
+          <span class="stage__score">9/9</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">A1</span>
+            <span class="crit__detail">project created (201), target_antigen None and discovery mode B</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A2</span>
+            <span class="crit__detail">a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A3</span>
+            <span class="crit__detail">a run returns 202 with job d5be32d25c38 rather than blocking</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A4</span>
+            <span class="crit__detail">job finished complete after stages [&#x27;sources&#x27;, &#x27;pairing&#x27;, &#x27;ranking&#x27;]</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A5</span>
+            <span class="crit__detail">zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A6</span>
+            <span class="crit__detail">end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A7</span>
+            <span class="crit__detail">top target CEACAM5 with a 6-component breakdown</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A8</span>
+            <span class="crit__detail">pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A9</span>
+            <span class="crit__detail">evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11</span>
+          </li></ul>
+      </section>
+  </section>
+
+  <p class="foot">Generated from reports/full-run.md &middot;
+  derived artifacts rebuilt from the cache
+  &middot; no value on this page is transcribed by hand</p>
+</div>

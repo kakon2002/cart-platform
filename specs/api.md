@@ -3,14 +3,58 @@
 Standard library only. No framework, no new dependency.
 
 ```
-py -3.13 -m car_pipeline.api.server        # http://127.0.0.1:8000
-py -3.13 verify_api.py                     # end-to-end check, 9 criteria
+.venv\Scripts\python.exe -m car_pipeline.api.server     # http://127.0.0.1:8000
+.venv\Scripts\python.exe verify_api.py                  # end to end, 9 criteria
+.venv\Scripts\python.exe run_all.py --fresh             # every stage, one report
 ```
+
+**The interpreter must be the one in `.venv`.** A bare `py -3.13` resolves to
+the system Python, which has none of the three dependencies and fails on the
+first import. Nothing needs to be running first: the server loads the caches
+under `data/` itself, and there is no database and no broker.
+
+`--host` and `--port` override the defaults, falling back to `HOST` and `PORT`
+from the environment. The default binds loopback only, so a demo is not also
+serving the internet; a container has to be told `0.0.0.0` explicitly.
 
 One process, an in-memory job table, a thread per run. Restarting loses jobs and
 loses nothing else: every stage's real output is on disk under its own manifest.
 One run per project at a time — two would race on the shared binder cache, whose
 writer unlinks the manifest before rewriting the payload.
+
+## Running it
+
+**Nothing has to be running first.** No database, no broker, no queue, no
+worker process. One command, and the caches under `data/` are read by the
+server itself.
+
+```
+cd C:\cart-platform
+.venv\Scripts\python.exe -m car_pipeline.api.server
+```
+
+`listening on http://127.0.0.1:8000`. A full screen takes about six minutes,
+almost all of it Stage 5 making one network call per pool member, so the
+machine needs to be online.
+
+To demo it in one command, without driving the endpoints by hand:
+
+```
+.venv\Scripts\python.exe verify_api.py
+```
+
+That starts a server on 8137, creates a project, submits a run, polls the job
+through each stage, checks nine criteria, and prints what the platform returns
+for this indication. It is the whole flow end to end and it needs no arguments.
+
+To drive it by hand against the server started above:
+
+```
+curl -s -X POST localhost:8000/projects -d "{\"cancer_type\":\"Pancreatic Ductal Adenocarcinoma\"}"
+curl -s -X POST localhost:8000/projects/<id>/runs
+curl -s localhost:8000/jobs/<job_id>            # poll until "complete"
+curl -s localhost:8000/projects/<id>/constructs
+```
 
 ## Job and poll, not request and response
 

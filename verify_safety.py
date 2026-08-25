@@ -31,7 +31,11 @@ PINNED_ORIGIN = {"Amatuximab": "chimeric", "Zolbetuximab": "chimeric"}
 def main() -> int:
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
-    records = stage5.retrieve(decisions, AntibodySource(), progress=False)
+    # As in the construct verifier: read what Stage 5 blessed rather than
+    # spending five minutes and 200 requests re-deriving it. The hash gates
+    # reuse on the configuration, not just the gene set.
+    records = stage5.load_or_retrieve(
+        decisions, AntibodySource(), manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
 
     surface, _ = load_surface()

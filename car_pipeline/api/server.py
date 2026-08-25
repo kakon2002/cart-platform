@@ -495,4 +495,30 @@ def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
 
 
 if __name__ == "__main__":
-    serve()
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(description="Serve the design platform.")
+    # 127.0.0.1 is the default on purpose: this binds only the loopback
+    # interface, so a laptop demo is not also serving the internet. A container
+    # has to be told 0.0.0.0 explicitly.
+    parser.add_argument("--host", default=os.environ.get("HOST") or "127.0.0.1")
+    # PORT from the environment because every managed container runtime assigns
+    # one and expects the process to honour it. Left as None here and resolved
+    # after parsing: converting the environment value while *building* the
+    # parser means an empty or malformed PORT raises an uncaught ValueError
+    # before argparse runs, so an explicit --port could not override it.
+    parser.add_argument("--port", type=int, default=None)
+    options = parser.parse_args()
+
+    port = options.port
+    if port is None:
+        raw = (os.environ.get("PORT") or "").strip()
+        if not raw:
+            port = 8000
+        elif raw.isdigit() and 0 < int(raw) < 65536:
+            port = int(raw)
+        else:
+            parser.error(f"PORT={raw!r} in the environment is not a port "
+                         "number; pass --port instead")
+    serve(options.host, port)

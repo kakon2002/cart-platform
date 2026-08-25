@@ -1,0 +1,39 @@
+loading every upstream stage
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    N1: a dominated point is excluded from the front
+  clear    N2: both non-dominated points are on the front
+  clear    N3: attrition accounts for 200 of 200
+  clear    N4: no weighted or summed score across objectives is emitted
+  clear    N5: status NO_DESIGN_REACHES_THE_END matches the survivor count 0
+  clear    N6: 200 rows against the 200 the Stage 4 manifest records
+========================================================================
+  6/6 criteria clear
+
+========================================================================
+WHERE THE TWO HUNDRED WENT
+========================================================================
+    blocked on normal tissue risk      - 199       1 remain
+    no design recommended              -   0       1 remain
+    no binder retrieved                -   1       0 remain
+    no construct assembled             -   0       0 remain
+    construct over budget              -   0       0 remain
+    reached the end                              0
+
+  ====================================================================
+  NO_DESIGN_REACHES_THE_END
+  ====================================================================
+    Reported as a status, not as an empty ranking. An empty table
+    reads as 'nothing ranked highly'; the true statement is that
+    nothing arrived to be ranked, and that difference is the whole
+    result of this pipeline for this indication.
+
+    Each drop above is a measurement, not a failure of the stage
+    that made it. The safety ceiling is Stage 1's and it is doing
+    what it exists for; the binder gap is a statement about the
+    literature; the budget overrun is arithmetic against a vector
+    capacity fixed before any of this ran.
+
+  configuration hash 5322084266633587

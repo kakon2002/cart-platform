@@ -1,0 +1,70 @@
+filter decisions
+  ok    entries: 20,431  reference 20,431  (0.00% off)
+  ok    surface: 3,466  reference 3,466  (0.00% off)
+  ok    single_pass: 1,446  reference 1,446  (0.00% off)
+  ok    multi_pass: 1,884  reference 1,884  (0.00% off)
+  ok    gpi_anchored: 136  reference 136  (0.00% off)
+
+withheld subdivision (reported, not gated)
+        internal_anchored: 1,362  reference 1,362  (0.00% off)
+        compartment_unresolved: 534  reference 534  (0.00% off)
+
+known targets that must survive
+  ok    MSLN       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    CD19       single_pass    tm=1  anchor=no  ectodomain=272 aa
+  ok    CD22       single_pass    tm=1  anchor=no  ectodomain=668 aa
+  ok    EGFR       single_pass    tm=1  anchor=no  ectodomain=621 aa
+  ok    ERBB2      single_pass    tm=1  anchor=no  ectodomain=630 aa
+  ok    CEACAM5    gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    EPCAM      single_pass    tm=1  anchor=no  ectodomain=242 aa
+  ok    PSCA       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    FOLH1      single_pass    tm=1  anchor=no  ectodomain=707 aa
+  ok    MUC1       single_pass    tm=1  anchor=no  ectodomain=1135 aa
+  ok    ROR1       single_pass    tm=1  anchor=no  ectodomain=377 aa
+  ok    GPC3       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    CD33       single_pass    tm=1  anchor=no  ectodomain=242 aa
+  ok    TNFRSF17   single_pass    tm=1  anchor=no  ectodomain=54 aa
+  ok    IL13RA2    single_pass    tm=1  anchor=no  ectodomain=317 aa
+  ok    L1CAM      single_pass    tm=1  anchor=no  ectodomain=1101 aa
+  ok    CLDN18     multi_pass     tm=4  anchor=no  ectodomain=84 aa
+  ok    TSHR       multi_pass     tm=7  anchor=no  ectodomain=439 aa
+  ok    DLL3       single_pass    tm=1  anchor=no  ectodomain=466 aa
+  ok    CD70       single_pass    tm=1  anchor=no  ectodomain=155 aa
+  ok    TACSTD2    single_pass    tm=1  anchor=no  ectodomain=248 aa
+  ok    NCAM1      gpi_anchored   tm=1  anchor=yes ectodomain=699 aa
+  ok    CD274      single_pass    tm=1  anchor=no  ectodomain=220 aa
+  ok    MET        single_pass    tm=1  anchor=no  ectodomain=908 aa
+  ok    ALPP       gpi_anchored   tm=1  anchor=yes ectodomain=unannotated
+  ok    CD52       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    CD59       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  ok    THY1       gpi_anchored   tm=0  anchor=yes ectodomain=unannotated
+  28/28 survived   expected 28
+
+negative controls that must not survive
+  ok    TP53       attached=False outward=False  rejected on: no anchor
+  ok    ACTB       attached=False outward=False  rejected on: no anchor
+  ok    GAPDH      attached=False outward=False  rejected on: no anchor
+  ok    TUBB       attached=False outward=False  rejected on: no anchor
+  ok    LMNA       attached=False outward=False  rejected on: no anchor
+  ok    CANX       attached=True  outward=False  rejected on: no outward face (topology)
+  ok    CALR       attached=False outward=True   rejected on: no anchor
+  ok    GOLGA2     attached=False outward=False  rejected on: no anchor
+  ok    SEC61A1    attached=True  outward=False  rejected on: no outward face (topology)
+  ok    RPN1       attached=True  outward=False  rejected on: no outward face (topology)
+  ok    GOLM1      attached=True  outward=False  rejected on: outward evidence only in a free-text note
+  ok    MTLN       attached=True  outward=False  rejected on: outward evidence only in a free-text note
+  12/12 rejected   expected 12
+
+rejection reasons
+  rejected on topology rather than anchor: ['CANX', 'RPN1', 'SEC61A1']   expected at least one of ['CANX', 'SEC61A1', 'RPN1']
+  rejected on the location-statement rule: ['GOLM1', 'MTLN']   expected ['GOLM1', 'MTLN']
+
+  held out, plasma-membrane evidence only in a note (14):
+    ABCA12, ASTN2, CHST15, GOLM1, IGF2R, MTLN, NSG1, NSG2, PGRMC1, PLSCR3, PMEL, REEP5, TMEM205, TMEM97
+    ASTN2 is the one to keep in view: its note reads "Integral membrane
+    protein not detected at the cell membrane", so the previous rule
+    admitted it on a sentence denying the thing it was matching.
+  CALR: outward=True attached=False   expected outward=True attached=False
+
+validation sets: pass
+filter decisions within 3% of the reference: yes

@@ -268,6 +268,66 @@ def write_binders(records: list["TargetBinders"], stage4_hash: str, root=None):
     return payload_path
 
 
+def load_or_retrieve(
+    decisions: list[dict],
+    source: "AntibodySource | None" = None,
+    stage4_hash: str | None = None,
+    root=None,
+) -> list["TargetBinders"]:
+    """The blessed cache if it belongs to this run, otherwise a fresh retrieval.
+
+    Retrieval makes one network call per pool member and takes about five
+    minutes. Every stage downstream of this one needs the same records, so a
+    driver that retrieves rather than reads pays that cost again and puts the
+    load on an external service a second and third time for nothing.
+
+    Two things have to match before the cache is usable, and the gene set is
+    only one of them. **The Stage 4 hash is the other, and it is the one that
+    catches a silent error:** changing a criticality override or the risk
+    ceiling changes the configuration hash while leaving the top-200 pool
+    identical, so a gene-set check alone would hand back binders retrieved
+    under the previous configuration and record the wrong provenance in every
+    artifact that chains from this one. ``stage4_hash`` is therefore required
+    to reuse a cache — omitting it means "retrieve", not "trust whatever is
+    on disk".
+
+    A pool or configuration change falls back to retrieval, because both are
+    ordinary events. A cache that fails its *integrity* check is not ordinary
+    and is re-raised: a truncated payload is an operator's problem, and
+    swallowing it here turns it into an unexplained five-minute pause and
+    leaves the bad artifact in place for the next stage to crash on.
+    """
+    from car_pipeline.data.source import CacheError
+
+    if stage4_hash is not None:
+        try:
+            records, manifest = read_binders(root=root)
+        except CacheError as exc:
+            # "no manifest" means nothing was ever written; anything else means
+            # something *was* written and does not survive its own checks.
+            if "no manifest" not in str(exc):
+                raise
+        except (TypeError, KeyError, ValueError) as exc:
+            # A payload that passed its digest but cannot be rebuilt: written
+            # under a layout this revision no longer understands. Recoverable
+            # by retrieving, but not silently — it means the manifest version
+            # was not bumped when the record shape changed.
+            print(f"  stage5 cache unreadable ({type(exc).__name__}: {exc}); "
+                  "retrieving instead")
+        else:
+            fresh = (
+                {r.gene for r in records} == {d["gene"] for d in decisions}
+                and manifest.get("stage4_hash") == stage4_hash
+            )
+            if fresh:
+                return records
+
+    records = retrieve(decisions, source, progress=False)
+    if stage4_hash is not None:
+        write_binders(records, stage4_hash, root=root)
+    return records
+
+
 def read_binders(root=None) -> tuple[list["TargetBinders"], dict]:
     """Rebuild the records, refusing a payload no manifest blesses."""
     from car_pipeline.data.source import CACHE_ROOT, CacheError

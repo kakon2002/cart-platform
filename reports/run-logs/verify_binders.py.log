@@ -1,0 +1,88 @@
+loading stage 4 decisions
+  200 decisions, stage4 hash 13939f3a4dad1de4, usable as a result: no
+  upstream tripped P15, P4, P7, P8 — this stage annotates them and does not treat them as settled
+retrieving binders
+    retrieved 25/200
+    retrieved 50/200
+    retrieved 75/200
+    retrieved 100/200
+    retrieved 125/200
+    retrieved 150/200
+    retrieved 175/200
+    retrieved 200/200
+
+========================================================================
+KNOWN-ANSWER CHECKS
+========================================================================
+  ok    MSLN      4 sequence binder(s); expected ['Amatuximab', 'Anetumab'] 
+  ok    CLDN18    11 sequence binder(s); expected ['Zolbetuximab'] 
+  ok    CEACAM5   5 sequence binder(s); expected ['Tusamitamab'] 
+  ok    CEACAM6   1 sequence binder(s); expected ['Tinurilimab'] 
+  ok    MUC1      3 sequence binder(s); expected ['Cantuzumab'] 
+
+  ok    MSLN      15 structure candidate(s) over 8 entries; expected ['4f3f', '7ued', '8cxc', '8cz8']
+  ok    CLDN18    4 structure candidate(s) over 3 entries; expected ['9v32']
+
+  ok    CEACAM6   6 entries, 0 structure candidate(s); expected 0
+  ok    NRG3      0 entries, 0 structure candidate(s); expected 0
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    B1: 73 targets have entries but no antibody among them (an inert stage would have none); 6 of 127 with entries echo their count
+  clear    B3: known answers hold: 5 sequence targets, 2 pinned structure targets, 2 documented negatives, and CEACAM5 at 1 structure entries of 6 (expected 1)
+  clear    B8: 5 of 5 known targets return a binder on some route
+  clear    B5: 0 candidates carry an affinity value (the source does not have one)
+  clear    B7: pool order carried through unchanged
+  clear    B13: 200 records out of 200 decisions in; 0 genes dropped, 0 added
+  clear    B11: 0 candidates claim a resolved isoform (neither route can determine one)
+========================================================================
+  7/7 criteria clear
+
+========================================================================
+WHAT THE LITERATURE HOLDS FOR THIS POOL
+========================================================================
+    STRUCTURE_AND_SEQUENCE     18  (9%)
+    BINDER_STRUCTURE_ONLY      36  (18%)
+    BINDER_SEQUENCE_ONLY       12  (6%)
+    NO_BINDER                 134  (67%)
+
+    targets with entries but no antibody in any of them: 73
+    That gap is the point: a protein having been crystallised is not
+    the same as a binder existing against it, and only the curated
+    chain annotation separates the two.
+
+  The two validation targets in full
+  --------------------------------------------------------------------
+    MSLN (Q13421) — STRUCTURE_AND_SEQUENCE, Stage 4 outcome NO_DESIGN
+      12 entries, 15 antibody complexes
+      Amatuximab       Phase-II     Discontinued   VH 119 VL 106 aa  scFv 720 bp
+      Anetumab         Phase-II     Discontinued   VH 120 VL 111 aa  scFv 738 bp
+      Inezetamab       Phase-I      Active         VH 120 VL 111 aa  scFv 738 bp
+      Misitatug        Phase-II     Active         VH 124 VL 106 aa  scFv 735 bp
+
+    CLDN18 (P56856) — STRUCTURE_AND_SEQUENCE, Stage 4 outcome DUAL
+      3 entries, 4 antibody complexes
+      Ciletatug        Phase-I/II   Active         VH 119 VL 113 aa  scFv 741 bp
+      Garetatug        TBC          TBC            VH 118 VL 113 aa  scFv 738 bp
+      Givastomig       Phase-I      Active         VH 120 VL 113 aa  scFv 744 bp
+      Gresonitamab     Phase-I      Discontinued   VH 125 VL 107 aa  scFv 741 bp
+      Omectatug        Phase-III    Active         VH 118 VL 113 aa  scFv 738 bp
+      Osemitamab       Phase-II     Active         VH 118 VL 113 aa  scFv 738 bp
+      Sonesitatug      Phase-III    Active         VH 118 VL 113 aa  scFv 738 bp
+      Spevatamig       Phase-I/II   Active         VH 114 VL 107 aa  scFv 708 bp
+      Tecotabart       Phase-I/II   Active         VH 119 VL 113 aa  scFv 741 bp
+      Tixentamig       TBC          TBC            VH 125 VL 109 aa  scFv 747 bp
+      Zolbetuximab     Approved     Active         VH 118 VL 113 aa  scFv 738 bp
+
+  Known targets, all routes
+  --------------------------------------------------------------------
+    CEACAM5   STRUCTURE_AND_SEQUENCE   entries   6  structure   1  sequence   5
+    CEACAM6   BINDER_SEQUENCE_ONLY     entries   6  structure   0  sequence   1
+    CLDN18    STRUCTURE_AND_SEQUENCE   entries   3  structure   4  sequence  11
+    MSLN      STRUCTURE_AND_SEQUENCE   entries  12  structure  15  sequence   4
+    MUC1      STRUCTURE_AND_SEQUENCE   entries  23  structure  29  sequence   3
+
+  binders written to C:\cart-platform\data\stage5\binders.json
+  configuration hash ff56844b012fdb34
+  affinity: NOT_CONNECTED for every candidate, and that is measured

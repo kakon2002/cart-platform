@@ -1,0 +1,656 @@
+{
+  "clear": 98,
+  "total": 103,
+  "minutes": 6.9,
+  "fresh": true,
+  "report": "reports/full-run.md",
+  "accepted": {
+    "3/R13": "Withdrawn. The two populations differ by construction (breadth 51 vs 7) and the max-over-sources gate rewards being unmeasured, so no combination rule reaches the 5x limit. Replaced by R13-prime, which clears.",
+    "4/P4": "Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.",
+    "4/P7": "One cleared pair contains HLA-A. Recorded rather than filtered, because the pool is not curated by hand.",
+    "4/P8": "48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.",
+    "4/P15": "Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision."
+  },
+  "unexpected": [],
+  "stale": [],
+  "api": [
+    "    GET /constructs -> NO_BUILDABLE_CONSTRUCT",
+    "      - Conservative safety tolerance mandates a safety switch (1308 bp).",
+    "      - The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.",
+    "      - Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.",
+    "      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.",
+    "    GET /result     -> NO_DESIGN_REACHES_THE_END",
+    "      blocked on normal tissue risk      - 199     1 remain",
+    "      no design recommended              -   0     1 remain",
+    "      no binder retrieved                -   1     0 remain",
+    "      no construct assembled             -   0     0 remain",
+    "      construct over budget              -   0     0 remain"
+  ],
+  "stages": [
+    {
+      "number": "1",
+      "name": "Design spec",
+      "clear": 31,
+      "total": 31,
+      "ok": true,
+      "seconds": 0.5,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "check 1",
+          "tripped": false,
+          "detail": "discovery_mode \u2014 got 'B', expected 'B'"
+        },
+        {
+          "id": "check 2",
+          "tripped": false,
+          "detail": "target_antigen \u2014 got None, expected None"
+        },
+        {
+          "id": "check 3",
+          "tripped": false,
+          "detail": "cancer_type \u2014 got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'"
+        },
+        {
+          "id": "check 4",
+          "tripped": false,
+          "detail": "malignancy_type \u2014 got 'solid', expected 'solid'"
+        },
+        {
+          "id": "check 5",
+          "tripped": false,
+          "detail": "product_type \u2014 got 'autologous', expected 'autologous'"
+        },
+        {
+          "id": "check 6",
+          "tripped": false,
+          "detail": "car_format \u2014 got 'auto', expected 'auto'"
+        },
+        {
+          "id": "check 7",
+          "tripped": false,
+          "detail": "safety_tolerance \u2014 got 'conservative', expected 'conservative'"
+        },
+        {
+          "id": "check 8",
+          "tripped": false,
+          "detail": "vector_payload_limit_kb \u2014 got 4.7, expected 4.7"
+        },
+        {
+          "id": "check 9",
+          "tripped": false,
+          "detail": "max_genetic_edits \u2014 got 2, expected 2"
+        },
+        {
+          "id": "check 10",
+          "tripped": false,
+          "detail": "pancreas override tier \u2014 got 2, expected 2"
+        },
+        {
+          "id": "check 11",
+          "tripped": false,
+          "detail": "mistyped field rejected \u2014 got True, expected True"
+        },
+        {
+          "id": "check 12",
+          "tripped": false,
+          "detail": "blank antigen -> None \u2014 got None, expected None"
+        },
+        {
+          "id": "check 13",
+          "tripped": false,
+          "detail": "blank antigen -> mode B \u2014 got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>"
+        },
+        {
+          "id": "check 14",
+          "tripped": false,
+          "detail": "supplied antigen -> mode A \u2014 got 'A', expected 'A'"
+        },
+        {
+          "id": "check 15",
+          "tripped": false,
+          "detail": "blank cancer_type rejected \u2014 got True, expected True"
+        },
+        {
+          "id": "check 16",
+          "tripped": false,
+          "detail": "override without rationale rejected \u2014 got True, expected True"
+        },
+        {
+          "id": "check 17",
+          "tripped": false,
+          "detail": "spec discovery_mode \u2014 got 'B', expected 'B'"
+        },
+        {
+          "id": "check 18",
+          "tripped": false,
+          "detail": "datasets \u2014 got 10, expected 10"
+        },
+        {
+          "id": "check 19",
+          "tripped": false,
+          "detail": "blocking datasets \u2014 got 8, expected 8"
+        },
+        {
+          "id": "check 20",
+          "tripped": false,
+          "detail": "construct budget kb \u2014 got 3.5, expected 3.5"
+        },
+        {
+          "id": "check 21",
+          "tripped": false,
+          "detail": "safety switch required \u2014 got True, expected True"
+        },
+        {
+          "id": "check 22",
+          "tripped": false,
+          "detail": "risk ceiling \u2014 got 0.15, expected 0.15"
+        },
+        {
+          "id": "check 23",
+          "tripped": false,
+          "detail": "allowed formats \u2014 got 5, expected 5"
+        },
+        {
+          "id": "check 24",
+          "tripped": false,
+          "detail": "auto excluded \u2014 got True, expected True"
+        },
+        {
+          "id": "check 25",
+          "tripped": false,
+          "detail": "spec target_antigen \u2014 got None, expected None"
+        },
+        {
+          "id": "check 26",
+          "tripped": false,
+          "detail": "unresolved availability score \u2014 got 0.0, expected 0.0"
+        },
+        {
+          "id": "check 27",
+          "tripped": false,
+          "detail": "resolved availability score \u2014 got 0.75, expected 0.75"
+        },
+        {
+          "id": "check 28",
+          "tripped": false,
+          "detail": "validation datasets \u2014 got 7, expected 7"
+        },
+        {
+          "id": "check 29",
+          "tripped": false,
+          "detail": "validation blocking \u2014 got 5, expected 5"
+        },
+        {
+          "id": "check 30",
+          "tripped": false,
+          "detail": "input not mutated by build \u2014 got None, expected None"
+        },
+        {
+          "id": "check 31",
+          "tripped": false,
+          "detail": "project id unique \u2014 got True, expected True"
+        }
+      ]
+    },
+    {
+      "number": "2",
+      "name": "Surface proteome",
+      "clear": 2,
+      "total": 2,
+      "ok": true,
+      "seconds": 0.5,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "validation sets",
+          "tripped": false,
+          "detail": "pass"
+        },
+        {
+          "id": "count drift",
+          "tripped": false,
+          "detail": "yes"
+        }
+      ]
+    },
+    {
+      "number": "3",
+      "name": "Target discovery",
+      "clear": 12,
+      "total": 13,
+      "ok": false,
+      "seconds": 19.9,
+      "exit": 1,
+      "criteria": [
+        {
+          "id": "R1",
+          "tripped": false,
+          "detail": "outside top decile: none"
+        },
+        {
+          "id": "R2",
+          "tripped": false,
+          "detail": "cleared the ceiling: none (across 4 accessions)"
+        },
+        {
+          "id": "R3",
+          "tripped": false,
+          "detail": "CEACAM5 composite=0.8769 measured_weight=0.55 tier_rank=1"
+        },
+        {
+          "id": "R4",
+          "tripped": false,
+          "detail": "non-surface entries present: 0"
+        },
+        {
+          "id": "R5",
+          "tripped": false,
+          "detail": "highest |rho| tumour_vs_normal=0.815 (over measured targets only)"
+        },
+        {
+          "id": "R6",
+          "tripped": false,
+          "detail": "worst retention 94% at malignant_expression x0.8"
+        },
+        {
+          "id": "R7",
+          "tripped": false,
+          "detail": "cleared 646 of 3,466"
+        },
+        {
+          "id": "R8",
+          "tripped": false,
+          "detail": "most repeated composite 0.1273 occurs 17x (0.50%)"
+        },
+        {
+          "id": "R9",
+          "tripped": false,
+          "detail": "best unresolved None vs best protein-confirmed 0.8769"
+        },
+        {
+          "id": "R10",
+          "tripped": false,
+          "detail": "0 of 100 reached only after a symbol failed"
+        },
+        {
+          "id": "R11",
+          "tripped": false,
+          "detail": "22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread"
+        },
+        {
+          "id": "R12",
+          "tripped": false,
+          "detail": "worst retention 82% at c3_fold x0.5"
+        },
+        {
+          "id": "R13",
+          "tripped": true,
+          "detail": "clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x"
+        }
+      ]
+    },
+    {
+      "number": "4",
+      "name": "Target pairing",
+      "clear": 10,
+      "total": 14,
+      "ok": false,
+      "seconds": 8.9,
+      "exit": 2,
+      "criteria": [
+        {
+          "id": "P1",
+          "tripped": false,
+          "detail": "combined risk vs min of members, rho=0.7926 (limit 0.95)"
+        },
+        {
+          "id": "P2",
+          "tripped": false,
+          "detail": "6,328 of 19,900 (31.80%) beat the better member by more than 0.05 (limit 1%)"
+        },
+        {
+          "id": "P3",
+          "tripped": false,
+          "detail": "99 blocked targets rescued by some pair: ACSL5, ADAM9, ADGRF1, AMIGO2, AMN, ANO1, ANTXR1, AQP5"
+        },
+        {
+          "id": "P4",
+          "tripped": true,
+          "detail": "f_AB vs f_A x f_B over 14,535 measured pairs, rho=0.9934 (limit 0.98)"
+        },
+        {
+          "id": "P5",
+          "tripped": false,
+          "detail": "0 pairs marked cleared on the optimistic arm"
+        },
+        {
+          "id": "P6",
+          "tripped": false,
+          "detail": "0 recommended pairs are unmeasured"
+        },
+        {
+          "id": "P7",
+          "tripped": true,
+          "detail": "1 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['NPSR1+HLA-A']"
+        },
+        {
+          "id": "P8",
+          "tripped": true,
+          "detail": "108 of 222 cleared pairs (48.6%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)"
+        },
+        {
+          "id": "P10",
+          "tripped": false,
+          "detail": "0 targets recommended dual despite clearing alone"
+        },
+        {
+          "id": "P11",
+          "tripped": false,
+          "detail": "outcome spread {'NO_DESIGN': 185, 'DUAL': 13, 'UNRESOLVED': 1, 'SINGLE': 1}, largest 92.5% (limit 95%)"
+        },
+        {
+          "id": "P12",
+          "tripped": false,
+          "detail": "4 of 13 dual recommendations change at 2 counts (30.8%, limit 50%)"
+        },
+        {
+          "id": "P13",
+          "tripped": false,
+          "detail": "most common partner takes 38.5% of dual recommendations (LAMP5)"
+        },
+        {
+          "id": "P14",
+          "tripped": false,
+          "detail": "top pair is NPSR1+PTPRN2, top two singles are CEACAM5+TMC5"
+        },
+        {
+          "id": "P15",
+          "tripped": true,
+          "detail": "pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)"
+        }
+      ]
+    },
+    {
+      "number": "5",
+      "name": "Binder discovery",
+      "clear": 7,
+      "total": 7,
+      "ok": true,
+      "seconds": 366.6,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "B1",
+          "tripped": false,
+          "detail": "73 targets have entries but no antibody among them (an inert stage would have none); 6 of 127 with entries echo their count"
+        },
+        {
+          "id": "B3",
+          "tripped": false,
+          "detail": "known answers hold: 5 sequence targets, 2 pinned structure targets, 2 documented negatives, and CEACAM5 at 1 structure entries of 6 (expected 1)"
+        },
+        {
+          "id": "B8",
+          "tripped": false,
+          "detail": "5 of 5 known targets return a binder on some route"
+        },
+        {
+          "id": "B5",
+          "tripped": false,
+          "detail": "0 candidates carry an affinity value (the source does not have one)"
+        },
+        {
+          "id": "B7",
+          "tripped": false,
+          "detail": "pool order carried through unchanged"
+        },
+        {
+          "id": "B13",
+          "tripped": false,
+          "detail": "200 records out of 200 decisions in; 0 genes dropped, 0 added"
+        },
+        {
+          "id": "B11",
+          "tripped": false,
+          "detail": "0 candidates claim a resolved isoform (neither route can determine one)"
+        }
+      ]
+    },
+    {
+      "number": "6",
+      "name": "Construct assembly",
+      "clear": 8,
+      "total": 8,
+      "ok": true,
+      "seconds": 0.6,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "K1",
+          "tripped": false,
+          "detail": "2 constructs translate back to their own sequence"
+        },
+        {
+          "id": "K2",
+          "tripped": false,
+          "detail": "2 constructs carry their binders verbatim, including the pinned MUC16, MUC17"
+        },
+        {
+          "id": "K3",
+          "tripped": false,
+          "detail": "domain boundaries partition every construct exactly"
+        },
+        {
+          "id": "K4",
+          "tripped": false,
+          "detail": "every part of every construct names its source (19 parts in the first construct)"
+        },
+        {
+          "id": "K5",
+          "tripped": false,
+          "detail": "part costs sum to the printed total for every construct"
+        },
+        {
+          "id": "K6",
+          "tripped": false,
+          "detail": "every buildable construct carries the mandatory safety switch"
+        },
+        {
+          "id": "K7",
+          "tripped": false,
+          "detail": "every owed construct was built and none was built without a binder; 26 targets have a binder but no recommendation (\u00a75.1)"
+        },
+        {
+          "id": "K8",
+          "tripped": false,
+          "detail": "200 rows and 200 distinct genes against the 200 the Stage 4 manifest records"
+        }
+      ]
+    },
+    {
+      "number": "9",
+      "name": "Safety gate",
+      "clear": 7,
+      "total": 7,
+      "ok": true,
+      "seconds": 3.9,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "S1",
+          "tripped": false,
+          "detail": "registry returns trials for both pins (MSLN=169, CLDN18=3)"
+        },
+        {
+          "id": "S2",
+          "tripped": false,
+          "detail": "pinned names classify as expected (Amatuximab=chimeric, Zolbetuximab=chimeric)"
+        },
+        {
+          "id": "S3",
+          "tripped": false,
+          "detail": "every target with a binder carries a Stage 3 risk"
+        },
+        {
+          "id": "S4",
+          "tripped": false,
+          "detail": "no target over the ceiling escapes BLOCKED"
+        },
+        {
+          "id": "S5",
+          "tripped": false,
+          "detail": "epitope immunogenicity is NOT_CONNECTED on every row"
+        },
+        {
+          "id": "S6",
+          "tripped": false,
+          "detail": "200 rows and 200 distinct genes against the 200 the Stage 4 manifest records"
+        },
+        {
+          "id": "S7",
+          "tripped": false,
+          "detail": "every target with stopped trials is flagged or blocked"
+        }
+      ]
+    },
+    {
+      "number": "10",
+      "name": "Developability",
+      "clear": 6,
+      "total": 6,
+      "ok": true,
+      "seconds": 0.6,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "D1",
+          "tripped": false,
+          "detail": "poly-K pI 11.463, poly-E pI 2.623 \u2014 the charge model orders the two known answers correctly"
+        },
+        {
+          "id": "D2",
+          "tripped": false,
+          "detail": "NST yields 1 sequon, NPT yields 0 \u2014 the proline exclusion holds"
+        },
+        {
+          "id": "D3",
+          "tripped": false,
+          "detail": "a 3-cysteine control reports parity 'odd', and never 'unpaired: 0'"
+        },
+        {
+          "id": "D4",
+          "tripped": false,
+          "detail": "every scored binder has a pI in 1..14 and 0..5 flags"
+        },
+        {
+          "id": "D5",
+          "tripped": false,
+          "detail": "113 rows against 113 binders carrying a sequence"
+        },
+        {
+          "id": "D6",
+          "tripped": false,
+          "detail": "no liability is summed into a single score; flags are counted and listed"
+        }
+      ]
+    },
+    {
+      "number": "11",
+      "name": "Final ranking",
+      "clear": 6,
+      "total": 6,
+      "ok": true,
+      "seconds": 4.0,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "N1",
+          "tripped": false,
+          "detail": "a dominated point is excluded from the front"
+        },
+        {
+          "id": "N2",
+          "tripped": false,
+          "detail": "both non-dominated points are on the front"
+        },
+        {
+          "id": "N3",
+          "tripped": false,
+          "detail": "attrition accounts for 200 of 200"
+        },
+        {
+          "id": "N4",
+          "tripped": false,
+          "detail": "no weighted or summed score across objectives is emitted"
+        },
+        {
+          "id": "N5",
+          "tripped": false,
+          "detail": "status NO_DESIGN_REACHES_THE_END matches the survivor count 0"
+        },
+        {
+          "id": "N6",
+          "tripped": false,
+          "detail": "200 rows against the 200 the Stage 4 manifest records"
+        }
+      ]
+    },
+    {
+      "number": "API",
+      "name": "HTTP surface",
+      "clear": 9,
+      "total": 9,
+      "ok": true,
+      "seconds": 10.9,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "A1",
+          "tripped": false,
+          "detail": "project created (201), target_antigen None and discovery mode B"
+        },
+        {
+          "id": "A2",
+          "tripped": false,
+          "detail": "a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list"
+        },
+        {
+          "id": "A3",
+          "tripped": false,
+          "detail": "a run returns 202 with job d5be32d25c38 rather than blocking"
+        },
+        {
+          "id": "A4",
+          "tripped": false,
+          "detail": "job finished complete after stages ['sources', 'pairing', 'ranking']"
+        },
+        {
+          "id": "A5",
+          "tripped": false,
+          "detail": "zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows"
+        },
+        {
+          "id": "A6",
+          "tripped": false,
+          "detail": "end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200"
+        },
+        {
+          "id": "A7",
+          "tripped": false,
+          "detail": "top target CEACAM5 with a 6-component breakdown"
+        },
+        {
+          "id": "A8",
+          "tripped": false,
+          "detail": "pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)"
+        },
+        {
+          "id": "A9",
+          "tripped": false,
+          "detail": "evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11"
+        }
+      ]
+    }
+  ]
+}

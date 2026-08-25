@@ -112,17 +112,10 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     s4_hash = stage4.configuration_hash(s3_hash, [r.gene for r in pool])
 
     progress("binders", "retrieving binders")
-    try:
-        records, _bm = stage5.read_binders()
-        cached_genes = {r.gene for r in records}
-        if cached_genes != {d["gene"] for d in decisions}:
-            raise ValueError("pool changed")
-    except Exception:
-        records = stage5.retrieve(decisions, AntibodySource(), progress=False)
-        # The Stage 4 hash, which is the slot this artifact records and what
-        # every downstream hash chains from. Writing the Stage 3 hash here would
-        # corrupt the provenance of a cache three other drivers read.
-        stage5.write_binders(records, s4_hash)
+    # The Stage 4 hash, which is the slot this artifact records and what every
+    # downstream hash chains from. Passing the Stage 3 hash here would corrupt
+    # the provenance of a cache three other drivers read.
+    records = stage5.load_or_retrieve(decisions, AntibodySource(), s4_hash)
     binders = {r.gene: r for r in records}
 
     progress("constructs", "assembling")

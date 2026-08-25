@@ -1,0 +1,34 @@
+  ok    discovery_mode: got 'B'  expected 'B'
+  ok    target_antigen: got None  expected None
+  ok    cancer_type: got 'Pancreatic Ductal Adenocarcinoma'  expected 'Pancreatic Ductal Adenocarcinoma'
+  ok    malignancy_type: got 'solid'  expected 'solid'
+  ok    product_type: got 'autologous'  expected 'autologous'
+  ok    car_format: got 'auto'  expected 'auto'
+  ok    safety_tolerance: got 'conservative'  expected 'conservative'
+  ok    vector_payload_limit_kb: got 4.7  expected 4.7
+  ok    max_genetic_edits: got 2  expected 2
+  ok    pancreas override tier: got 2  expected 2
+  ok    mistyped field rejected: got True  expected True
+  ok    blank antigen -> None: got None  expected None
+  ok    blank antigen -> mode B: got <DiscoveryMode.DISCOVER: 'B'>  expected <DiscoveryMode.DISCOVER: 'B'>
+  ok    supplied antigen -> mode A: got 'A'  expected 'A'
+  ok    blank cancer_type rejected: got True  expected True
+  ok    override without rationale rejected: got True  expected True
+  ok    spec discovery_mode: got 'B'  expected 'B'
+  ok    datasets: got 10  expected 10
+  ok    blocking datasets: got 8  expected 8
+  ok    construct budget kb: got 3.5  expected 3.5
+  ok    safety switch required: got True  expected True
+  ok    risk ceiling: got 0.15  expected 0.15
+  ok    allowed formats: got 5  expected 5
+  ok    auto excluded: got True  expected True
+  ok    spec target_antigen: got None  expected None
+  ok    unresolved availability score: got 0.0  expected 0.0
+  ok    resolved availability score: got 0.75  expected 0.75
+  ok    validation datasets: got 7  expected 7
+  ok    validation blocking: got 5  expected 5
+  ok    input not mutated by build: got None  expected None
+  ok    project id unique: got True  expected True
+
+discovery mode: B   expected: B
+checks passed: 31/31

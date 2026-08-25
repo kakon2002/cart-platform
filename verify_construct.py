@@ -29,7 +29,15 @@ def main() -> int:
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
     source = AntibodySource()
-    records = stage5.retrieve(decisions, source, progress=False)
+    # The cache Stage 5 wrote, not a second retrieval: this is the path the
+    # API takes, so the join under test here is the real one. The hash is
+    # what makes reuse safe, and passing it also persists the records when
+    # the cache is cold, so the next verifier does not retrieve them again.
+    #
+    # The live-route check this used to carry now lives in verify_binders,
+    # which run_all runs first and which retrieves for real.
+    records = stage5.load_or_retrieve(
+        decisions, source, manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
     stage5_hash = stage5.configuration_hash(
         manifest["stage4_hash"], [r.gene for r in records])
