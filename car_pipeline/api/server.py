@@ -37,6 +37,22 @@ PROJECTS: dict[str, dict] = {}
 JOBS: dict[str, dict] = {}
 RESULTS: dict[str, dict] = {}
 
+#: How many completed runs to keep. A result holds the ranked surface proteome
+#: and 19,900 evaluated pairs, so this is the difference between a bounded
+#: process and one whose memory grows with every caller. The endpoint is open,
+#: the single instance has nowhere to shed load, and without a cap a caller
+#: creating projects in a loop takes it out of memory — at which point the job
+#: table dies with it and every outstanding poll answers 404.
+#:
+#: Oldest first, and never the run currently in flight.
+MAX_RESULTS = 8
+
+
+def _evict_results() -> None:
+    """Drop the oldest completed runs beyond MAX_RESULTS. Call under _LOCK."""
+    while len(RESULTS) > MAX_RESULTS:
+        RESULTS.pop(next(iter(RESULTS)))
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -73,16 +89,25 @@ def start_run(project_id: str) -> dict:
     with _LOCK:
         if project_id not in PROJECTS:
             raise KeyError(project_id)
-        # One at a time. Two runs would race on RESULTS and on the shared binder
-        # cache, whose writer unlinks the manifest before rewriting the payload —
-        # a reader between those two steps sees an unblessed artifact.
+        # One run at a time **across the whole process**, not per project.
+        #
+        # Per-project was not enough and could not be fixed by deployment. A run
+        # is a detached thread: the request returns 202 in milliseconds, so a
+        # request-concurrency limit never sees two runs overlap and cannot
+        # serialise them. Two *different* projects would each start a thread,
+        # both would write the shared binder cache, and its writer replaces the
+        # payload before the manifest — a reader landing between those two steps
+        # gets an artifact nothing blessed.
         running = [j for j in JOBS.values()
-                   if j["project_id"] == project_id
-                   and j["status"] in ("queued", "running")]
+                   if j["status"] in ("queued", "running")]
         if running:
+            other = running[0]
+            same = other["project_id"] == project_id
             raise RuntimeError(
-                f"run {running[0]['job_id']} is already {running[0]['status']} "
-                "for this project"
+                f"run {other['job_id']} is already {other['status']}"
+                + (" for this project" if same else
+                   f" for project {other['project_id']}; the pipeline writes a "
+                   "shared cache and runs one at a time")
             )
         job_id = uuid.uuid4().hex[:12]
         job = {
@@ -102,7 +127,11 @@ def start_run(project_id: str) -> dict:
         try:
             result = pipeline.run(PROJECTS[project_id]["cancer_type"], progress)
             with _LOCK:
+                # Re-inserted rather than updated in place, so the eviction
+                # order below is genuinely least-recently-completed.
+                RESULTS.pop(project_id, None)
                 RESULTS[project_id] = result
+                _evict_results()
                 job["status"] = "complete"
                 job["stage"] = "ranking"
                 job["note"] = result["status"]

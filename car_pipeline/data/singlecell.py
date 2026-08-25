@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -30,7 +31,8 @@ from typing import Iterable
 import h5py
 import numpy as np
 
-from car_pipeline.data.source import CacheEntry, DataSource, stream_to_file
+from car_pipeline.data.source import (
+    CacheEntry, CacheError, DataSource, stream_to_file)
 
 SERIES = "GSE202051"
 ARCHIVE = f"{SERIES}_totaldata-final-toshare.h5ad.gz"
@@ -147,10 +149,25 @@ class SingleCellSource(DataSource):
 
         return self.cache.ensure(entry, fetcher)
 
+    #: Set where recovering the matrix is not an option — a container that ships
+    #: only the derived summaries. Fetching the archive there would download
+    #: 2.6 GB and expand it to 8.3 GB onto an in-memory filesystem, so the
+    #: instance is killed mid-job instead of reporting anything.
+    OFFLINE_ENV = "CART_NO_MATRIX_FETCH"
+
     def matrix_path(self) -> Path:
         entry = self._entry("matrix")
         if self.cache.is_valid(entry):
             return self.cache.path(entry)
+
+        if os.environ.get(self.OFFLINE_ENV):
+            raise CacheError(
+                "the single-cell matrix is absent and this deployment cannot "
+                "fetch it. The derived summaries under data/singlecell cover "
+                "one gene pool; a different indication changes the pool digest "
+                "and needs the matrix, which must be materialised ahead of "
+                "time rather than downloaded here. See specs/deployment.md."
+            )
 
         source = self.archive_path()
 
