@@ -1,0 +1,32 @@
+# What `gcloud run deploy --source .` uploads as the build context.
+#
+# THIS FILE MUST EXIST. Without it gcloud generates a default that pulls in
+# `.gitignore`, and `.gitignore` excludes `/data/` — the 648 MB of caches, none
+# of which is tracked in git. The upload would carry no `data/` at all and the
+# build would fail at `COPY data/ ./data/` with "not found". The cache is
+# deliberately untracked and deliberately deployed, and this file is the only
+# place those two facts are reconciled.
+
+.git/
+.gitignore
+.gitattributes
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.claude/
+.env
+
+# The two files that make data/ 11 GB instead of 648 MB. Same reasoning as
+# .dockerignore, applied one layer earlier: excluded here they are never
+# uploaded, so the build context stays small as well as the image.
+data/singlecell/*.h5ad
+data/singlecell/*.h5ad.gz
+
+# Outputs and local tooling. None of it runs in the container.
+reports/
+specs/
+run_all.py
+make_artifact.py
+verify_*.py
+deploy.ps1

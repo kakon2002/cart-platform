@@ -1,0 +1,28 @@
+# The two files that make data/ 11 GB instead of 648 MB.
+#
+# The expanded single-cell matrix is a build-time input: the loader goes
+# through cache.ensure() and returns the cached group_means.npz whenever the
+# fingerprint matches, so a service that never invalidates those fingerprints
+# never opens it. The .gz beside it is the archive the matrix was expanded
+# from and is redundant once it has been.
+#
+# This holds for ONE indication. The malignant-cells fingerprint includes a
+# digest of the gene set, so a different cancer type produces a different pool,
+# a cache miss, and this file back in the serving path. See specs/deployment.md.
+data/singlecell/*.h5ad
+data/singlecell/*.h5ad.gz
+
+.venv/
+.git/
+.gitattributes
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Outputs, not inputs. The run report and the per-stage transcripts describe a
+# run on the build machine and would be misleading inside the image.
+reports/
+run_all.py
+make_artifact.py
+verify_*.py
+specs/
