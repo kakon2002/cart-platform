@@ -1,0 +1,73 @@
+loading upstream
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    S1: registry returns trials for both pins (MSLN=169, CLDN18=3)
+  clear    S2: pinned names classify as expected (Amatuximab=chimeric, Zolbetuximab=chimeric)
+  clear    S3: every target with a binder carries a Stage 3 risk
+  clear    S4: no target over the ceiling escapes BLOCKED
+  clear    S5: epitope immunogenicity is NOT_CONNECTED on every row
+  clear    S6: 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
+  clear    S7: every target with stopped trials is flagged or blocked
+========================================================================
+  7/7 criteria clear
+
+========================================================================
+WHAT THE GATE SAYS
+========================================================================
+    PASSES_STATED_CHECKS      0  (0%)
+    FLAGGED                   0  (0%)
+    BLOCKED                 199  (100%)
+    NO_GATE                   1  (0%)
+
+  WHICH QUESTIONS THIS RUN ACTUALLY EXERCISED
+  --------------------------------------------------------------------
+    reached the immunogenicity and trials questions   0 of 200
+    stopped at carried Stage 3 risk                   199
+    stopped for want of a binder                      1
+
+    So this gate's own two questions decided nothing here. Every
+    target was settled by the risk Stage 3 already measured, which
+    is the correct precedence and leaves the new logic untested on
+    live data. S7 passes vacuously and should be read that way.
+    S2 does not: it pins the origin rule against known names rather
+    than against this run's output, which is why it still has force.
+
+    The origin table below is computed for every target carrying a
+    binder, including blocked ones, so it is measured rather than
+    vacuous — it simply did not change any verdict.
+
+    PASSES_STATED_CHECKS is not a safety claim. It means three named
+    questions failed to show a problem, and one of them — epitope-level
+    immunogenicity — was not asked at all.
+
+  The five known targets
+  --------------------------------------------------------------------
+    CEACAM5   BLOCKED                risk  0.6000 (gi_tract) binder Cergutuzumab, Cibisatamab, Labetuzumab [ORIGIN_UNKNOWN]
+      trials  342, stopped 28
+      - Stage 3 risk 0.6000 exceeds the ceiling 0.15 (peak organ gi_tract)
+    CEACAM6   BLOCKED                risk  0.8135 (lung) binder Tinurilimab [ORIGIN_UNKNOWN]
+      trials    2, stopped 0
+      - Stage 3 risk 0.8135 exceeds the ceiling 0.15 (peak organ lung)
+    CLDN18    BLOCKED                risk  0.7271 (lung) binder Ciletatug, Garetatug, Givastomig [chimeric]
+      trials    3, stopped 0
+      - Stage 3 risk 0.7271 exceeds the ceiling 0.15 (peak organ lung)
+    MSLN      BLOCKED                risk  0.6366 (lung) binder Amatuximab, Anetumab, Inezetamab [chimeric]
+      trials  169, stopped 33
+      - Stage 3 risk 0.6366 exceeds the ceiling 0.15 (peak organ lung)
+    MUC1      BLOCKED                risk  0.9215 (liver) binder Cantuzumab, Clivatuzumab, Gatipotuzumab [humanised]
+      trials  492, stopped 26
+      - Stage 3 risk 0.9215 exceeds the ceiling 0.15 (peak organ liver)
+
+  Binder origin across targets that have one, read from the name stem
+    ORIGIN_UNKNOWN           17
+    chimeric                  5
+    murine                    4
+    humanised                 2
+    human                     2
+    A naming convention, not a sequence measurement. Stage 5 records
+    humanisation_state NOT_CONNECTED from the deposited taxonomy; this
+    is a second, equally indirect reading reported beside it.
+
+  configuration hash 1e5b18939222964b

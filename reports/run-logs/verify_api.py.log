@@ -1,0 +1,37 @@
+  server up on http://127.0.0.1:8137
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    A1: project created (201), target_antigen None and discovery mode B
+  clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
+  clear    A3: a run returns 202 with job d5be32d25c38 rather than blocking
+
+  polling
+    running   sources  loading cached sources
+    running   pairing  evaluating pairs
+    complete  ranking  NO_DESIGN_REACHES_THE_END
+  clear    A4: job finished complete after stages ['sources', 'pairing', 'ranking']
+  clear    A5: zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows
+  clear    A6: end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200
+  clear    A7: top target CEACAM5 with a 6-component breakdown
+  clear    A8: pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)
+  clear    A9: evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
+========================================================================
+  9/9 criteria clear
+
+========================================================================
+WHAT THE API RETURNS FOR THIS INDICATION
+========================================================================
+    GET /constructs -> NO_BUILDABLE_CONSTRUCT
+      - Conservative safety tolerance mandates a safety switch (1308 bp).
+      - The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.
+      - Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.
+      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
+
+    GET /result     -> NO_DESIGN_REACHES_THE_END
+      blocked on normal tissue risk      - 199     1 remain
+      no design recommended              -   0     1 remain
+      no binder retrieved                -   1     0 remain
+      no construct assembled             -   0     0 remain
+      construct over budget              -   0     0 remain

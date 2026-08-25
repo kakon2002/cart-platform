@@ -1,0 +1,79 @@
+loading upstream
+  113 binder sequences scored, status SCORED
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    D1: poly-K pI 11.463, poly-E pI 2.623 — the charge model orders the two known answers correctly
+  clear    D2: NST yields 1 sequon, NPT yields 0 — the proline exclusion holds
+  clear    D3: a 3-cysteine control reports parity 'odd', and never 'unpaired: 0'
+  clear    D4: every scored binder has a pI in 1..14 and 0..5 flags
+  clear    D5: 113 rows against 113 binders carrying a sequence
+  clear    D6: no liability is summed into a single score; flags are counted and listed
+========================================================================
+  6/6 criteria clear
+
+========================================================================
+WHAT THE SEQUENCES CARRY
+========================================================================
+    binder sequences scored          113
+    carrying at least one flag       113
+    clean on all five               0
+
+    liability by kind:
+      aggregation-prone region                      113
+      pI near formulation pH                         42
+      low net charge                                 20
+      N-glycosylation sequon                          8
+      odd cysteine count                              1
+
+    A FLAG THAT FIRES ON EVERY INPUT CARRIES NO INFORMATION.
+      'aggregation-prone region' fired on all 113 sequences.
+      The threshold was fixed before the run and is NOT adjusted
+      now that its output is visible — that is the tuning this
+      project forbids. It is recorded as uninformative at its
+      stated setting, which is a result about the threshold rather
+      than about the sequences. Every antibody variable region has
+      hydrophobic windows; discriminating between them needs a
+      measure of surface exposure, which sequence alone cannot give.
+
+  The binders for the two targets under discussion
+  --------------------------------------------------------------------
+    MSLN     Amatuximab        225 aa  pI  8.338  charge  +1.783  Cys 4 (even)  sequons 0  APR 7
+        - pI near formulation pH: pI 8.338 within 1.0 of 7.4
+        - aggregation-prone region: 7 region(s) starting [16, 45, 80, 91]
+    MSLN     Anetumab          231 aa  pI  6.941  charge  -0.291  Cys 4 (even)  sequons 0  APR 5
+        - pI near formulation pH: pI 6.941 within 1.0 of 7.4
+        - low net charge: net charge -0.291 below 1.0
+        - aggregation-prone region: 5 region(s) starting [45, 113, 137, 167]
+    MSLN     Inezetamab        231 aa  pI  8.659  charge  +2.713  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [18, 91, 113, 137]
+    MSLN     Misitatug         230 aa  pI  6.117  charge  -1.252  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [18, 58, 116, 131]
+    CLDN18   Ciletatug         232 aa  pI  8.599  charge  +2.663  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [16, 28, 45, 91]
+    CLDN18   Garetatug         231 aa  pI  8.868  charge  +3.747  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [16, 45, 91, 114]
+    CLDN18   Givastomig        233 aa  pI  8.589  charge  +2.699  Cys 4 (even)  sequons 0  APR 6
+        - aggregation-prone region: 6 region(s) starting [16, 91, 113, 129]
+    CLDN18   Gresonitamab      232 aa  pI  9.284  charge  +7.559  Cys 6 (even)  sequons 0  APR 8
+        - aggregation-prone region: 8 region(s) starting [16, 91, 101, 121]
+    CLDN18   Omectatug         231 aa  pI  8.859  charge  +3.707  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [16, 28, 91, 114]
+    CLDN18   Osemitamab        231 aa  pI  8.829  charge  +3.701  Cys 4 (even)  sequons 0  APR 6
+        - aggregation-prone region: 6 region(s) starting [16, 91, 114, 127]
+    CLDN18   Sonesitatug       231 aa  pI  8.618  charge  +2.666  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [17, 83, 91, 111]
+    CLDN18   Spevatamig        221 aa  pI  6.490  charge  -1.171  Cys 4 (even)  sequons 0  APR 4
+        - pI near formulation pH: pI 6.49 within 1.0 of 7.4
+        - aggregation-prone region: 4 region(s) starting [16, 91, 107, 160]
+    CLDN18   Tecotabart        232 aa  pI  7.944  charge  +0.710  Cys 4 (even)  sequons 0  APR 6
+        - pI near formulation pH: pI 7.944 within 1.0 of 7.4
+        - low net charge: net charge 0.71 below 1.0
+        - aggregation-prone region: 6 region(s) starting [18, 91, 112, 128]
+    CLDN18   Tixentamig        234 aa  pI  9.107  charge  +4.711  Cys 4 (even)  sequons 0  APR 7
+        - aggregation-prone region: 7 region(s) starting [18, 118, 141, 189]
+    CLDN18   Zolbetuximab      231 aa  pI  8.608  charge  +2.664  Cys 4 (even)  sequons 0  APR 4
+        - aggregation-prone region: 4 region(s) starting [115, 128, 169, 195]
+
+  configuration hash 40a3207c8712f248

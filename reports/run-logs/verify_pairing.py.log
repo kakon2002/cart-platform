@@ -1,0 +1,118 @@
+loading sources
+building the per cell matrix
+
+========================================================================
+PER CELL DERIVATION — known answer check
+========================================================================
+  KRT19      detected in  0.7294 of malignant cells (floor 0.50) ok
+  CLDN18     detected in  0.1848 of malignant cells (floor 0.05) ok
+  CEACAM6    detected in  0.1439 of malignant cells (floor 0.05) ok
+  MSLN       detected in  0.1197 of malignant cells (floor 0.05) ok
+  CEACAM5    detected in  0.0000 — excluded from the check; this assay is documented as dropping it
+
+  cells 64,538  genes 188  patients 43  evaluable 29
+evaluating pairs
+  partner eligibility at 5.0 TPM: 182 of 200 pool members eligible (0 without a tumour column)
+  span context attached to 14,535 pairs of 14,535 measured
+
+========================================================================
+CONSTRUCTION INVARIANTS
+========================================================================
+  ok   I1: self pair reproduces single risk for all 200, worst gap 0.00e+00
+  ok   I2: symmetric over 2,000 pairs
+  ok   I4: 0 pairs better evidenced than their weaker member
+  ok   I3: 0 pairs with f_AB above its marginals
+  ok   I5: 0 pairs exceed min of members, worst excess 0.00e+00
+  ok   I6: pairwise intersections fall monotonically across (1, 2, 3) counts (0 violations)
+  ok   I7: 0 pairs where the independence bound exceeds the gate
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    P1: combined risk vs min of members, rho=0.7926 (limit 0.95)
+  clear    P2: 6,328 of 19,900 (31.80%) beat the better member by more than 0.05 (limit 1%)
+  clear    P3: 99 blocked targets rescued by some pair: ACSL5, ADAM9, ADGRF1, AMIGO2, AMN, ANO1, ANTXR1, AQP5
+  TRIPPED  P4: f_AB vs f_A x f_B over 14,535 measured pairs, rho=0.9934 (limit 0.98)
+  clear    P5: 0 pairs marked cleared on the optimistic arm
+  clear    P6: 0 recommended pairs are unmeasured
+  TRIPPED  P7: 1 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['NPSR1+HLA-A']
+  TRIPPED  P8: 108 of 222 cleared pairs (48.6%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
+  report   P9: 13 of 13 recommended pairs sit below the patient floor of 0.6 (reported, not gated — see 6.5b)
+  clear    P10: 0 targets recommended dual despite clearing alone
+  clear    P11: outcome spread {'NO_DESIGN': 185, 'DUAL': 13, 'UNRESOLVED': 1, 'SINGLE': 1}, largest 92.5% (limit 95%)
+  clear    P12: 4 of 13 dual recommendations change at 2 counts (30.8%, limit 50%)
+  clear    P13: most common partner takes 38.5% of dual recommendations (LAMP5)
+  clear    P14: top pair is NPSR1+PTPRN2, top two singles are CEACAM5+TMC5
+  TRIPPED  P15: pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)
+  report   P16: 7,080 of 14,535 measured pairs reach f_AB >= 0.02 (reported, not gated)
+========================================================================
+  10/14 criteria clear
+  decisions written to C:\cart-platform\data\stage4\decisions.json
+  usable as a result: no
+
+========================================================================
+WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)
+========================================================================
+
+  What the weights are doing in this stage
+  --------------------------------------------------------------------
+    swapping the ordering key from combined risk to composite changes 9 of 13 recommendations (69%)
+
+    The weights never order anything in this stage. They enter only
+    through pool membership, and P15 above measures how much that
+    boundary matters: read the figure printed there rather than any
+    number quoted here, because it has moved.
+
+    And the swap number is NOT evidence that the weights are
+    decorative. The two keys agreeing means the choice is insensitive
+    to which is used, and the reason is P13: one partner wins under
+    both, so almost nothing is being ordered at all. Since coverage
+    was removed from selection the winner changed but the
+    concentration did not, which is section 6.5c: a partner scoring
+    near zero in every organ minimises min(A,B) for every A, so any
+    rule minimising combined risk picks it for everyone.
+
+  Coverage and the escape population
+  --------------------------------------------------------------------
+    AND-gate coverage is the intersection. Escape is one minus it.
+    Both are FLOORS: this is a single-nucleus assay and it drops
+    transcripts, so the true intersection is higher and the true
+    escape lower. The direction is known; the magnitude is not.
+
+    Two coverage numbers, and both are needed. f_AB is the fraction
+    itself; span %ile is where that fraction sits among measured pairs
+    of similar gene length. Detection tracks span more strongly than it
+    tracks expression, so a high f_AB on two long genes and a high one
+    on two short genes do not mean the same thing. Neither number
+    gates anything: coverage was removed from partner selection.
+
+    A         B           A alone  B alone      OR     AND   escape   cost  span kb span %ile
+    CEACAM6   MSLN         0.1439   0.1197  0.2348  0.0288   0.9712   5.0x       13       94%
+    CEACAM6   CLDN18       0.1439   0.1848  0.2836  0.0451   0.9549   4.1x       27       75%
+    CEACAM6   MUC1         0.1439   0.0520  0.1867  0.0093   0.9907  15.5x       12       77%
+    MSLN      CLDN18       0.1197   0.1848  0.2808  0.0237   0.9763   7.8x       17       75%
+    MSLN      MUC1         0.1197   0.0520  0.1631  0.0087   0.9913  13.8x        8       76%
+    CLDN18    MUC1         0.1848   0.0520  0.2224  0.0145   0.9855  12.7x       16       63%
+    PTPRK     VMP1         0.7507   0.8025  0.9033  0.6500   0.3500   1.2x      273      100%
+    ABCC3     VMP1         0.6877   0.8025  0.8995  0.5908   0.4092   1.4x       88      100%
+    EFNA5     VMP1         0.6382   0.8025  0.8747  0.5660   0.4340   1.4x      199      100%
+    ABCC3     PTPRK        0.6877   0.7507  0.8858  0.5526   0.4474   1.4x      178      100%
+    EFNA5     PTPRK        0.6382   0.7507  0.8435  0.5454   0.4546   1.4x      403      100%
+
+    The best-covering pairs above are all high-abundance genes. That
+    is the dropout bias of section 6.5 visible in the output: a scarce
+    antigen cannot show a large intersection on this assay whatever
+    its biology, so this table ranks detectability alongside truth.
+
+    Stated plainly, on the most favourable known pair: an AND-gate on CEACAM6+CLDN18
+    reaches 4.5% of malignant cells, so 95.5% escape it. CEACAM6 alone reaches 14.4%
+    and CLDN18 alone 18.5%; the safety gain costs 4.1x the coverage of the
+    better single target, and an OR-gate on the same two would reach 28.4%.
+    That is antigen heterogeneity measured directly, and it is the
+    strongest argument in this output that AND-gating may be the
+    wrong architecture for this indication even though it does
+    solve the safety problem. It is a floor, so the real figure is
+    better than this — but not better than the single-target one,
+    which is deflated by the same assay in the same direction.
+
+  STOPPING: P4, P7, P8, P15 tripped. The specification changes and the run repeats; the result does not get an explanation.
