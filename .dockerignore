@@ -25,4 +25,13 @@ reports/
 run_all.py
 make_artifact.py
 verify_*.py
+bootstrap.py
+deploy.ps1
+deploy.sh
+DEPLOY.md
 specs/
+
+# The packaged cache. Its contents are copied in directly; the archive itself
+# would be a second, redundant copy inside the image.
+*.tar.gz
+*.tar.gz.sha256

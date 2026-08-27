@@ -20,7 +20,11 @@ param(
     [string]$Region  = "us-central1",
     [string]$Project = "",
     # Report readiness and stop. Deploys nothing, bills nothing.
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    # Reading billing needs a permission on the billing account that a project
+    # Owner often does not hold. This is for that case, not for a project whose
+    # billing is genuinely off - that branch has no override.
+    [switch]$SkipBillingCheck
 )
 
 # Deliberately NOT "Stop". In Windows PowerShell 5.1 a native executable's
@@ -31,6 +35,18 @@ param(
 # explicitly instead, which is what actually indicates failure for a native
 # command.
 $ErrorActionPreference = "Continue"
+
+# param() binds positionally, so `.\deploy.ps1 --check-only` - the bash
+# spelling, one line away in DEPLOY.md - would assign "--check-only" to
+# $Service and deploy an always-on instance under that name. Rejected.
+foreach ($name in @($Service, $Region, $Project)) {
+    if ($name -like "-*") {
+        Write-Host "Unrecognised argument: $name" -ForegroundColor Red
+        Write-Host "Usage: .\deploy.ps1 [-CheckOnly]"
+        Write-Host "  (-CheckOnly, not --check-only; that is the bash spelling)"
+        exit 1
+    }
+}
 
 # Prefer whatever is on PATH; fall back to the per-user install location. Both
 # are checked so this still works in a shell opened before the SDK was
@@ -90,11 +106,26 @@ Step "Checking billing"
 # Cloud Run and Cloud Build both require a billing account on the project.
 # Checked up front, because without it the failure surfaces partway through the
 # first deploy as something less obvious.
-$billing = Invoke-GCloud @("beta", "billing", "projects", "describe", $Project,
-                           "--format=value(billingEnabled)") "Reading billing" -AllowFailure
+if ($SkipBillingCheck) {
+    Write-Host "skipped (-SkipBillingCheck)"
+    $billing = "True"
+    $global:LASTEXITCODE = 0
+} else {
+    $billing = Invoke-GCloud @("beta", "billing", "projects", "describe", $Project,
+                               "--format=value(billingEnabled)") "Reading billing" -AllowFailure
+}
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "Could not read billing status; the Cloud Billing API may be off." -ForegroundColor Yellow
-    Write-Host "  Check: https://console.cloud.google.com/billing/linkedaccount?project=$Project"
+    # Unknown is not enabled. This previously warned and carried on to "Ready to
+    # deploy", which told an operator with billingEnabled=false that they were
+    # ready — the deploy then fails minutes later inside Cloud Build. A status
+    # that could not be read is a third state and it stops here like any other.
+    Write-Host "Could not read billing status for $Project." -ForegroundColor Red
+    Write-Host "  This is ambiguous: billing may be fine and you may simply lack"
+    Write-Host "  permission to read it, or the 'beta' component may be missing."
+    Write-Host "  Check by hand:  gcloud beta billing projects describe $Project"
+    Write-Host "  Or in console:  https://console.cloud.google.com/billing/linkedaccount?project=$Project"
+    Write-Host "  If you know billing is on:  .\deploy.ps1 -SkipBillingCheck"
+    exit 1
 } elseif ("$billing" -ne "True") {
     Write-Host "Billing is NOT enabled on $Project. Cloud Run cannot deploy without it." -ForegroundColor Red
     Write-Host "  Link an account: https://console.cloud.google.com/billing/linkedaccount?project=$Project"
@@ -175,7 +206,10 @@ do {
     Start-Sleep -Seconds 5
     $state = Invoke-RestMethod -Uri "$url/jobs/$($job.job_id)"
     Write-Host "  $($state.status)  $($state.stage)"
-} while ($state.status -notin @("complete", "failed") -and (Get-Date) -lt $deadline)
+    # Anything outside the known progress states is terminal. Waiting only for
+    # complete|failed spins the full deadline on NOT_FOUND, which is what a
+    # restarted instance returns because the job table is in memory.
+} while ($state.status -in @("queued", "running") -and (Get-Date) -lt $deadline)
 
 if ($state.status -ne "complete") {
     # $state.error is null while a job is merely slow, so printing only that
