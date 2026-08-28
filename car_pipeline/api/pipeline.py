@@ -225,7 +225,6 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
 
 
 UNKNOWN_TARGET = "UNKNOWN_TARGET"
-NOT_SURFACE = "NOT_SURFACE_ACCESSIBLE"
 SUITABLE = "SUITABLE"
 CONDITIONAL = "CONDITIONAL"
 UNSUITABLE = "UNSUITABLE"
