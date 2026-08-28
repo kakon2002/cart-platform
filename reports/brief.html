@@ -86,6 +86,10 @@ td {
 td.n, th.n { text-align:right; padding-right:0;
   font-family:"IBM Plex Mono",ui-monospace,monospace;
   font-variant-numeric:tabular-nums; }
+/* Every cell has zero left padding, so a right-aligned number ran straight into
+   the left-flush text beside it: "0.227marrow and blood". Separate the pair
+   rather than padding every cell, which would move the whole table. */
+.n + td, .n + th { padding-left:18px; }
 .gene { font-weight:600; }
 
 .sweep td, .sweep th { text-align:right; padding:9px 10px; }
@@ -95,6 +99,31 @@ td.n, th.n { text-align:right; padding-right:0;
 .sweep td { font-family:"IBM Plex Mono",ui-monospace,monospace;
   font-variant-numeric:tabular-nums; }
 .on { background:var(--tripped-bg); color:var(--tripped); font-weight:600; }
+
+.chain {
+  list-style:none; margin:16px 0 18px; padding:0;
+  display:flex; flex-direction:column; gap:0;
+  border-left:2px solid var(--rule); max-width:460px;
+}
+.chain li {
+  display:flex; align-items:baseline; gap:11px; flex-wrap:wrap;
+  padding:8px 0 8px 16px; color:var(--ink-soft); font-size:0.95rem;
+}
+.chain li:first-child, .chain li:last-child {
+  color:var(--ink); font-weight:500;
+}
+.chain__n, .chain__d, .chain__r {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums;
+}
+.chain__n { font-size:1.05rem; color:var(--ink); min-width:52px; }
+.chain__d { color:var(--madder); min-width:52px; }
+/* The running total after each step. Without it, two subtractions in a row read
+   as both coming off the starting number. */
+.chain__r {
+  margin-left:auto; font-size:0.8rem; color:var(--ink-faint);
+  white-space:nowrap;
+}
 
 .note {
   background:var(--surface); border:1px solid var(--rule);
@@ -138,23 +167,30 @@ a { color:var(--madder); }
   <section>
     <p class="eyebrow">What it does</p>
     <h2>A cancer type in, ranked designs out</h2>
-    <p>You give it an indication and name no target. It screens all 3,466
-    human cell-surface proteins against tumour and normal-tissue evidence,
-    ranks them, tests 19,900 two-antigen combinations, retrieves real antibody
-    binders, chooses a receptor architecture from each target's safety profile,
-    and assembles a complete DNA construct that must fit inside the viral
-    vector.</p>
-    <p>Every number traces to a public dataset and a release date, and where a
-    measurement is missing the platform says so rather than substituting one.</p>
+    <p>You give it an indication and name no target. It screens all 3,466 human
+    cell-surface proteins against tumour and normal-tissue evidence, tests
+    19,900 two-antigen combinations, retrieves real antibody binders, picks a
+    receptor architecture from each target's safety profile, and assembles a DNA
+    construct that has to fit inside the viral vector. Every number traces to a
+    public dataset and a release date, and where a measurement is missing it
+    says so rather than substituting one.</p>
   </section>
 
   <section>
     <p class="eyebrow">The result</p>
     <h2>Eight targets survive every gate</h2>
-    <p>Of 200 candidates carried forward, 191 are stopped by normal-tissue
-    safety and one has no retrievable binder. The remaining eight assemble into
-    complete constructs at 2,811 base pairs against a 3,500 limit — comfortably
-    inside the vector.</p>
+    <p>The candidates are filtered in sequence, each step working on what the
+    one before it left:</p>
+    <ol class="chain">
+      <li><span class="chain__n">200</span> candidates carried forward</li>
+      <li><span class="chain__d">&minus;191</span> stopped by normal-tissue
+        safety <span class="chain__r">9 left</span></li>
+      <li><span class="chain__d">&minus;1</span> no retrievable binder
+        <span class="chain__r">8 left</span></li>
+      <li><span class="chain__n">8</span> assemble into complete constructs</li>
+    </ol>
+    <p>Those eight come in at 2,811 base pairs against a 3,500 limit —
+    comfortably inside the vector.</p>
     <div class="scroll">
       <table>
         <thead><tr>
@@ -193,6 +229,39 @@ a { color:var(--madder); }
       sized. To order DNA, one sequence must be licensed or obtained from the
       published literature — a procurement and IP question, roughly a week of
       work, not a research problem. Everything downstream of it is finished.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Read this before the table below</p>
+    <h2>Why mesothelin and claudin-18.2 are not on that list</h2>
+    <p>The eight are unfamiliar names, and the targets we have been planning
+    around are missing. <strong>That is not because the platform ranked them
+    poorly. It ranked them at the very top.</strong></p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Target</th><th class="n">Rank of 3,400</th>
+          <th class="n">Risk</th><th>Stopped by</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="gene">CEACAM5</td><td class="n">1</td><td class="n">0.600</td><td>GI tract</td></tr>
+          <tr><td class="gene">Mesothelin</td><td class="n">18</td><td class="n">0.637</td><td>lung</td></tr>
+          <tr><td class="gene">Claudin-18</td><td class="n">25</td><td class="n">0.727</td><td>lung</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>All three sit in the top 1% on tumour attractiveness. Every one is
+    stopped by <strong>normal-tissue safety</strong> — expression in healthy
+    organs — against a ceiling of 0.15 for a permanent therapy and 0.35 for a
+    stoppable one.</p>
+    <p>The eight that do survive rank between <strong>27 and 159</strong>. They
+    are less attractive targets that happen to be safe enough.</p>
+    <div class="note">
+      <p><strong>So the platform is trading efficacy for safety at the ceiling
+      we set</strong> — and that is exactly the trade the table below prices. It
+      is not telling us mesothelin is a bad target. It is telling us mesothelin
+      is a risky one, and that the current ceiling does not accept that risk.</p>
     </div>
   </section>
 
