@@ -14,6 +14,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
+from car_pipeline.stages.stage4 import ADAPTOR
 from car_pipeline.data.domains import (
     SYNTHETIC_PARTS,
     Part,
@@ -43,7 +44,9 @@ REVERSE_CODON = {v: k for k, v in CODON.items()}
 #: Outcomes this stage will build for. A construct assembled for a target the
 #: pairing stage rejected would be a design presented for something upstream says
 #: is not designable, and a reader cannot be expected to carry that caveat.
-BUILDABLE_OUTCOMES = ("SINGLE", "DUAL")
+#: ADAPTOR joins these: it is a real routed architecture that
+#: assembles, even though its binder sequence is not supplied.
+BUILDABLE_OUTCOMES = ("SINGLE", "DUAL", "ADAPTOR")
 
 
 def assemblable(sequence: str) -> set[str]:
@@ -101,9 +104,19 @@ class Construct:
     dna: str = ""
     segments: list[Segment] = field(default_factory=list)
     reason: str = ""
+    #: False when a part in this construct declares a size but no sequence --
+    #: the adaptor receptor's anti-tag binder is the only such part. The layout
+    #: and the length are real; the residues are not supplied and are not
+    #: invented, so `amino_acid_sequence` and `dna` are left empty rather than
+    #: filled with something that would read as a design.
+    binder_supplied: bool = True
+    #: The construct's length when there is no DNA to measure it from.
+    declared_bp: int | None = None
 
     @property
     def total_bp(self) -> int:
+        if not self.dna and self.declared_bp is not None:
+            return self.declared_bp
         return len(self.dna)
 
     @property
@@ -127,6 +140,10 @@ def _assemble(pieces: list[tuple[str, Part]]) -> tuple[str, str, list[Segment]]:
     """Concatenate, reverse-translate, and record every boundary."""
     aa_parts, segments = [], []
     aa_pos = 0
+    # A part may declare a length without residues. Coordinates still advance by
+    # its declared size so the map and the budget are right; the protein is
+    # withheld below rather than padded with filler.
+    complete = all(part.supplied for _l, part in pieces)
     for _label, part in pieces:
         seq = part.sequence
         segments.append(
@@ -138,13 +155,18 @@ def _assemble(pieces: list[tuple[str, Part]]) -> tuple[str, str, list[Segment]]:
                 start_residue=part.start,
                 end_residue=part.end,
                 aa_start=aa_pos,
-                aa_end=aa_pos + len(seq),
+                aa_end=aa_pos + part.residues,
                 bp_start=aa_pos * 3,
-                bp_end=(aa_pos + len(seq)) * 3,
+                bp_end=(aa_pos + part.residues) * 3,
             )
         )
         aa_parts.append(seq)
-        aa_pos += len(seq)
+        aa_pos += part.residues
+    if not complete:
+        # Length and layout are real; the residues are not supplied. Returning
+        # an empty protein rather than a padded one means nothing downstream can
+        # mistake this for a sequence that was designed.
+        return "", "", segments
     protein = "".join(aa_parts)
     unknown = assemblable(protein)
     if unknown:
@@ -167,6 +189,7 @@ def build(
     linker = SYNTHETIC_PARTS["linker"]
     skip = SYNTHETIC_PARTS["skip"]
     switch_linker = SYNTHETIC_PARTS["switch_linker"]
+    adaptor_binder = SYNTHETIC_PARTS["adaptor_binder"]
 
     def best_binder(gene: str):
         """The shortest sequence-route binder: the smallest that fits is the
@@ -196,6 +219,35 @@ def build(
         target = best_binder(gene)
         partner_gene = row.get("partner")
         partner = best_binder(partner_gene) if partner_gene else None
+
+        # An adaptor receptor binds the tag, not the antigen, so it needs no
+        # target binder and is built before the binder guard below. Its
+        # antigen specificity lives in a separately manufactured adaptor that
+        # is not in this vector -- which is the whole reason it fits.
+        if row["outcome"] == ADAPTOR:
+            pieces = (
+                [("leader", parts["leader"]),
+                 ("anti-tag", adaptor_binder),
+                 ("hinge", parts["hinge"]), ("TM", parts["transmembrane"]),
+                 ("4-1BB", parts["costimulatory"]),
+                 ("CD3zeta", parts["activation"])]
+                + switch
+            )
+            protein, dna, segments = _assemble(pieces)
+            total = sum(seg.bp_end - seg.bp_start for seg in segments) + len(STOP)
+            out.append(Construct(
+                gene=gene, accession=row["accession"], pool_index=row["pool_index"],
+                outcome=row["outcome"], partner=None,
+                verdict=BUILDABLE if total <= BUDGET_BP else BUDGET_EXCEEDED,
+                architecture="adaptor, anti-tag receptor, antigen on the adaptor",
+                binder_name=adaptor_binder.name,
+                amino_acid_sequence=protein, dna=dna, segments=segments,
+                binder_supplied=False, declared_bp=total,
+                reason="the anti-tag binder declares a size but no sequence; "
+                       "no anti-tag antibody exists in the cached structural "
+                       "set and none was invented",
+            ))
+            continue
 
         if target is None:
             out.append(Construct(

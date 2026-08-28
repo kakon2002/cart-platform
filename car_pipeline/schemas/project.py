@@ -92,6 +92,9 @@ class ProjectInput(BaseModel):
     product_type: ProductType = ProductType.AUTOLOGOUS
     car_format: CARFormat = CARFormat.AUTO
     safety_tolerance: SafetyTolerance = SafetyTolerance.CONSERVATIVE
+    #: Declared per project, never derived. See DesignConstraints for why this
+    #: has no default: the platform cannot invent a clinical risk tolerance.
+    terminable_risk_ceiling: float | None = Field(default=None, ge=0.0, le=1.0)
 
     manufacturing: ManufacturingConstraints = Field(
         default_factory=ManufacturingConstraints

@@ -21,7 +21,7 @@ from car_pipeline.data.tcga import PRIMARY_TUMOUR, TCGASource, match_surface as 
 from car_pipeline.data.trials import TrialSource
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import (
-    stage3, stage4, stage5, stage6, stage9, stage10, stage11,
+    routing, stage3, stage4, stage5, stage6, stage9, stage10, stage11,
 )
 from car_pipeline.stages.stage1 import build_spec
 
@@ -107,9 +107,16 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
             value = float(np.median(cohort.values[primary, cj[0]]))
             if np.isfinite(value):
                 tumour_tpm[r.gene] = value
-    decisions_obj = stage4.decide(pool, pairs, tumour_tpm)
+    # Stage 4a. Both ceilings come from the project spec; neither is invented
+    # here. A project with no declared terminable ceiling gets no adaptor row.
+    tolerances = routing.Tolerances(
+        persistent=ceiling,
+        terminable=spec.design_constraints.terminable_risk_ceiling,
+    )
+    decisions_obj = stage4.decide(pool, pairs, tumour_tpm, tolerances)
     decisions = stage4.decision_rows(decisions_obj)
-    s4_hash = stage4.configuration_hash(s3_hash, [r.gene for r in pool])
+    s4_hash = stage4.configuration_hash(
+        s3_hash, [r.gene for r in pool], tolerances)
 
     progress("binders", "retrieving binders")
     # The Stage 4 hash, which is the slot this artifact records and what every

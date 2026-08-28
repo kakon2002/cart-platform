@@ -29,6 +29,16 @@ PDAC_PROJECT = ProjectInput(
     product_type=ProductType.AUTOLOGOUS,
     car_format=CARFormat.AUTO,
     safety_tolerance=SafetyTolerance.CONSERVATIVE,
+    # A policy input, fixed before the run and pinned in
+    # specs/stage4a-architecture-routing.md §3. It is the risk this project
+    # accepts from an exposure that can be stopped — an adaptor design, where
+    # activation needs a separately dosed protein — as distinct from the 0.15 it
+    # accepts from a T cell that cannot be withdrawn.
+    #
+    # This pipeline cannot measure it. Criterion A9 therefore reports the
+    # admitted count across the whole sweep so the choice is visible, and A10
+    # trips if this value ever stops matching the one recorded in the spec.
+    terminable_risk_ceiling=0.35,
     manufacturing=ManufacturingConstraints(
         vector_payload_limit_kb=4.7,
         max_genetic_edits=2,

@@ -41,6 +41,16 @@ class DesignConstraints(BaseModel):
     require_safety_switch: bool
     allowed_car_formats: list[CARFormat]
     normal_tissue_risk_ceiling: float = Field(ge=0.0, le=1.0)
+    #: The ceiling for an exposure that can be stopped. An adaptor design does
+    #: not make an antigen safer - the adaptor still binds it - it makes the
+    #: exposure terminable, because activation needs a separately dosed protein.
+    #: Magnitude and reversibility are different axes, so this is a second
+    #: number rather than an adjustment to the first.
+    #:
+    #: Optional and defaulted to None on purpose. Both ceilings are policy
+    #: inputs, not measurements; a default here would be this code quietly
+    #: setting clinical policy, so its absence disables the adaptor row instead.
+    terminable_risk_ceiling: float | None = Field(default=None, ge=0.0, le=1.0)
 
 
 class ProjectSpec(BaseModel):
