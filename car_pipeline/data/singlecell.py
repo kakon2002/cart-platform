@@ -34,11 +34,11 @@ import numpy as np
 from car_pipeline.data.source import (
     CacheEntry, CacheError, DataSource, stream_to_file)
 
-SERIES = "GSE202051"
-ARCHIVE = f"{SERIES}_totaldata-final-toshare.h5ad.gz"
-URL = (
-    f"https://ftp.ncbi.nlm.nih.gov/geo/series/GSE202nnn/{SERIES}/suppl/{ARCHIVE}"
-)
+#: No dataset-specific constants live here any more. Which series, which
+#: columns, which category values and which compartment map all belong to the
+#: atlas being read, and are declared on an AtlasSchema in the indication
+#: config. A module global naming one submission is exactly what made this
+#: loader single-indication.
 
 # Below this, a group mean is treated as a capture failure rather than absence.
 # An exact-zero test misses the case entirely: genes that bulk measurement puts
@@ -54,23 +54,11 @@ OTHER = "other"
 
 SUBSET_ALL = "all"
 SUBSET_UNTREATED = "untreated"
-UNTREATED_LABEL = "Untreated"
 
-LEVEL1 = "Level 1 Annotation"
-LEVEL3 = "Level 3 Annotation"
-TREATMENT = "treatment_status"
 
 # The authors' top-level branches, collapsed only where two of them describe the
 # same compartment. Everything not named here is reported as other rather than
 # forced into one of the five.
-COMPARTMENT_MAP = {
-    "Epithelial (malignant)": MALIGNANT,
-    "Cancer-associated fibroblast": FIBROBLAST,
-    "Epithelial (non-malignant)": EPITHELIAL,
-    "Lymphoid": IMMUNE,
-    "Myeloid": IMMUNE,
-    "Endothelial": ENDOTHELIAL,
-}
 COMPARTMENT_ORDER = [MALIGNANT, FIBROBLAST, EPITHELIAL, IMMUNE, ENDOTHELIAL, OTHER]
 
 # Compartments a genuine tumour antigen must rise above. Peak is taken over
@@ -110,7 +98,7 @@ class Atlas:
 
 
 class SingleCellSource(DataSource):
-    name = f"GEO {SERIES}"
+    name = "Single-cell tumour atlas"
     namespace = "singlecell"
 
     def __init__(self, atlas=None, root=None) -> None:
@@ -125,7 +113,9 @@ class SingleCellSource(DataSource):
             from car_pipeline.configs.pdac import PDAC_ATLAS
             atlas = PDAC_ATLAS
         self.atlas = atlas
-        self.name = f"GEO {atlas.series}"
+        #: The registry key stays the class name; the accession is detail,
+        #: reported per run rather than baked into the dataset identity.
+        self.series_name = f"GEO {atlas.series}"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
         a = self.atlas
@@ -165,8 +155,9 @@ class SingleCellSource(DataSource):
         entry = self._entry("archive")
 
         def fetcher(tmp: Path) -> dict:
-            print(f"  fetching {ARCHIVE}", flush=True)
-            return stream_to_file(URL, tmp, progress_label="archive", timeout=1800)
+            print(f"  fetching {self.atlas.archive}", flush=True)
+            return stream_to_file(self.atlas.url, tmp,
+                                  progress_label="archive", timeout=1800)
 
         return self.cache.ensure(entry, fetcher)
 
@@ -180,6 +171,13 @@ class SingleCellSource(DataSource):
         entry = self._entry("matrix")
         if self.cache.is_valid(entry):
             return self.cache.path(entry)
+
+        # Not every atlas arrives compressed. The reference submission is a
+        # gzipped h5ad that has to be expanded; a CELLxGENE export is already an
+        # h5ad, and running it through the expander would fail on the first read
+        # rather than simply having nothing to do.
+        if not self.atlas.archive.endswith(".gz"):
+            return self.archive_path()
 
         if os.environ.get(self.OFFLINE_ENV):
             raise CacheError(
@@ -292,9 +290,15 @@ class SingleCellSource(DataSource):
                         f"first few read as {list(ensembl[:3])}"
                     )
 
-                l1_codes, l1_cats = self._read_categorical(obs, LEVEL1)
-                l3_codes, l3_cats = self._read_categorical(obs, LEVEL3)
-                tr_codes, tr_cats = self._read_categorical(obs, TREATMENT)
+                a = self.atlas
+                l1_codes, l1_cats = self._read_categorical(obs, a.level1_column)
+                l3_codes, l3_cats = self._read_categorical(obs, a.level3_column)
+                # An atlas without a treatment split is read without one
+                # rather than refused: the untreated subset is then absent,
+                # which is a third state, not a zero.
+                tr_codes, tr_cats = (
+                    self._read_categorical(obs, a.treatment_column)
+                    if a.treatment_column else (None, None))
 
                 n_cells = l3_codes.shape[0]
                 n_genes = len(genes)
@@ -318,20 +322,32 @@ class SingleCellSource(DataSource):
                 level3_to_level1: dict[str, str] = {}
                 for t_name in l3_cats:
                     parent = next(iter(nesting[t_name])) if nesting[t_name] else ""
-                    compartment = COMPARTMENT_MAP.get(parent, OTHER)
+                    compartment = self.atlas.compartment_map.get(parent, OTHER)
                     level3_to_level1[str(t_name)] = compartment
                     print(f"    {t_name:38s} {parent:30s} -> {compartment}")
 
                 compartment_of_l1 = np.asarray(
                     [
-                        COMPARTMENT_ORDER.index(COMPARTMENT_MAP.get(str(c), OTHER))
+                        COMPARTMENT_ORDER.index(
+                            self.atlas.compartment_map.get(str(c), OTHER))
                         for c in l1_cats
                     ]
                 )
                 comp_of_cell = compartment_of_l1[l1_codes]
 
-                untreated_idx = int(np.where(tr_cats == UNTREATED_LABEL)[0][0])
-                untreated = tr_codes == untreated_idx
+                # An atlas with no treatment split, or one whose split does not
+                # carry the declared label, yields an empty untreated subset
+                # rather than raising. The group table then holds the "all" rows
+                # with the untreated rows present and empty, which is what a
+                # reader must see: not measured, rather than measured as zero.
+                if tr_cats is not None and a.untreated_label in list(tr_cats):
+                    untreated_idx = list(tr_cats).index(a.untreated_label)
+                    untreated = tr_codes == untreated_idx
+                else:
+                    if a.treatment_column:
+                        print(f"    no {a.untreated_label!r} category in "
+                              f"{a.treatment_column!r}; untreated subset empty")
+                    untreated = np.zeros(l1_codes.shape[0], dtype=bool)
 
                 x = fh["X"]
                 indptr = x["indptr"][:]
@@ -522,22 +538,26 @@ class SingleCellSource(DataSource):
                 lut[cols] = np.arange(len(cols), dtype=np.int32)
 
                 obs = fh["obs"]
-                l1_codes, l1_cats = self._read_categorical(obs, LEVEL1)
-                if l1_cats is None or MALIGNANT_LEVEL1 not in list(l1_cats):
+                a = self.atlas
+                l1_codes, l1_cats = self._read_categorical(obs, a.level1_column)
+                if l1_cats is None or a.malignant_label not in list(l1_cats):
                     raise KeyError(
-                        f"the annotation has no {MALIGNANT_LEVEL1!r} branch; "
+                        f"the annotation has no {a.malignant_label!r} branch; "
                         f"found {sorted(set(map(str, l1_cats or [])))}"
                     )
-                malignant = l1_codes == list(l1_cats).index(MALIGNANT_LEVEL1)
+                malignant = l1_codes == list(l1_cats).index(a.malignant_label)
                 n_cells = int(malignant.sum())
                 if n_cells == 0:
                     raise ValueError("no malignant cells selected")
 
                 pid = self._read_column(obs, "pid")
-                tr_codes, tr_cats = self._read_categorical(obs, TREATMENT)
-                untreated_all = tr_codes == list(tr_cats).index(UNTREATED_LABEL)
+                if a.treatment_column:
+                    tr_codes, tr_cats = self._read_categorical(obs, a.treatment_column)
+                    untreated_all = tr_codes == list(tr_cats).index(a.untreated_label)
+                else:
+                    untreated_all = np.zeros(l1_codes.shape[0], dtype=bool)
 
-                layer = fh["layers"][COUNTS_LAYER]
+                layer = fh["layers"][a.counts_layer]
                 data, indices = layer["data"], layer["indices"]
                 iptr = layer["indptr"][:]
 
@@ -624,9 +644,7 @@ class SingleCellSource(DataSource):
 #: per cell, so a fixed threshold on it is not a fixed count threshold: raw depth
 #: across malignant cells runs from 96 to 9,642. Detection is defined on counts,
 #: so counts is what gets read.
-COUNTS_LAYER = "counts"
 
-MALIGNANT_LEVEL1 = "Epithelial (malignant)"
 
 JOIN_SYMBOL = "symbol"
 JOIN_ENSEMBL_BRIDGE = "ensembl_bridge"

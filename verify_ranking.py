@@ -24,8 +24,8 @@ from car_pipeline.data.coverage import (
 from car_pipeline.data.depmap import DepMapSource, RELEASE_PIN as DEPMAP_PIN, gene_index
 from car_pipeline.data.gtex import GTExSource, RELEASE_PIN as GTEX_PIN
 from car_pipeline.data.hpa import HPASource, RELEASE_PIN as HPA_PIN, index as atlas_index
+from car_pipeline.configs.pdac import PDAC_ATLAS
 from car_pipeline.data.singlecell import (
-    SERIES,
     SingleCellSource,
     match_surface as cell_match,
 )
@@ -145,7 +145,7 @@ def main() -> int:
         "normal baseline": GTEX_PIN,
         "tumour cohort": TCGA_PIN,
         "dependency screens": DEPMAP_PIN,
-        "cell atlas": SERIES,
+        "cell atlas": PDAC_ATLAS.series,
     }
     print()
     print(

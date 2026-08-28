@@ -9,7 +9,7 @@ an empty result onto an error, because the emptiness is the finding.
 
 from __future__ import annotations
 
-from car_pipeline.configs.pdac import PDAC_PROJECT
+from car_pipeline.configs.registry import resolve as resolve_indication
 from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.data.coverage import build_coverage
 from car_pipeline.data.depmap import DepMapSource, gene_index
@@ -30,22 +30,21 @@ import numpy as np
 STAGES = ("sources", "screen", "pairing", "binders", "constructs",
           "safety", "developability", "ranking")
 
-#: Indications with a configured project. The platform's design is
-#: cancer-agnostic; its *configuration* is not, and only this one has the
-#: criticality overrides, cohort and cell atlas pinned. A request for anything
-#: else is refused rather than answered with these results under another name.
-CONFIGURED = {"pancreatic ductal adenocarcinoma": PDAC_PROJECT}
+#: An indication with no single-cell atlas can still be scored, and the result
+#: must not be presented as a ranking. Measured: dropping the atlas costs C1 and
+#: C2, leaves 3,399 of 3,466 targets scored, and fills the top of the pool with
+#: immunoglobulin, TCR and MHC-II genes -- because C2 is the ONLY component that
+#: rejects stromal and immune expression. Losing 0.45 of weight is survivable
+#: arithmetic; losing the only discriminator against stroma is not, and the
+#: renormalised mean hides that by rescaling what remains as the whole score.
+USABLE = "USABLE"
+NOT_USABLE = "NOT_USABLE"
 
 
 def project_for(cancer_type: str):
     """The configured project for an indication, or a refusal naming what exists."""
-    key = (cancer_type or "").strip().lower()
-    if key not in CONFIGURED:
-        raise ValueError(
-            f"no configuration for {cancer_type!r}; configured indications are: "
-            + ", ".join(sorted(CONFIGURED))
-        )
-    return CONFIGURED[key]
+    _indication, project = resolve_indication(cancer_type)
+    return project
 
 
 def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
@@ -55,7 +54,8 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     the screen takes minutes and a request/response shape would time out.
     """
     progress("sources", "loading cached sources")
-    spec = build_spec(project_for(cancer_type))
+    indication, project = resolve_indication(cancer_type)
+    spec = build_spec(project)
     ceiling = spec.design_constraints.normal_tissue_risk_ceiling
     overrides = {o: ov.tier
                  for o, ov in spec.inputs.tissue_criticality_overrides.items()}
@@ -65,12 +65,36 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     atlas = HPASource().load()
     by_acc, by_sym = atlas_index(atlas)
     gtex_profiles, gtex_tissues, _ = GTExSource().match_surface(surface, by_acc)
-    cohort = TCGASource().load()
+    # Every tumour-side source is resolved from the indication. Nothing below
+    # reaches for a module constant naming one cohort or one atlas.
+    unavailable: list[str] = []
+    cohort = TCGASource(indication.tcga_project).load()
     cohort_join = tcga_match(cohort, surface, by_acc)
-    cells_atlas = SingleCellSource().load()
-    cell_index = cell_match(cells_atlas, surface, by_acc)
-    dependency, _ = DepMapSource().load()
-    dep_index = gene_index(dependency)
+
+    if indication.atlas is None:
+        cells_atlas, cell_index = None, {}
+        unavailable.append(
+            "single-cell atlas: none is connected for this indication, so "
+            "malignant_expression and malignant_vs_stroma cannot be measured"
+        )
+    else:
+        cells_atlas = SingleCellSource(indication.atlas).load()
+        cell_index = cell_match(cells_atlas, surface, by_acc)
+
+    try:
+        dependency, _ = DepMapSource(indication.depmap_lineage).load()
+        dep_index = gene_index(dependency)
+    except Exception as exc:                       # noqa: BLE001
+        # A lineage with no screened cell lines used to reach np.vstack and
+        # raise "need at least one array to concatenate". Six of the 36 lineages
+        # in the cached model table qualify. Escape resistance is 0.05 of the
+        # weight and its absence changes almost nothing, so this degrades and
+        # names the source rather than ending the run.
+        dependency, dep_index = None, {}
+        unavailable.append(
+            f"dependency lineage {indication.depmap_lineage!r}: "
+            f"{type(exc).__name__}: {exc}"
+        )
     coverage_rows = build_coverage(surface, by_acc, by_sym, gtex_profiles, cohort_join)
 
     progress("screen", "ranking the surface proteome")
@@ -80,8 +104,11 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     ranked, model, _ = stage3.rank(
         coverage_rows, surface_by_acc, by_acc, by_sym, cells_atlas, cell_index,
         gtex_profiles, gtex_tissues, cohort, cohort_join, dependency, dep_index,
-        overrides, ceiling, calibration)
-    s3_hash = stage3.configuration_hash(overrides, ceiling, calibration=calibration)
+        overrides, ceiling, calibration,
+        margin_label=indication.gtex_bulk_label)
+    s3_hash = stage3.configuration_hash(
+        overrides, ceiling, calibration=calibration,
+        margin_label=indication.gtex_bulk_label)
 
     progress("pairing", "evaluating pairs")
     pool = stage4.build_pool(ranked)
@@ -146,7 +173,15 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     final, attrition, status = stage11.rank(
         decisions, binders, by_construct, by_gate, liabilities, composites, ceiling)
 
+    # An atlas-less run is refused as a ranking rather than served with a
+    # caveat. A number that looks like an answer is worse than a refusal,
+    # because only one of the two gets checked.
+    usability = NOT_USABLE if indication.atlas is None else USABLE
+
     return {
+        "indication": indication,
+        "usability": usability,
+        "unavailable": unavailable,
         "spec": spec,
         "ceiling": ceiling,
         "ranked": ranked,
