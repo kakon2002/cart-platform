@@ -199,3 +199,148 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         "stage3_hash": s3_hash,
         "stage4_hash": s4_hash,
     }
+
+
+# --------------------------------------------------------------------------
+# Mode A - a target is supplied and the question is whether it is suitable
+# --------------------------------------------------------------------------
+
+UNKNOWN_TARGET = "UNKNOWN_TARGET"
+NOT_SURFACE = "NOT_SURFACE_ACCESSIBLE"
+SUITABLE = "SUITABLE"
+CONDITIONAL = "CONDITIONAL"
+UNSUITABLE = "UNSUITABLE"
+
+
+def validate(cancer_type: str, target: str, progress=lambda s, n="": None) -> dict:
+    """Evaluate one supplied target, rather than screening for targets.
+
+    **This runs the same screen Mode B runs and then reads the supplied target
+    out of it.** That is deliberate and it is the whole design: evaluating a
+    target through a separate code path would let the two modes drift, and the
+    first symptom would be the platform reporting one risk in discovery and a
+    different one in validation for the same protein and the same evidence.
+    Agreement is structural here, not asserted by a test.
+
+    The cost is that answering about one protein ranks the whole proteome. That
+    is about twenty seconds and it buys an answer that cannot disagree with the
+    discovery run.
+    """
+    symbol = (target or "").strip().upper()
+    if not symbol:
+        raise ValueError("a target symbol is required in validation mode")
+
+    screen = run(cancer_type, progress)
+    ranked = [x for x in screen["ranked"] if x.gene]
+    scored = sorted(
+        (x for x in ranked if x.composite is not None),
+        key=lambda x: (-x.composite, x.gene, x.accession),
+    )
+    rank_of = {x.gene: i + 1 for i, x in enumerate(scored)}
+
+    entry = next((x for x in ranked if x.gene.upper() == symbol), None)
+    base = {
+        "mode": "A",
+        "cancer_type": screen["indication"].cancer_type,
+        "target": symbol,
+        "screen": screen,
+    }
+
+    if entry is None:
+        # Two different findings, kept apart. A symbol the reviewed proteome
+        # does not carry at all is a question about the input. A symbol it does
+        # carry but does not place at the cell surface is a rejection, and it is
+        # a real answer about the target's suitability.
+        from car_pipeline.data.uniprot import UniProtSource
+        every = UniProtSource().load()
+        match = next((r for r in every if (r.gene or "").upper() == symbol), None)
+        if match is None:
+            return {
+                **base,
+                "verdict": UNKNOWN_TARGET,
+                "reasons": [
+                    f"{symbol} is not a gene symbol in the reviewed human "
+                    f"proteome ({len(every):,} entries, release pinned).",
+                ],
+            }
+        return {
+            **base,
+            "verdict": UNSUITABLE,
+            "accession": match.accession,
+            "reasons": [
+                f"{symbol} ({match.accession}) is in the reviewed proteome but "
+                "is not surface-accessible, so a CAR binder has nothing to "
+                "engage. This is a rejection on topology, not an absence of "
+                "evidence.",
+                f"Membrane class: {match.membrane_class}; "
+                f"outward-facing: {match.outward}; attached: {match.attached}.",
+            ],
+        }
+
+    decision = next(
+        (d for d in screen["decisions"] if d["gene"] == entry.gene), None)
+    binder = screen["binders"].get(entry.gene)
+    construct = next(
+        (c for c in screen["constructs"] if c.gene == entry.gene), None)
+
+    # A target can be surface-accessible, scored and ranked, and still never
+    # reach the pairing stage: only the top of the ranking is carried forward.
+    # "No architecture was routed" then means "it was not among the candidates
+    # considered", which is a different statement from "no architecture fits".
+    in_pool = decision is not None
+    architecture = (decision or {}).get("architecture") or "NOT_EVALUATED"
+    if architecture == "CONVENTIONAL":
+        verdict = SUITABLE
+    elif architecture in ("AND_GATE", "ADAPTOR"):
+        verdict = CONDITIONAL
+    else:
+        verdict = UNSUITABLE
+
+    reasons = []
+    if entry.composite is None:
+        reasons.append(
+            "Below the evidence floor: too little of the score is measured for "
+            "this target to be ranked at all.")
+    else:
+        reasons.append(
+            f"Ranks {rank_of.get(entry.gene, '?')} of {len(scored)} on tumour "
+            f"attractiveness (composite {entry.composite:.4f}, "
+            f"{entry.measured_weight:.2f} of the evidence measured).")
+    if entry.risk is not None:
+        reasons.append(
+            f"Normal-tissue risk {entry.risk:.4f}, peak organ "
+            f"{entry.risk_organ}.")
+    if not in_pool:
+        reasons.append(
+            f"Not carried into pairing: only the top {len(screen['pool'])} of "
+            f"{len(scored)} ranked targets are, and this one is not among them. "
+            "No architecture was routed for it, which is not the same as no "
+            "architecture fitting it.")
+    elif decision.get("route_reason"):
+        reasons.append(decision["route_reason"])
+    if binder is not None:
+        n = len(binder.sequence) + len(binder.structure)
+        reasons.append(
+            f"{n} binder candidate(s) retrieved"
+            + (f"; {len(binder.sequence)} carry a usable sequence."
+               if binder.sequence else ", none carrying a usable sequence."))
+    if construct is not None and construct.total_bp:
+        reasons.append(
+            f"Assembles at {construct.total_bp} bp against the budget "
+            f"({construct.verdict}).")
+
+    return {
+        **base,
+        "verdict": verdict,
+        "accession": entry.accession,
+        "rank": rank_of.get(entry.gene),
+        "of": len(scored),
+        "composite": entry.composite,
+        "measured_weight": entry.measured_weight,
+        "risk": entry.risk,
+        "risk_organ": entry.risk_organ,
+        "evidence_class": entry.evidence_class,
+        "architecture": architecture,
+        "outcome": (decision or {}).get("outcome"),
+        "reasons": reasons,
+    }
