@@ -46,6 +46,10 @@ STAGES = [
     ("10", "Developability", "verify_developability.py"),
     ("11", "Final ranking", "verify_ranking_final.py"),
     ("API", "HTTP surface", "verify_api.py"),
+    # Last on purpose: it runs BOTH indications and then asserts that
+    # neither one's artifacts moved, so it must see the caches in the
+    # state every earlier stage left them.
+    ("MULTI", "Multi-indication", "verify_indications.py"),
 ]
 
 #: Derived artifacts. Everything else under data/ is a raw source cache.

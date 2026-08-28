@@ -583,7 +583,20 @@ class SingleCellSource(DataSource):
                 if n_cells == 0:
                     raise ValueError("no malignant cells selected")
 
-                pid = self._read_column(obs, "pid")
+                # The donor identifier, whatever this submission calls it.
+                # Reading a hardcoded name gave a bare TypeError three frames
+                # later when the column was absent, which named nothing.
+                if not a.patient_column:
+                    raise CacheError(
+                        f"{a.series}: no patient column declared, so per-patient "
+                        "prevalence cannot be measured for this atlas"
+                    )
+                pid = self._read_field(obs, a.patient_column)
+                if pid is None:
+                    raise CacheError(
+                        f"{a.series}: obs has no {a.patient_column!r} column; "
+                        f"available: {sorted(obs.keys())[:12]}..."
+                    )
                 if a.treatment_column:
                     tr_codes, tr_cats = self._read_categorical(obs, a.treatment_column)
                     untreated_all = tr_codes == list(tr_cats).index(a.untreated_label)

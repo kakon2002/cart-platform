@@ -120,7 +120,13 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
             gtex_tissues, calibration)
         for r in pool
     }
-    cells = SingleCellSource().load_malignant(sorted({r.gene for r in pool}))
+    # The indication's atlas, not the default. A bare SingleCellSource() here
+    # silently paired one indication's targets against another indication's
+    # single-cell data, and the only reason it was visible at all is that the
+    # artifact now carries its accession in the filename.
+    cells = (SingleCellSource(indication.atlas)
+             .load_malignant(sorted({r.gene for r in pool}))
+             if indication.atlas is not None else None)
     pairs = stage4.evaluate(pool, per_organ, model, ceiling, cells)
     try:
         stage4.annotate_span_context(pairs, GeneSpanSource().load())
