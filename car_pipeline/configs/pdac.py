@@ -74,3 +74,20 @@ PDAC_PROJECT = ProjectInput(
         )
     },
 )
+
+
+#: The reference indication, as an Indication object. Everything that was a
+#: module constant inside a loader now lives here.
+PDAC = Indication(
+    key="pdac",
+    cancer_type="Pancreatic Ductal Adenocarcinoma",
+    tcga_project="TCGA-PAAD",
+    depmap_lineage="Pancreas",
+    # Four GTEx pancreas columns exist; three are cell-sorted fractions. The
+    # bulk one is the denominator, which was a judgement call recorded in
+    # stage 3 rather than an obvious choice.
+    gtex_bulk_label="Pancreas",
+    atlas=PDAC_ATLAS,
+    tissue_overrides={"pancreas": (2, PANCREAS_RATIONALE)},
+    terminable_ceiling=0.35,
+)

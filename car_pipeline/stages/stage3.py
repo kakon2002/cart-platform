@@ -412,7 +412,10 @@ BASELINE_TPM_SATURATION = 1000.0
 #: reading all four and taking the worst of them: for safety the question is
 #: whether any pancreatic compartment carries the antigen, not what the organ
 #: averages.
-BULK_PANCREAS_LABEL = "Pancreas"
+#: The reference indication's denominator. Every use now goes through the
+#: `margin_label` argument; this is the default so an unparameterised caller
+#: keeps its answer, not a constant the scorer reaches for.
+DEFAULT_MARGIN_LABEL = "Pancreas"
 
 
 def _clamp(x: float) -> float:
@@ -726,6 +729,7 @@ def rank(
     ceiling: float,
     calibration: CalibrationCurve,
     saturation: dict[str, float] | None = None,
+    margin_label: str | None = None,
     weights: dict[str, float] | None = None,
 ) -> tuple[list[Ranked], RiskModel, dict]:
     sat = dict(SATURATION if saturation is None else saturation)
@@ -744,15 +748,16 @@ def rank(
         )
     model = RiskModel(overrides=overrides)
 
-    if BULK_PANCREAS_LABEL not in gtex_tissues:
+    margin_label = margin_label or DEFAULT_MARGIN_LABEL
+    if margin_label not in gtex_tissues:
         # Failing here is the point. Silently having no denominator would make
         # the margin component unmeasured for every protein at once, and the
         # evidence floor would then quietly drop a third of the universe.
         raise KeyError(
-            f"the baseline has no {BULK_PANCREAS_LABEL!r} column; "
+            f"the baseline has no {margin_label!r} column; "
             "the margin component has no denominator"
         )
-    bulk_pancreas_col = gtex_tissues.index(BULK_PANCREAS_LABEL)
+    bulk_pancreas_col = gtex_tissues.index(margin_label)
 
     primary_mask = cohort.sample_types == PRIMARY_TUMOUR
     normal_mask = cohort.sample_types == SOLID_NORMAL
@@ -946,6 +951,7 @@ def configuration_hash(
     saturation: dict[str, float] | None = None,
     weights: dict[str, float] | None = None,
     calibration: CalibrationCurve | None = None,
+    margin_label: str | None = None,
 ) -> str:
     """Covers the tissue tables themselves, not only the tier assignments.
 
@@ -963,7 +969,7 @@ def configuration_hash(
         # The column the margin denominator is drawn from. Swapping it moves
         # every fold change and therefore the whole ranking, so a hash that
         # ignored it would let two different experiments compare as one.
-        "margin_denominator": BULK_PANCREAS_LABEL,
+        "margin_denominator": margin_label or DEFAULT_MARGIN_LABEL,
         "tier_weights": TIER_WEIGHTS,
         "organ_tiers": ORGAN_TIERS,
         "baseline_organs": BASELINE_ORGANS,
@@ -1016,7 +1022,7 @@ def header(
         f"  revision             {_revision()}",
         f"  configuration hash   "
         f"{configuration_hash(model.overrides, ceiling, sat, wts, calibration)}",
-        f"  margin denominator   {BULK_PANCREAS_LABEL} (bulk only)",
+        f"  margin denominator   {margin_label} (bulk only)",
         f"  field offset         "
         + (
             f"the cohort fold runs {stats['field_offset_fold']:.1f}x below the "

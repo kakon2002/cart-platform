@@ -43,7 +43,12 @@ _SCREENING_DATASETS: list[tuple[str, str, list[int]]] = [
 # nominate it.
 _SHARED_DATASETS: list[tuple[str, str, list[int]]] = [
     ("Human Protein Atlas", "surface localisation, normal tissue", [3, 9]),
-    ("GEO GSE202051", "per cell type expression", [3, 9]),
+    # Named generically. It used to carry the reference accession, which tied
+    # the dataset registry to one submission: a second indication reads a
+    # different series and would have been reported as having no connector at
+    # all while its connector sat unused. Which series was actually read is
+    # reported per run, not asserted here.
+    ("Single-cell tumour atlas", "per cell type expression", [3, 9]),
     ("GTEx", "normal tissue baseline", [3, 9]),
 ]
 
