@@ -41,9 +41,11 @@ def main() -> int:
     """Run the multi-indication criteria."""
     tripped: list[str] = []
 
+    checked: list[str] = []
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
         """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+        checked.append(cid)
         if is_tripped:
             tripped.append(cid)
 
@@ -184,7 +186,7 @@ def main() -> int:
               f"{deg_unavailable}")
 
     print("=" * 72)
-    print(f"  {10 - len(tripped)}/10 criteria clear")
+    print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
 
     print()
     print("=" * 72)

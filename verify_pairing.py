@@ -239,9 +239,11 @@ def main() -> int:
 
     outcomes: dict[str, bool] = {}
 
+    checked: list[str] = []
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
         """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+        checked.append(cid)
         outcomes[cid] = not is_tripped
         if is_tripped:
             tripped.append(cid)
@@ -373,7 +375,7 @@ def main() -> int:
           f"f_AB >= {stage4.COVERAGE_FLOOR} (reported, not gated)")
 
     print("=" * 72)
-    print(f"  {14 - len(tripped)}/14 criteria clear")
+    print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
 
     written = stage4.write_decisions(
         decisions,

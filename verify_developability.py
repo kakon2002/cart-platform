@@ -25,9 +25,11 @@ def main() -> int:
     print("=" * 72)
     tripped: list[str] = []
 
+    checked: list[str] = []
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
         """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+        checked.append(cid)
         if is_tripped:
             tripped.append(cid)
 
@@ -64,7 +66,7 @@ def main() -> int:
               "listed")
 
     print("=" * 72)
-    print(f"  {6 - len(tripped)}/6 criteria clear")
+    print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
     if tripped:
         print(f"\n  STOPPING: {', '.join(tripped)} tripped.")
         return 2
