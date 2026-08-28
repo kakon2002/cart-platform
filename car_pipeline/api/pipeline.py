@@ -68,6 +68,24 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     # Every tumour-side source is resolved from the indication. Nothing below
     # reaches for a module constant naming one cohort or one atlas.
     unavailable: list[str] = []
+    # None means "not connected", and every loader would otherwise read it as
+    # "use the default", which is the reference indication's pancreas cohort.
+    # An indication is refused rather than quietly screened against another
+    # one's data and served under its own name.
+    missing_required = [
+        name for name, value in (
+            ("tumour cohort", indication.tcga_project),
+            ("normal-tissue denominator", indication.gtex_bulk_label),
+        ) if not value
+    ]
+    if missing_required:
+        raise ValueError(
+            f"{indication.cancer_type} declares no "
+            + " and no ".join(missing_required)
+            + ". These have no default: falling back would screen this "
+              "indication against another one's data and report it under this "
+              "name."
+        )
     cohort = TCGASource(indication.tcga_project).load()
     cohort_join = tcga_match(cohort, surface, by_acc)
 
@@ -109,6 +127,44 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     s3_hash = stage3.configuration_hash(
         overrides, ceiling, calibration=calibration,
         margin_label=indication.gtex_bulk_label)
+
+    # Refused here, before any stage that assumes an atlas. This used to be
+    # decided at the very end of run(), 55 lines after the pairing stage had
+    # already dereferenced the atlas that is not there -- so the refusal was
+    # unreachable and the real behaviour was an AttributeError.
+    if indication.atlas is None:
+        return {
+            "indication": indication,
+            "usability": NOT_USABLE,
+            "unavailable": unavailable,
+            "spec": spec,
+            "ceiling": ceiling,
+            "ranked": ranked,
+            "pool": [],
+            "pairs": [],
+            "decisions": [],
+            "binders": {},
+            "constructs": [],
+            "gated": [],
+            "developability": [],
+            "developability_status": "NOT_SCORED",
+            "final": [],
+            "attrition": {},
+            "status": NOT_USABLE,
+            "stage3_hash": s3_hash,
+            "stage4_hash": None,
+            "reasons": [
+                "No single-cell atlas is connected for this indication, so "
+                "malignant_expression and malignant_vs_stroma are unmeasured.",
+                "malignant_vs_stroma is the only component that rejects "
+                "stromal and immune genes. Without it nothing distinguishes a "
+                "tumour antigen from a gene expressed by the lymphocytes beside "
+                "the tumour, and the ranking fills with immunoglobulin, T-cell "
+                "receptor and MHC-II genes while still scoring ~3,400 targets.",
+                "That is a structural loss, not a missing 0.45 of weight, so no "
+                "ranking is served for this indication.",
+            ],
+        }
 
     progress("pairing", "evaluating pairs")
     pool = stage4.build_pool(ranked)
@@ -216,6 +272,9 @@ NOT_SURFACE = "NOT_SURFACE_ACCESSIBLE"
 SUITABLE = "SUITABLE"
 CONDITIONAL = "CONDITIONAL"
 UNSUITABLE = "UNSUITABLE"
+#: Scored and ranked, but outside the pool carried into pairing. Neither
+#: suitable nor rejected -- not assessed.
+NOT_ASSESSED = "NOT_ASSESSED"
 
 
 def validate(cancer_type: str, target: str, progress=lambda s, n="": None) -> dict:
@@ -295,7 +354,12 @@ def validate(cancer_type: str, target: str, progress=lambda s, n="": None) -> di
     # considered", which is a different statement from "no architecture fits".
     in_pool = decision is not None
     architecture = (decision or {}).get("architecture") or "NOT_EVALUATED"
-    if architecture == "CONVENTIONAL":
+    if not in_pool:
+        # Never carried into pairing is not a rejection. Collapsing it into
+        # UNSUITABLE told a caller reading only the status that the platform had
+        # assessed and rejected a target it never assessed at all.
+        verdict = NOT_ASSESSED
+    elif architecture == "CONVENTIONAL":
         verdict = SUITABLE
     elif architecture in ("AND_GATE", "ADAPTOR"):
         verdict = CONDITIONAL

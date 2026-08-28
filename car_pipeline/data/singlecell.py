@@ -172,13 +172,10 @@ class SingleCellSource(DataSource):
         if self.cache.is_valid(entry):
             return self.cache.path(entry)
 
-        # Not every atlas arrives compressed. The reference submission is a
-        # gzipped h5ad that has to be expanded; a CELLxGENE export is already an
-        # h5ad, and running it through the expander would fail on the first read
-        # rather than simply having nothing to do.
-        if not self.atlas.archive.endswith(".gz"):
-            return self.archive_path()
-
+        # The offline guard comes first. It used to sit below the non-gzip
+        # branch, so a deployment that forbids fetching the matrix would happily
+        # download an uncompressed one instead -- 844 MB on an in-memory
+        # filesystem, which is the exact outcome the variable exists to stop.
         if os.environ.get(self.OFFLINE_ENV):
             raise CacheError(
                 "the single-cell matrix is absent and this deployment cannot "
@@ -187,6 +184,13 @@ class SingleCellSource(DataSource):
                 "and needs the matrix, which must be materialised ahead of "
                 "time rather than downloaded here. See specs/deployment.md."
             )
+
+        # Not every atlas arrives compressed. The reference submission is a
+        # gzipped h5ad that has to be expanded; a CELLxGENE export is already an
+        # h5ad, and running it through the expander would fail on the first read
+        # rather than having nothing to do.
+        if not self.atlas.archive.endswith(".gz"):
+            return self.archive_path()
 
         source = self.archive_path()
 
@@ -597,9 +601,18 @@ class SingleCellSource(DataSource):
                         f"{a.series}: obs has no {a.patient_column!r} column; "
                         f"available: {sorted(obs.keys())[:12]}..."
                     )
+                # Guarded the same way the group-means reader is. It was not,
+                # so an atlas whose treatment column is stored plainly, or whose
+                # declared label is absent, built its group means fine and then
+                # died here -- the same shape as the donor-column bug this
+                # replaced.
                 if a.treatment_column:
                     tr_codes, tr_cats = self._read_categorical(obs, a.treatment_column)
-                    untreated_all = tr_codes == list(tr_cats).index(a.untreated_label)
+                    if tr_cats is not None and a.untreated_label in list(tr_cats):
+                        untreated_all = tr_codes == list(tr_cats).index(
+                            a.untreated_label)
+                    else:
+                        untreated_all = np.zeros(n_cells_total, dtype=bool)
                 else:
                     untreated_all = np.zeros(l1_codes.shape[0], dtype=bool)
 

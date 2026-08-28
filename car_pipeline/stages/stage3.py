@@ -1023,7 +1023,7 @@ def header(
         f"  universe             {universe}",
         f"  revision             {_revision()}",
         f"  configuration hash   "
-        f"{configuration_hash(model.overrides, ceiling, sat, wts, calibration)}",
+        f"{configuration_hash(model.overrides, ceiling, sat, wts, calibration, margin_label)}",
         f"  margin denominator   {margin_label} (bulk only)",
         f"  field offset         "
         + (
