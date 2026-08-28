@@ -63,13 +63,25 @@ Check what you have at any point:
 python bootstrap.py
 ```
 
-Expect `10/10 sources usable`. Two entries look unusual and are correct:
+Expect `8/8 shared sources usable` and, beneath it, a per-indication line
+reading `tcga=ok  singlecell=ok  depmap=ok` for **every** registered indication.
+
+**The per-indication block is the one to read.** The shared sources describe the
+human body and there is one copy of each; the cohort, the atlas and the
+dependency matrix describe a tumour and there is one *per indication*. A single
+averaged count would report a clone as ready while a second indication had
+nothing — which is exactly what it used to do.
+
+Two entries look unusual and are correct:
 
 - **singlecell** shows ~18 MB, not 11 GB. The 8.3 GB matrix and the 2.6 GB
   archive it came from are build-time inputs; the derived summaries are what a
   served run reads.
 - **trials** shows `deferred`. Its cache is keyed by the screened antigen list,
   so it has no meaning until a pool exists, and it is built during the first run.
+- **singlecell** carries only derived summaries. The atlases themselves — 8.3 GB
+  for one indication, 844 MB for the other — are build-time inputs and are
+  deliberately not in the archive.
 
 A payload named by a manifest but absent is reported `BROKEN` with the filename,
 rather than counted as present.
