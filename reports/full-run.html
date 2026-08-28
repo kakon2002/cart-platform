@@ -191,6 +191,22 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
 .crit__note--new { color:var(--madder); border-left-color:var(--madder);
   font-weight:500; }
 
+.sweep { min-width:520px; }
+.sweep th {
+  text-align:left; padding:9px 14px 9px 0; white-space:nowrap;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:400;
+}
+.sweep td {
+  padding:9px 12px; text-align:right; border-bottom:1px solid var(--rule-soft);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; font-size:0.92rem;
+}
+.sweep tr:first-child td { color:var(--ink-soft); }
+.sweep .sw--on {
+  background:var(--tripped-bg); color:var(--tripped); font-weight:500;
+}
 .foot {
   margin-top:80px; padding-top:22px; border-top:1px solid var(--rule);
   color:var(--ink-faint); font-size:0.83rem;
@@ -211,8 +227,8 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
       one command against the cached sources. </p>
     </div>
     <div class="tally">
-      <span class="tally__n">98<span style="color:var(--ink-faint)">/103</span></span>
-      <span class="tally__l">criteria clear &middot; 6.9 min</span>
+      <span class="tally__n">108<span style="color:var(--ink-faint)">/114</span></span>
+      <span class="tally__l">criteria clear &middot; 16.1 min</span>
     </div>
   </header>
 
@@ -220,7 +236,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
     <p class="eyebrow">Stage ledger</p>
     <h2>What ran, and what it cost</h2>
     <p class="lede">Each stage is verified by its own process against criteria
-    written before the run. 5 criteria are tripped. Every one has a decision on record, shown against it — a tripped criterion here is a recorded limitation, not a silenced one.</p>
+    written before the run. 6 criteria are tripped. Every one has a decision on record, shown against it — a tripped criterion here is a recorded limitation, not a silenced one.</p>
     <div class="scroll">
       <table>
         <thead><tr>
@@ -246,7 +262,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Target discovery</td>
           <td class="ct"><span class="frac">12/13</span></td>
           <td class="st"><span class="pill pill--tripped">1 tripped</span></td>
-          <td class="tm">19.9s</td>
+          <td class="tm">19.7s</td>
         </tr>
         <tr class="row row--tripped">
           <td class="num">4</td>
@@ -255,19 +271,26 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="st"><span class="pill pill--tripped">4 tripped</span></td>
           <td class="tm">8.9s</td>
         </tr>
+        <tr class="row row--tripped">
+          <td class="num">4a</td>
+          <td class="nm">Architecture routing</td>
+          <td class="ct"><span class="frac">10/11</span></td>
+          <td class="st"><span class="pill pill--tripped">1 tripped</span></td>
+          <td class="tm">312.9s</td>
+        </tr>
         <tr class="row row--clear">
           <td class="num">5</td>
           <td class="nm">Binder discovery</td>
           <td class="ct"><span class="frac">7/7</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">366.6s</td>
+          <td class="tm">303.9s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">6</td>
           <td class="nm">Construct assembly</td>
           <td class="ct"><span class="frac">8/8</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">0.6s</td>
+          <td class="tm">0.4s</td>
         </tr>
         <tr class="row row--absent">
           <td class="num">7</td>
@@ -288,7 +311,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Safety gate</td>
           <td class="ct"><span class="frac">7/7</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">3.9s</td>
+          <td class="tm">3.7s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">10</td>
@@ -302,14 +325,14 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Final ranking</td>
           <td class="ct"><span class="frac">6/6</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">4.0s</td>
+          <td class="tm">3.8s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">API</td>
           <td class="nm">HTTP surface</td>
           <td class="ct"><span class="frac">9/9</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">10.9s</td>
+          <td class="tm">311.4s</td>
         </tr></tbody>
       </table>
     </div>
@@ -317,18 +340,17 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
 
   <section class="block">
     <p class="eyebrow">The result</p>
-    <h2>Where 200 candidate targets stop</h2>
+    <h2>8 of 200 designs reach the end</h2>
     <p class="lede">Every candidate is attributed to the first gate it fails, so
-    the drops sum to the pool rather than overlapping. Nothing reaches the end,
-    and that is a measurement of the constraints — not a failure of the run.</p>
+    the drops sum to the pool rather than overlapping. 8 reach it. The pipeline produced designs rather than a wall, and the gates that stopped the rest are measurements of the constraints, not failures of the run.</p>
     <ol class="gates">
         <li class="gate">
           <div class="gate__head">
             <span class="gate__name">blocked on normal tissue risk</span>
-            <span class="gate__drop">&minus;199</span>
+            <span class="gate__drop">&minus;191</span>
           </div>
-          <div class="gate__bar"><span style="width:99.5000%"></span></div>
-          <div class="gate__rem">1 remain</div>
+          <div class="gate__bar"><span style="width:95.5000%"></span></div>
+          <div class="gate__rem">9 remain</div>
         </li>
         <li class="gate">
           <div class="gate__head">
@@ -336,7 +358,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
             <span class="gate__drop">&minus;0</span>
           </div>
           <div class="gate__bar"><span style="width:0.0000%"></span></div>
-          <div class="gate__rem">1 remain</div>
+          <div class="gate__rem">9 remain</div>
         </li>
         <li class="gate">
           <div class="gate__head">
@@ -344,7 +366,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
             <span class="gate__drop">&minus;1</span>
           </div>
           <div class="gate__bar"><span style="width:0.5000%"></span></div>
-          <div class="gate__rem">0 remain</div>
+          <div class="gate__rem">8 remain</div>
         </li>
         <li class="gate">
           <div class="gate__head">
@@ -352,7 +374,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
             <span class="gate__drop">&minus;0</span>
           </div>
           <div class="gate__bar"><span style="width:0.0000%"></span></div>
-          <div class="gate__rem">0 remain</div>
+          <div class="gate__rem">8 remain</div>
         </li>
         <li class="gate">
           <div class="gate__head">
@@ -360,25 +382,48 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
             <span class="gate__drop">&minus;0</span>
           </div>
           <div class="gate__bar"><span style="width:0.0000%"></span></div>
-          <div class="gate__rem">0 remain</div>
+          <div class="gate__rem">8 remain</div>
         </li></ol>
+  </section>
+
+  
+  <section class="block">
+    <p class="eyebrow">The one number this pipeline cannot measure</p>
+    <h2>What each ceiling would admit</h2>
+    <p class="lede">An adaptor design does not make an antigen safer — the
+    adaptor still binds it — it makes the exposure stoppable. How much risk that
+    justifies is a clinical policy decision, not something derivable from
+    expression data, so the ceiling is a declared input and this is what every
+    setting of it buys. The declared value is highlighted.</p>
+    <div class="scroll">
+      <table class="sweep">
+        <tbody>
+          <tr><th>terminable ceiling</th><td class="">0.15</td><td class="">0.2</td><td class="">0.25</td><td class="">0.3</td><td class="sw--on">0.35</td><td class="">0.4</td><td class="">0.5</td><td class="">0.6</td><td class="">0.7</td></tr>
+          <tr><th>designs admitted</th><td class="">0</td><td class="">0</td><td class="">1</td><td class="">5</td><td class="sw--on">9</td><td class="">26</td><td class="">65</td><td class="">109</td><td class="">150</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lede" style="margin-top:18px">The reference antigen MSLN sits at
+    risk 0.6366 and is <em>not</em> admitted at 0.35. Admitting it needs roughly
+    0.65, which also admits about 120 others. That trade is the decision.</p>
   </section>
 
   <section class="block">
     <p class="eyebrow">Served over HTTP</p>
-    <h2>An empty pipeline answers 200</h2>
-    <p class="lede">The endpoints return a named status with the reasons
-    computed from this run — never a 404, a 500, or a bare empty list. An empty
-    list would read as having looked and found nothing to say.</p>
+    <h2>Every answer is a named status</h2>
+    <p class="lede">The endpoints return a status with the reasons computed from
+    this run — never a 404, a 500, or a bare empty list. A design that fits but
+    has no binder sequence is reported as its own state, distinct both from a
+    finished design and from one the budget stopped.</p>
     <div class="endings">
         <div class="ending">
           <p class="ending__ep">GET /constructs</p>
-          <p class="ending__st">NO_BUILDABLE_CONSTRUCT</p>
-          <ul class="ending__why"><li>Conservative safety tolerance mandates a safety switch (1308 bp).</li><li>The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.</li><li>Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.</li><li>This is a constraint result, not a pipeline failure. The budget is Stage 1&#x27;s and is doing what it exists for.</li></ul>
+          <p class="ending__st">BUILDABLE_AWAITING_BINDER</p>
+          <ul class="ending__why"><li>8 design(s) fit the 3500 bp budget but carry no binder sequence: the adaptor receptor binds a tag, and no anti-tag binder exists in the connected sources, so its size is declared and its sequence is not invented.</li></ul>
         </div>
         <div class="ending">
           <p class="ending__ep">GET /result</p>
-          <p class="ending__st">NO_DESIGN_REACHES_THE_END</p>
+          <p class="ending__st">RANKED_AWAITING_BINDER</p>
           
         </div></div>
   </section>
@@ -386,7 +431,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
   <section class="block">
     <p class="eyebrow">Every criterion</p>
     <h2>The full ledger</h2>
-    <p class="lede">All 103 criteria, in pipeline order, exactly as
+    <p class="lede">All 114 criteria, in pipeline order, exactly as
     each verifier reported them.</p>
     
       <section class="stage" id="s1">
@@ -661,6 +706,58 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
             <span class="crit__detail">pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)<span class="crit__note">Accepted — Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.</span></span>
           </li></ul>
       </section>
+      <section class="stage" id="s4a">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage 4a</span>
+          Architecture routing
+          <span class="stage__score">10/11</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">A1</span>
+            <span class="crit__detail">architecture is order-independent; 0 differ on a reversed pool</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A2</span>
+            <span class="crit__detail">0 targets routed ADAPTOR that CONVENTIONAL would have admitted</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A3</span>
+            <span class="crit__detail">0 routed risks differ from the Stage 3 risk</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A4</span>
+            <span class="crit__detail">0 CONVENTIONAL targets sit above the persistent ceiling</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A5</span>
+            <span class="crit__detail">NPSR1 (risk 0.0277) routes CONVENTIONAL</span>
+          </li>
+          <li class="crit crit--accepted">
+            <span class="crit__id">A6</span>
+            <span class="crit__detail">MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE<span class="crit__note">Accepted — A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row&#x27;s condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible.</span></span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A7</span>
+            <span class="crit__detail">0 targets resolve to NO_ARCHITECTURE with no reason</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A8</span>
+            <span class="crit__detail">with no declared terminable ceiling, 0 targets still route ADAPTOR</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A9</span>
+            <span class="crit__detail">adaptor admissions across the ceiling sweep: 0.15-&gt;0, 0.2-&gt;0, 0.25-&gt;1, 0.3-&gt;5, 0.35-&gt;9, 0.4-&gt;26, 0.5-&gt;65, 0.6-&gt;109, 0.7-&gt;150</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A10</span>
+            <span class="crit__detail">declared ceiling 0.35 matches the spec value 0.35</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">A11</span>
+            <span class="crit__detail">8 adaptor constructs; 0 emit a sequence despite an unsupplied binder</span>
+          </li></ul>
+      </section>
       <section class="stage" id="s5">
         <h3 class="stage__h">
           <span class="stage__label">Stage 5</span>
@@ -854,19 +951,19 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A3</span>
-            <span class="crit__detail">a run returns 202 with job d5be32d25c38 rather than blocking</span>
+            <span class="crit__detail">a run returns 202 with job 73841f0df19f rather than blocking</span>
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A4</span>
-            <span class="crit__detail">job finished complete after stages [&#x27;sources&#x27;, &#x27;pairing&#x27;, &#x27;ranking&#x27;]</span>
+            <span class="crit__detail">job finished complete after stages [&#x27;sources&#x27;, &#x27;pairing&#x27;, &#x27;binders&#x27;, &#x27;ranking&#x27;]</span>
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A5</span>
-            <span class="crit__detail">zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows</span>
+            <span class="crit__detail">200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons</span>
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A6</span>
-            <span class="crit__detail">end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200</span>
+            <span class="crit__detail">end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting</span>
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A7</span>

@@ -251,19 +251,38 @@ def constructs_view(project_id: str) -> dict:
     counts: dict[str, int] = {}
     for c in constructs:
         counts[c.verdict] = counts.get(c.verdict, 0) + 1
+    # Three states, and they are genuinely different answers. A design that
+    # fits and carries its sequence is finished. One that fits but whose binder
+    # sequence was never supplied is a real design waiting on one part. One
+    # that does not fit is stopped by the budget. Counting only the first, as
+    # this view used to, reported two designs where there were ten.
     buildable = [c for c in constructs if c.verdict == stage6.BUILDABLE]
-    assembled = [c for c in constructs if c.amino_acid_sequence]
+    complete = [c for c in buildable if c.amino_acid_sequence]
+    awaiting = [c for c in buildable if not c.amino_acid_sequence]
+    over_budget = [c for c in constructs if c.verdict == stage6.BUDGET_EXCEEDED]
 
+    def state(c):
+        if c.verdict != stage6.BUILDABLE:
+            return "BUDGET_EXCEEDED"
+        return "COMPLETE" if c.amino_acid_sequence else "AWAITING_BINDER"
+
+    # Everything that assembled to a length, whether or not it carries residues.
+    # An over-budget design is reported too: its overage is the measurement.
     rows = []
-    for c in assembled:
+    for c in buildable + over_budget:
         rows.append({
             "gene": c.gene, "partner": c.partner, "verdict": c.verdict,
+            "state": state(c),
             "architecture": c.architecture,
+            # False where a part declares a size but no sequence. The length and
+            # the domain map are real; the residues were never supplied and were
+            # not invented.
+            "binder_supplied": c.binder_supplied,
             "binder": c.binder_name, "partner_binder": c.partner_binder_name,
             "total_bp": c.total_bp, "budget_bp": stage6.BUDGET_BP,
             "headroom_bp": c.headroom_bp,
-            "amino_acid_sequence": c.amino_acid_sequence,
-            "dna": c.dna,
+            "amino_acid_sequence": c.amino_acid_sequence or None,
+            "dna": c.dna or None,
             "domains": [
                 {"name": s.name, "provenance": s.provenance,
                  "accession": s.accession, "feature": s.feature,
@@ -314,11 +333,29 @@ def constructs_view(project_id: str) -> dict:
             "This is a constraint result, not a pipeline failure. The budget is "
             "Stage 1's and is doing what it exists for."
         )
+    if not buildable:
+        status = "NO_BUILDABLE_CONSTRUCT"
+    elif complete:
+        status = "BUILDABLE"
+    else:
+        # Every design that fits is waiting on a binder sequence. Reporting this
+        # as plain BUILDABLE would promise something that cannot be ordered yet.
+        status = "BUILDABLE_AWAITING_BINDER"
+
+    if buildable and not complete:
+        reasons.append(
+            f"{len(awaiting)} design(s) fit the {stage6.BUDGET_BP} bp budget "
+            "but carry no binder sequence: the adaptor receptor binds a tag, "
+            "and no anti-tag binder exists in the connected sources, so its "
+            "size is declared and its sequence is not invented."
+        )
     return {
-        "status": "NO_BUILDABLE_CONSTRUCT" if not buildable else "BUILDABLE",
+        "status": status,
         "counts": counts,
         "buildable": len(buildable),
-        "assembled": len(assembled),
+        "complete": len(complete),
+        "awaiting_binder": len(awaiting),
+        "over_budget": len(over_budget),
         "constructs": rows,
         "reasons": reasons,
     }
@@ -332,16 +369,42 @@ def result_view(project_id: str) -> dict:
         n = r["attrition"][gate]
         running -= n
         chain.append({"gate": gate, "dropped": n, "remaining": running})
-    return {
-        "status": r["status"],
-        "pool_size": len(r["final"]),
-        "reached_the_end": sum(1 for x in r["final"] if x.survived),
-        "attrition": chain,
-        "reasons": [
+    survivors = [x for x in r["final"] if x.survived]
+    complete = [x for x in survivors if x.binder_supplied]
+    awaiting = [x for x in survivors if not x.binder_supplied]
+
+    # Reasons computed from this run, as everywhere else in this file. The
+    # zero-design wording describes a case that no longer holds and is not
+    # printed over a run that produced designs.
+    if not survivors:
+        reasons = [
             "Every drop is a measurement, not a failure of the stage that made it.",
             "An empty ranking would read as 'nothing ranked highly'; the true "
             "statement is that nothing arrived to be ranked.",
-        ],
+        ]
+    else:
+        reasons = [
+            f"{len(survivors)} design(s) reached the end: {len(complete)} "
+            f"complete, {len(awaiting)} awaiting a binder sequence.",
+            "Every drop is a measurement, not a failure of the stage that "
+            "made it.",
+        ]
+        if awaiting:
+            reasons.append(
+                "A design awaiting a binder has a layout, a length and a "
+                "domain map, and no residues for its anti-tag binder. It fits "
+                "the budget and cannot be ordered yet, which is a different "
+                "state both from a design that does not fit and from a "
+                "finished one."
+            )
+    return {
+        "status": r["status"],
+        "pool_size": len(r["final"]),
+        "reached_the_end": len(survivors),
+        "complete": len(complete),
+        "awaiting_binder": len(awaiting),
+        "attrition": chain,
+        "reasons": reasons,
         "developability_status": r["developability_status"],
     }
 

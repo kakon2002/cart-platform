@@ -46,19 +46,19 @@ WHAT THE GATE SAYS
   --------------------------------------------------------------------
     CEACAM5   BLOCKED                risk  0.6000 (gi_tract) binder Cergutuzumab, Cibisatamab, Labetuzumab [ORIGIN_UNKNOWN]
       trials  342, stopped 28
-      - Stage 3 risk 0.6000 exceeds the ceiling 0.15 (peak organ gi_tract)
+      - Stage 3 risk 0.6000 exceeds the persistent ceiling 0.15 (peak organ gi_tract)
     CEACAM6   BLOCKED                risk  0.8135 (lung) binder Tinurilimab [ORIGIN_UNKNOWN]
       trials    2, stopped 0
-      - Stage 3 risk 0.8135 exceeds the ceiling 0.15 (peak organ lung)
+      - Stage 3 risk 0.8135 exceeds the persistent ceiling 0.15 (peak organ lung)
     CLDN18    BLOCKED                risk  0.7271 (lung) binder Ciletatug, Garetatug, Givastomig [chimeric]
       trials    3, stopped 0
-      - Stage 3 risk 0.7271 exceeds the ceiling 0.15 (peak organ lung)
+      - Stage 3 risk 0.7271 exceeds the persistent ceiling 0.15 (peak organ lung)
     MSLN      BLOCKED                risk  0.6366 (lung) binder Amatuximab, Anetumab, Inezetamab [chimeric]
       trials  169, stopped 33
-      - Stage 3 risk 0.6366 exceeds the ceiling 0.15 (peak organ lung)
+      - Stage 3 risk 0.6366 exceeds the persistent ceiling 0.15 (peak organ lung)
     MUC1      BLOCKED                risk  0.9215 (liver) binder Cantuzumab, Clivatuzumab, Gatipotuzumab [humanised]
       trials  492, stopped 26
-      - Stage 3 risk 0.9215 exceeds the ceiling 0.15 (peak organ liver)
+      - Stage 3 risk 0.9215 exceeds the persistent ceiling 0.15 (peak organ liver)
 
   Binder origin across targets that have one, read from the name stem
     ORIGIN_UNKNOWN           17
@@ -70,4 +70,4 @@ WHAT THE GATE SAYS
     humanisation_state NOT_CONNECTED from the deposited taxonomy; this
     is a second, equally indirect reading reported beside it.
 
-  configuration hash 1e5b18939222964b
+  configuration hash df43da01c696a611
