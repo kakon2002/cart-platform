@@ -2,21 +2,22 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**108/114 criteria clear across 11 stages**, 16.1 minutes.
+**106/111 criteria clear across 12 stages**, 27.5 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
-| 1 | Design spec | 31/31 | clear | 0s |
+| 1 | Design spec | 31/31 | clear | 1s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
-| 3 | Target discovery | 12/13 | **TRIPPED** | 20s |
+| 3 | Target discovery | 0/0 | **TRIPPED** | 4s |
 | 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 10/11 | **TRIPPED** | 313s |
-| 5 | Binder discovery | 7/7 | clear | 304s |
+| 4a | Architecture routing | 10/11 | **TRIPPED** | 354s |
+| 5 | Binder discovery | 7/7 | clear | 291s |
 | 6 | Construct assembly | 8/8 | clear | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 9/9 | clear | 311s |
+| API | HTTP surface | 9/9 | clear | 296s |
+| MULTI | Multi-indication | 10/10 | clear | 688s |
 
 ## Every criterion
 
@@ -59,21 +60,9 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `validation sets` — pass
 - clear `count drift` — yes
 
-### Stage 3 — Target discovery (12/13)
+### Stage 3 — Target discovery (0/0)
 
-- clear `R1` — outside top decile: none
-- clear `R2` — cleared the ceiling: none (across 4 accessions)
-- clear `R3` — CEACAM5 composite=0.8769 measured_weight=0.55 tier_rank=1
-- clear `R4` — non-surface entries present: 0
-- clear `R5` — highest |rho| tumour_vs_normal=0.815 (over measured targets only)
-- clear `R6` — worst retention 94% at malignant_expression x0.8
-- clear `R7` — cleared 646 of 3,466
-- clear `R8` — most repeated composite 0.1273 occurs 17x (0.50%)
-- clear `R9` — best unresolved None vs best protein-confirmed 0.8769
-- clear `R10` — 0 of 100 reached only after a symbol failed
-- clear `R11` — 22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread
-- clear `R12` — worst retention 82% at c3_fold x0.5
-- **TRIPPED** `R13` — clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x
+No criteria parsed; the verifier exited 1.
 
 ### Stage 4 — Target pairing (10/14)
 
@@ -159,13 +148,26 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 73841f0df19f rather than blocking
+- clear `A3` — a run returns 202 with job 05722cdbe6cf rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
 - clear `A5` — 200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons
 - clear `A6` — end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting
 - clear `A7` — top target CEACAM5 with a 6-component breakdown
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
+
+### Stage MULTI — Multi-indication (10/10)
+
+- clear `M1` — 34 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+- clear `M2` — shared sources carry no per-indication copy (0 found)
+- clear `M3` — indication-specific module constants remaining: none
+- clear `M4` — an indication with no atlas is expressible and carries atlas=None, which the driver maps to NOT_USABLE
+- clear `M5` — the atlas-less path names malignant_vs_stroma as what is lost, not just a weight
+- clear `M6` — Mode A on CD19 returns UNSUITABLE with 3 reasons
+- clear `M7` — CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement
+- clear `M8` — Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)
+- clear `M9` — reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
+- clear `M10` — unavailable components name their source (none unavailable)
 
 ## What the platform returns for this indication
 
@@ -182,8 +184,6 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 ## Tripped
 
-- Stage 3 `R13` — clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x
-  - Accepted: Withdrawn. The two populations differ by construction (breadth 51 vs 7) and the max-over-sources gate rewards being unmeasured, so no combination rule reaches the 5x limit. Replaced by R13-prime, which clears.
 - Stage 4 `P4` — f_AB vs f_A x f_B over 14,535 measured pairs, rho=0.9934 (limit 0.98)
   - Accepted: Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.
 - Stage 4 `P7` — 1 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['NPSR1+HLA-A']

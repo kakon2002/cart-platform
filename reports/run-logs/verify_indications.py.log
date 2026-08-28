@@ -1,0 +1,55 @@
+registered indications:
+  Invasive Breast Carcinoma            cohort=TCGA-BRCA  atlas=GSE176078 lineage=Breast
+  Pancreatic Ductal Adenocarcinoma     cohort=TCGA-PAAD  atlas=GSE202051 lineage=Pancreas
+
+running both indications
+  Invasive Breast Carcinoma
+  querying the trial registry for 200 antigens
+    25/200
+    50/200
+    75/200
+    100/200
+    125/200
+    150/200
+    175/200
+    200/200
+  Pancreatic Ductal Adenocarcinoma
+  querying the trial registry for 200 antigens
+    25/200
+    50/200
+    75/200
+    100/200
+    125/200
+    150/200
+    175/200
+    200/200
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    M1: 34 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+  clear    M2: shared sources carry no per-indication copy (0 found)
+  clear    M3: indication-specific module constants remaining: none
+  clear    M4: an indication with no atlas is expressible and carries atlas=None, which the driver maps to NOT_USABLE
+  clear    M5: the atlas-less path names malignant_vs_stroma as what is lost, not just a weight
+  clear    M6: Mode A on CD19 returns UNSUITABLE with 3 reasons
+  clear    M7: CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement
+  clear    M8: Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)
+  clear    M9: reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
+  clear    M10: unavailable components name their source (none unavailable)
+========================================================================
+  10/10 criteria clear
+
+========================================================================
+WHAT EACH INDICATION PRODUCED
+========================================================================
+  Invasive Breast Carcinoma
+    usability USABLE  status RANKED
+    scored 3,401  pool 200  top ['CD24', 'EPCAM', 'MAL2', 'CEACAM6', 'SLC39A6']
+    outcomes {'UNRESOLVED': 104, 'DUAL': 81, 'SINGLE': 3, 'NO_DESIGN': 7, 'ADAPTOR': 5}
+
+  Pancreatic Ductal Adenocarcinoma
+    usability USABLE  status RANKED_AWAITING_BINDER
+    scored 3,400  pool 200  top ['CEACAM5', 'TMC5', 'MUCL3', 'NECTIN4', 'HLA-H']
+    outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
+

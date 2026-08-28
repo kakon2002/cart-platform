@@ -106,3 +106,33 @@ Fixed before the run.
 
 M9 is the one the whole exercise rests on: **two indications is only real if the
 first still produces what it produced before.**
+
+## 5. What the second indication actually caught
+
+Four defects surfaced only because a second indication existed, and the first is
+the exact failure shape this document opens with.
+
+**The pairing stage used the wrong atlas.** It built its co-expression artifact
+from a source constructed with no argument, so it silently read the reference
+indication's atlas while screening the second one's targets. The run completed
+and the output was plausible. What exposed it was the artifact filename carrying
+one accession beside a gene digest belonging to the other indication's pool:
+`malignant_cells__GSE202051_78f956cf86701571`. **Under the old unnamed layout
+that file would have been indistinguishable from a correct one.** This is the
+argument for putting the source in the path and not only in the fingerprint,
+made by the very thing the path was supposed to prevent.
+
+**The donor column was read by a hardcoded name**, so an atlas that calls it
+something else failed three frames later with a bare type error that named
+nothing. It is declared now, and its absence is refused by name with the
+available columns listed.
+
+**Parameterising the normal-tissue denominator missed two call sites** — the
+configuration hash, where the local was out of scope, and the run header, which
+died on an undefined name after the scoring had already succeeded.
+
+**Renaming the cohort pin to a default left two verifiers importing the old
+name.** Both failed at import and reported no criteria at all. The runner caught
+it, because a stage that reports nothing is a failure there regardless of exit
+code — but an import sweep across the verifiers is cheaper and would have caught
+it before the run rather than during it.
