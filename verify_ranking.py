@@ -30,7 +30,7 @@ from car_pipeline.data.singlecell import (
     match_surface as cell_match,
 )
 from car_pipeline.data.tcga import (
-    PROJECT as TCGA_PIN,
+    DEFAULT_PROJECT as TCGA_PIN,
     TCGASource,
     match_surface as tcga_match,
 )

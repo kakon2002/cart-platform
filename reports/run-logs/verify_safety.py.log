@@ -1,4 +1,13 @@
 loading upstream
+  querying the trial registry for 200 antigens
+    25/200
+    50/200
+    75/200
+    100/200
+    125/200
+    150/200
+    175/200
+    200/200
 
 ========================================================================
 REJECTION CRITERIA
@@ -45,7 +54,7 @@ WHAT THE GATE SAYS
   The five known targets
   --------------------------------------------------------------------
     CEACAM5   BLOCKED                risk  0.6000 (gi_tract) binder Cergutuzumab, Cibisatamab, Labetuzumab [ORIGIN_UNKNOWN]
-      trials  342, stopped 28
+      trials  342, stopped 29
       - Stage 3 risk 0.6000 exceeds the persistent ceiling 0.15 (peak organ gi_tract)
     CEACAM6   BLOCKED                risk  0.8135 (lung) binder Tinurilimab [ORIGIN_UNKNOWN]
       trials    2, stopped 0
@@ -54,10 +63,10 @@ WHAT THE GATE SAYS
       trials    3, stopped 0
       - Stage 3 risk 0.7271 exceeds the persistent ceiling 0.15 (peak organ lung)
     MSLN      BLOCKED                risk  0.6366 (lung) binder Amatuximab, Anetumab, Inezetamab [chimeric]
-      trials  169, stopped 33
+      trials  169, stopped 34
       - Stage 3 risk 0.6366 exceeds the persistent ceiling 0.15 (peak organ lung)
     MUC1      BLOCKED                risk  0.9215 (liver) binder Cantuzumab, Clivatuzumab, Gatipotuzumab [humanised]
-      trials  492, stopped 26
+      trials  492, stopped 27
       - Stage 3 risk 0.9215 exceeds the persistent ceiling 0.15 (peak organ liver)
 
   Binder origin across targets that have one, read from the name stem
