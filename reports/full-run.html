@@ -227,8 +227,8 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
       one command against the cached sources. </p>
     </div>
     <div class="tally">
-      <span class="tally__n">108<span style="color:var(--ink-faint)">/114</span></span>
-      <span class="tally__l">criteria clear &middot; 16.1 min</span>
+      <span class="tally__n">118<span style="color:var(--ink-faint)">/124</span></span>
+      <span class="tally__l">criteria clear &middot; 34.2 min</span>
     </div>
   </header>
 
@@ -248,7 +248,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Design spec</td>
           <td class="ct"><span class="frac">31/31</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">0.5s</td>
+          <td class="tm">0.7s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">2</td>
@@ -262,28 +262,28 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Target discovery</td>
           <td class="ct"><span class="frac">12/13</span></td>
           <td class="st"><span class="pill pill--tripped">1 tripped</span></td>
-          <td class="tm">19.7s</td>
+          <td class="tm">20.4s</td>
         </tr>
         <tr class="row row--tripped">
           <td class="num">4</td>
           <td class="nm">Target pairing</td>
           <td class="ct"><span class="frac">10/14</span></td>
           <td class="st"><span class="pill pill--tripped">4 tripped</span></td>
-          <td class="tm">8.9s</td>
+          <td class="tm">8.8s</td>
         </tr>
         <tr class="row row--tripped">
           <td class="num">4a</td>
           <td class="nm">Architecture routing</td>
           <td class="ct"><span class="frac">10/11</span></td>
           <td class="st"><span class="pill pill--tripped">1 tripped</span></td>
-          <td class="tm">312.9s</td>
+          <td class="tm">355.1s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">5</td>
           <td class="nm">Binder discovery</td>
           <td class="ct"><span class="frac">7/7</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">303.9s</td>
+          <td class="tm">296.5s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">6</td>
@@ -311,7 +311,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Safety gate</td>
           <td class="ct"><span class="frac">7/7</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">3.7s</td>
+          <td class="tm">3.8s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">10</td>
@@ -325,14 +325,21 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <td class="nm">Final ranking</td>
           <td class="ct"><span class="frac">6/6</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">3.8s</td>
+          <td class="tm">4.1s</td>
         </tr>
         <tr class="row row--clear">
           <td class="num">API</td>
           <td class="nm">HTTP surface</td>
           <td class="ct"><span class="frac">9/9</span></td>
           <td class="st"><span class="pill pill--clear">clear</span></td>
-          <td class="tm">311.4s</td>
+          <td class="tm">301.4s</td>
+        </tr>
+        <tr class="row row--clear">
+          <td class="num">MULTI</td>
+          <td class="nm">Multi-indication</td>
+          <td class="ct"><span class="frac">10/10</span></td>
+          <td class="st"><span class="pill pill--clear">clear</span></td>
+          <td class="tm">1060.2s</td>
         </tr></tbody>
       </table>
     </div>
@@ -431,7 +438,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
   <section class="block">
     <p class="eyebrow">Every criterion</p>
     <h2>The full ledger</h2>
-    <p class="lede">All 114 criteria, in pipeline order, exactly as
+    <p class="lede">All 124 criteria, in pipeline order, exactly as
     each verifier reported them.</p>
     
       <section class="stage" id="s1">
@@ -951,7 +958,7 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A3</span>
-            <span class="crit__detail">a run returns 202 with job 73841f0df19f rather than blocking</span>
+            <span class="crit__detail">a run returns 202 with job 82b290bf017b rather than blocking</span>
           </li>
           <li class="crit crit--clear">
             <span class="crit__id">A4</span>
@@ -976,6 +983,54 @@ tbody td { padding:11px 12px; border-bottom:1px solid var(--rule-soft); }
           <li class="crit crit--clear">
             <span class="crit__id">A9</span>
             <span class="crit__detail">evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11</span>
+          </li></ul>
+      </section>
+      <section class="stage" id="sMULTI">
+        <h3 class="stage__h">
+          <span class="stage__label">Stage MULTI</span>
+          Multi-indication
+          <span class="stage__score">10/10</span>
+        </h3>
+        <ul class="crits">
+          <li class="crit crit--clear">
+            <span class="crit__id">M1</span>
+            <span class="crit__detail">36 indication-tagged artifacts; 0 changed, 0 disappeared after running both</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M2</span>
+            <span class="crit__detail">shared sources carry no per-indication copy (0 found)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M3</span>
+            <span class="crit__detail">indication-specific module constants remaining: none</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M4</span>
+            <span class="crit__detail">an atlas-less indication returns NOT_USABLE with no ranking</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M5</span>
+            <span class="crit__detail">the refusal names malignant_vs_stroma as the missing discriminator, not just a lost weight</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M6</span>
+            <span class="crit__detail">Mode A on CD19 returns NOT_ASSESSED with 3 reasons</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M7</span>
+            <span class="crit__detail">CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M8</span>
+            <span class="crit__detail">Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M9</span>
+            <span class="crit__detail">reference unchanged: top3 [&#x27;CEACAM5&#x27;, &#x27;TMC5&#x27;, &#x27;MUCL3&#x27;], pool 200, hash a91c696f2e1318f7, outcomes {&#x27;NO_DESIGN&#x27;: 177, &#x27;DUAL&#x27;: 13, &#x27;ADAPTOR&#x27;: 8, &#x27;UNRESOLVED&#x27;: 1, &#x27;SINGLE&#x27;: 1}</span>
+          </li>
+          <li class="crit crit--clear">
+            <span class="crit__id">M10</span>
+            <span class="crit__detail">a degraded indication names its missing source: [&quot;dependency lineage &#x27;NoSuchLineage&#x27;: ValueError: need at least one array to concatenate&quot;]</span>
           </li></ul>
       </section>
   </section>

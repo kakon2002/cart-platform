@@ -27,16 +27,26 @@ running both indications
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    M1: 34 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+  clear    M1: 36 indication-tagged artifacts; 0 changed, 0 disappeared after running both
   clear    M2: shared sources carry no per-indication copy (0 found)
   clear    M3: indication-specific module constants remaining: none
-  clear    M4: an indication with no atlas is expressible and carries atlas=None, which the driver maps to NOT_USABLE
-  clear    M5: the atlas-less path names malignant_vs_stroma as what is lost, not just a weight
-  clear    M6: Mode A on CD19 returns UNSUITABLE with 3 reasons
+  clear    M4: an atlas-less indication returns NOT_USABLE with no ranking
+  clear    M5: the refusal names malignant_vs_stroma as the missing discriminator, not just a lost weight
+  clear    M6: Mode A on CD19 returns NOT_ASSESSED with 3 reasons
   clear    M7: CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement
   clear    M8: Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)
   clear    M9: reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
-  clear    M10: unavailable components name their source (none unavailable)
+  0 models in the lineage
+  querying the trial registry for 200 antigens
+    25/200
+    50/200
+    75/200
+    100/200
+    125/200
+    150/200
+    175/200
+    200/200
+  clear    M10: a degraded indication names its missing source: ["dependency lineage 'NoSuchLineage': ValueError: need at least one array to concatenate"]
 ========================================================================
   10/10 criteria clear
 

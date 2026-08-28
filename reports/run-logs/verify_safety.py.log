@@ -45,7 +45,7 @@ WHAT THE GATE SAYS
   The five known targets
   --------------------------------------------------------------------
     CEACAM5   BLOCKED                risk  0.6000 (gi_tract) binder Cergutuzumab, Cibisatamab, Labetuzumab [ORIGIN_UNKNOWN]
-      trials  342, stopped 29
+      trials  342, stopped 34
       - Stage 3 risk 0.6000 exceeds the persistent ceiling 0.15 (peak organ gi_tract)
     CEACAM6   BLOCKED                risk  0.8135 (lung) binder Tinurilimab [ORIGIN_UNKNOWN]
       trials    2, stopped 0
@@ -57,7 +57,7 @@ WHAT THE GATE SAYS
       trials  169, stopped 34
       - Stage 3 risk 0.6366 exceeds the persistent ceiling 0.15 (peak organ lung)
     MUC1      BLOCKED                risk  0.9215 (liver) binder Cantuzumab, Clivatuzumab, Gatipotuzumab [humanised]
-      trials  492, stopped 27
+      trials  491, stopped 31
       - Stage 3 risk 0.9215 exceeds the persistent ceiling 0.15 (peak organ liver)
 
   Binder origin across targets that have one, read from the name stem
