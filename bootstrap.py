@@ -70,19 +70,30 @@ POOL_DERIVED = {
 #: The times are measured from the manifests of the original build rather than
 #: estimated: each manifest records `retrieved_at`, and these are the gaps
 #: between consecutive entries.
-SOURCES = [
+#: Sources that describe the human body. One copy, whatever is being screened.
+SHARED_SOURCES = [
     ("uniprot", "the reviewed human proteome, 20,431 entries", "~10 min"),
     ("hpa", "normal tissue, pathology, subcellular, protein atlas", "11 s"),
     ("gtex", "bulk normal medians", "~2 min"),
-    ("tcga", "the tumour cohort, through the GDC API", "~3 min"),
     ("depmap", "CRISPR gene effect, 432 MB", "~5 min"),
     ("genespan", "gene annotation", "~1 min"),
     ("antibodies", "structure summary and therapeutics", "~1 min"),
     ("domains", "construct part sequences", "~1 min"),
-    ("singlecell", "derived summaries; the 8.3 GB matrix builds them",
-     "~2 h 30 min"),
     ("trials", "trial counts per antigen", "during the first run"),
 ]
+
+#: Sources that describe a tumour. One copy PER INDICATION, which is why the
+#: report and the rebuild both iterate the registry rather than a fixed list.
+#: The old flat list named "tcga" and "singlecell" as though each were a single
+#: thing, so a clone provisioned the reference indication and reported itself
+#: complete while a second indication had nothing.
+PER_INDICATION = [
+    ("tcga", "the tumour cohort, through the GDC API", "~3-21 min"),
+    ("singlecell", "derived summaries; the atlas builds them", "minutes to hours"),
+    ("depmap", "the per-lineage dependency matrix", "~1 min"),
+]
+
+SOURCES = SHARED_SOURCES
 
 
 def _sha256(path: Path) -> str:
@@ -132,6 +143,29 @@ def _state(name: str) -> tuple[str, int, list[str]]:
     return "present", size, []
 
 
+def _indications():
+    """The registry, or an empty list if the package cannot be imported.
+
+    bootstrap runs before dependencies are installed on a fresh clone, so it
+    must degrade to the shared-source report rather than failing on an import.
+    """
+    try:
+        from car_pipeline.configs.registry import INDICATIONS
+        return sorted(INDICATIONS.values(), key=lambda i: i.key)
+    except Exception:                                  # noqa: BLE001
+        return []
+
+
+def _tagged_present(namespace: str, tag: str) -> tuple[bool, int]:
+    """Whether any payload in a namespace carries this indication's tag."""
+    directory = DATA / namespace
+    if not directory.exists() or not tag:
+        return False, 0
+    hits = [f for f in directory.glob(f"*__{tag}*")
+            if f.is_file() and not f.name.endswith(".manifest.json")]
+    return bool(hits), sum(f.stat().st_size for f in hits)
+
+
 def report() -> int:
     """What is on this machine. Reads the cache only — never the network."""
     print(f"cache root: {DATA}")
@@ -154,8 +188,38 @@ def report() -> int:
             print(f"           {'':12s} {'':8s}     {POOL_DERIVED[name]}")
         elif mark == "MISSING":
             print(f"           {'':12s} {'':8s}     rebuild cost {cost}")
+    # Per indication. A clone that has the shared sources and one indication's
+    # tumour caches is not ready for a registry that declares two, and saying
+    # "10/10 sources usable" would tell it that it is.
+    indications = _indications()
+    incomplete: list[str] = []
+    if indications:
+        print()
+        print("  per indication:")
+        for ind in indications:
+            tags = [
+                ("tcga", ind.tcga_project),
+                ("singlecell", ind.atlas.series if ind.atlas else None),
+                ("depmap", ind.depmap_lineage),
+            ]
+            parts = []
+            for namespace, tag in tags:
+                if not tag:
+                    parts.append(f"{namespace}=declared-absent")
+                    continue
+                ok, size = _tagged_present(namespace, tag)
+                parts.append(f"{namespace}={'ok' if ok else 'MISSING'}")
+                if not ok:
+                    incomplete.append(f"{ind.cancer_type}: {namespace} ({tag})")
+            print(f"    {ind.cancer_type:34s} {'  '.join(parts)}")
+
     print()
-    print(f"  {usable}/{len(SOURCES)} sources usable")
+    print(f"  {usable}/{len(SOURCES)} shared sources usable")
+    if incomplete:
+        print(f"  {len(incomplete)} per-indication cache(s) missing:")
+        for row in incomplete:
+            print(f"    {row}")
+        missing = missing + incomplete
     if BUILD_ONLY:
         print("  the 8.3 GB matrix and its 2.6 GB archive are build-time only "
               "and are not expected here")
@@ -334,12 +398,26 @@ def from_sources() -> int:
         ("domains", lambda: DomainSource().fetch()),
         ("antibodies", lambda: AntibodySource().fetch()),
         ("uniprot", lambda: UniProtSource().fetch()),
-        ("tcga", lambda: TCGASource().build_cohort()),
-        ("depmap", lambda: DepMapSource().build_matrix()),
-        # Downloads 2.6 GB, expands to 8.3 GB, then streams the whole thing to
-        # accumulate 78 x 22,164 group means. This one step is the ~2 h 19 min.
-        ("singlecell", lambda: SingleCellSource().build_group_means()),
     ]
+
+    # Then the tumour-side caches, once per registered indication. This used to
+    # be three unparameterised calls, so a clone provisioned the reference
+    # indication only and the multi-indication stage failed on a fresh machine
+    # while every other stage passed.
+    for ind in _indications():
+        label = ind.key
+        if ind.tcga_project:
+            steps.append((f"tcga/{label}",
+                          lambda i=ind: TCGASource(i.tcga_project).build_cohort()))
+        if ind.depmap_lineage:
+            steps.append((f"depmap/{label}",
+                          lambda i=ind: DepMapSource(i.depmap_lineage).build_matrix()))
+        if ind.atlas:
+            # For the reference indication this downloads 2.6 GB, expands it to
+            # 8.3 GB and streams the whole thing: the ~2 h 19 min step. A
+            # CELLxGENE export needs no expansion and takes seconds.
+            steps.append((f"singlecell/{label}",
+                          lambda i=ind: SingleCellSource(i.atlas).build_group_means()))
 
     overall = time.monotonic()
     for name, run in steps:
@@ -365,7 +443,8 @@ def from_sources() -> int:
     print(f"\nall sources in {(time.monotonic() - overall) / 60:.0f} min")
     print()
     print("The trial counts and the malignant-cell summaries are keyed by the")
-    print("screened pool, so they are built by the first run rather than here:")
+    print("screened pool, and there is one set per indication, so they are built")
+    print("by the first run of each rather than here:")
     print("    <the interpreter in .venv> run_all.py --fresh")
     print()
     return report()
