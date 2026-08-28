@@ -63,9 +63,15 @@ def _now() -> str:
 # --------------------------------------------------------------------------
 
 
-def create_project(cancer_type: str) -> dict:
+def create_project(cancer_type: str, target_antigen: str | None = None) -> dict:
     if not isinstance(cancer_type, str) or not cancer_type.strip():
         raise ValueError("cancer_type is required and must be a string")
+    if target_antigen is not None and not str(target_antigen).strip():
+        # An empty string is not the same as an absent field. Absent selects
+        # discovery; empty is a caller who meant to supply something.
+        raise ValueError(
+            "target_antigen was supplied but is empty; omit it entirely to "
+            "screen for targets")
     # Refused here rather than at run time, so a caller learns immediately that
     # only some indications are configured instead of receiving another
     # indication's results under their own name.
@@ -74,10 +80,11 @@ def create_project(cancer_type: str) -> dict:
     project = {
         "project_id": project_id,
         "cancer_type": cancer_type.strip(),
-        # The null is what selects discovery mode, and it stays null. Seeding it
-        # would void the exercise.
-        "target_antigen": None,
-        "discovery_mode": "B",
+        # The null is what selects discovery mode. It stays null unless a
+        # caller supplies a target, in which case the question changes from
+        # "which targets" to "is this one suitable" and the mode follows.
+        "target_antigen": (target_antigen or "").strip().upper() or None,
+        "discovery_mode": "A" if target_antigen else "B",
         "created_at": _now(),
     }
     with _LOCK:
@@ -125,7 +132,15 @@ def start_run(project_id: str) -> dict:
                 job["stage"] = stage
                 job["note"] = note
         try:
-            result = pipeline.run(PROJECTS[project_id]["cancer_type"], progress)
+            project = PROJECTS[project_id]
+            target = project.get("target_antigen")
+            if target:
+                validation = pipeline.validate(
+                    project["cancer_type"], target, progress)
+                result = validation["screen"]
+                result["validation"] = validation
+            else:
+                result = pipeline.run(project["cancer_type"], progress)
             with _LOCK:
                 # Re-inserted rather than updated in place, so the eviction
                 # order below is genuinely least-recently-completed.
@@ -361,6 +376,37 @@ def constructs_view(project_id: str) -> dict:
     }
 
 
+def validation_view(project_id: str) -> dict:
+    """Mode A. What the platform concluded about a supplied target."""
+    r = _result(project_id)
+    v = r.get("validation")
+    if v is None:
+        # A discovery run has no validation to report. Saying so is different
+        # from returning an empty verdict, which would read as "unsuitable".
+        return {
+            "status": "NOT_APPLICABLE",
+            "reasons": ["This project supplied no target, so it ran in "
+                        "discovery mode. Create a project with target_antigen "
+                        "to ask whether a specific target is suitable."],
+        }
+    return {
+        "status": v["verdict"],
+        "mode": "A",
+        "cancer_type": v["cancer_type"],
+        "target": v["target"],
+        "accession": v.get("accession"),
+        "rank": v.get("rank"),
+        "of": v.get("of"),
+        "composite": v.get("composite"),
+        "measured_weight": v.get("measured_weight"),
+        "risk": v.get("risk"),
+        "risk_organ": v.get("risk_organ"),
+        "evidence_class": v.get("evidence_class"),
+        "architecture": v.get("architecture"),
+        "reasons": v["reasons"],
+    }
+
+
 def result_view(project_id: str) -> dict:
     r = _result(project_id)
     running = len(r["final"])
@@ -499,7 +545,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/projects":
                 body = self._body()
-                return self._send(201, create_project(body.get("cancer_type", "")))
+                return self._send(201, create_project(
+                        body.get("cancer_type", ""),
+                        body.get("target_antigen")))
             m = re.match(r"^/projects/([0-9a-f]{12})/runs$", path)
             if m:
                 return self._send(202, start_run(m.group(1)))
@@ -532,6 +580,21 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):                         # noqa: N802
         path = self.path.split("?")[0]
         try:
+            if path == "/indications":
+                from car_pipeline.configs.registry import registered
+                return self._send(200, {
+                    "status": "CONFIGURED",
+                    "indications": registered(),
+                    "reasons": [
+                        "An indication needs a tumour cohort, a single-cell "
+                        "atlas, a dependency lineage and a normal-tissue "
+                        "denominator declared before it can be screened. None "
+                        "of those is derivable from the cancer type, so an "
+                        "unregistered one is refused rather than answered with "
+                        "another indication's results.",
+                    ],
+                })
+
             m = re.match(r"^/jobs/([0-9a-f]{12})$", path)
             if m:
                 with _LOCK:
@@ -544,6 +607,9 @@ class Handler(BaseHTTPRequestHandler):
                     return self._send(404, {"status": "NOT_FOUND"})
                 return self._send(200, snapshot)
 
+            m = re.match(r"^/projects/([0-9a-f]{12})/validation$", path)
+            if m:
+                return self._send(200, validation_view(m.group(1)))
             for name, view, paged in (("targets", targets_view, True),
                                       ("pairs", pairs_view, True),
                                       ("constructs", constructs_view, False),
