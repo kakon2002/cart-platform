@@ -260,6 +260,37 @@ class SingleCellSource(DataSource):
             [cats[c] if c >= 0 else "" for c in codes], dtype=str
         )
 
+    def _read_field(self, group: "h5py.Group", field: str) -> np.ndarray | None:
+        """One var/obs field, whether it is the index or a named column.
+
+        The two submissions are mirror images: the reference indexes by gene
+        symbol and carries Ensembl in a column, the CELLxGENE export indexes by
+        Ensembl and carries the symbol in `feature_name`. Resolving both here
+        means the readers below never have to know which is which.
+        """
+        if field == "_index":
+            return self._read_index(group)
+        return self._read_column(group, field)
+
+    def _counts_matrix(self, fh: "h5py.File"):
+        """The raw-counts matrix, wherever this submission put it.
+
+        Reading the wrong matrix is the failure that does not announce itself:
+        normalised values would be consumed as though they were counts and every
+        downstream count would be wrong but plausible. So a missing path raises
+        by name rather than falling back to X.
+        """
+        node = fh
+        for part in self.atlas.counts_path.split("/"):
+            if part not in node:
+                raise KeyError(
+                    f"{self.atlas.series}: no raw counts at "
+                    f"{self.atlas.counts_path!r} (looking for {part!r}); "
+                    f"available here: {sorted(node.keys())}"
+                )
+            node = node[part]
+        return node
+
     @classmethod
     def _read_index(cls, group: h5py.Group) -> np.ndarray:
         key = group.attrs.get("_index", "_index")
@@ -273,10 +304,11 @@ class SingleCellSource(DataSource):
         entry = self._entry("group_means")
 
         def fetcher(tmp: Path) -> dict:
+            a = self.atlas
             with h5py.File(self.matrix_path(), "r") as fh:
                 obs = fh["obs"]
-                genes = self._read_index(fh["var"])
-                ensembl = self._read_column(fh["var"], "ensg")
+                genes = self._read_field(fh["var"], a.symbol_field)
+                ensembl = self._read_field(fh["var"], a.ensembl_field)
                 if ensembl is None:
                     ensembl = np.asarray([""] * len(genes))
                 # A bridge built from values of the wrong kind matches nothing
@@ -500,7 +532,7 @@ class SingleCellSource(DataSource):
             fingerprint={
                 "series": self.atlas.series,
                 "file": self.atlas.archive,
-                "layer": self.atlas.counts_layer,
+                "layer": self.atlas.counts_path,
                 "compartment": self.atlas.malignant_label,
                 # The gene set is part of what this artifact *is*. Without it a
                 # changed pool would silently reuse the wrong columns.
@@ -523,7 +555,8 @@ class SingleCellSource(DataSource):
 
         def fetcher(tmp: Path) -> dict:
             with h5py.File(self.matrix_path(), "r") as fh:
-                var_names = list(self._read_index(fh["var"]))
+                var_names = list(
+                    self._read_field(fh["var"], self.atlas.symbol_field))
                 column_of = {g: i for i, g in enumerate(var_names)}
                 present = [g for g in genes if g in column_of]
                 missing = [g for g in genes if g not in column_of]
@@ -557,7 +590,7 @@ class SingleCellSource(DataSource):
                 else:
                     untreated_all = np.zeros(l1_codes.shape[0], dtype=bool)
 
-                layer = fh["layers"][a.counts_layer]
+                layer = self._counts_matrix(fh)
                 data, indices = layer["data"], layer["indices"]
                 iptr = layer["indptr"][:]
 

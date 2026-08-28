@@ -66,8 +66,16 @@ BREAST_ATLAS = AtlasSchema(
         "Plasmablasts": "immune",
         "Endothelial": "endothelial",
     },
+    counts_path="raw/X",
+    # Inverted from the reference submission: this export indexes by Ensembl and
+    # carries the symbol in feature_name.
+    symbol_field="feature_name",
+    ensembl_field="_index",
     treatment_column="treatment_status",
-    untreated_label="Naive",
+    # With a diaeresis. Verified against the file rather than typed from the
+    # paper: "Naive" would have matched nothing, and the untreated subset would
+    # have come back empty with no error.
+    untreated_label="Naïve",
     patient_column="donor_id",
 )
 

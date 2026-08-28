@@ -41,9 +41,17 @@ class AtlasSchema:
     #: Coarse label -> compartment. Anything unmapped becomes "other", which is
     #: reported rather than silently dropped.
     compartment_map: dict[str, str]
-    #: Raw counts layer, and the var column carrying Ensembl identifiers.
-    counts_layer: str = "counts"
-    ensembl_column: str = "ensg"
+    #: Where raw counts live. The reference submission puts them in
+    #: `layers/counts`; a CELLxGENE export leaves `layers` empty and puts them
+    #: in `raw/X`. Reading the wrong one is not an error that surfaces -- it
+    #: silently scores against normalised values as though they were counts.
+    counts_path: str = "layers/counts"
+    #: Which var field holds gene symbols and which holds Ensembl identifiers.
+    #: The two submissions have these the opposite way round: the reference
+    #: indexes by symbol with `ensg` beside it, the CELLxGENE export indexes by
+    #: Ensembl with `feature_name` beside it.
+    symbol_field: str = "_index"
+    ensembl_field: str = "ensg"
     #: Optional. An atlas without a treatment split still works; the untreated
     #: subset is simply absent rather than fabricated.
     treatment_column: str | None = None
