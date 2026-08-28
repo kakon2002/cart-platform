@@ -8,10 +8,12 @@ CHECKS: list[tuple[str, object, object]] = []
 
 
 def check(label: str, got: object, expected: object) -> None:
+    """Report one check and record it if it failed."""
     CHECKS.append((label, got, expected))
 
 
 def main() -> int:
+    """Run the schema criteria."""
     p = PDAC_PROJECT
 
     check("discovery_mode", p.discovery_mode.value, "B")
@@ -25,7 +27,6 @@ def main() -> int:
     check("max_genetic_edits", p.manufacturing.max_genetic_edits, 2)
     check("pancreas override tier", p.tissue_criticality_overrides["pancreas"].tier, 2)
 
-    # Unknown fields must be rejected, not absorbed.
     try:
         ProjectInput(
             cancer_type="x", malignancy_type="solid", target_antigens="MSLN"
@@ -35,20 +36,17 @@ def main() -> int:
     else:
         check("mistyped field rejected", False, True)
 
-    # A blank antigen from a form is an absent one.
     blank = ProjectInput(
         cancer_type="x", malignancy_type="solid", target_antigen="   "
     )
     check("blank antigen -> None", blank.target_antigen, None)
     check("blank antigen -> mode B", blank.discovery_mode, DiscoveryMode.DISCOVER)
 
-    # A supplied antigen flips the mode.
     supplied = ProjectInput(
         cancer_type="x", malignancy_type="solid", target_antigen="MSLN"
     )
     check("supplied antigen -> mode A", supplied.discovery_mode.value, "A")
 
-    # A blank cancer type is refused.
     try:
         ProjectInput(cancer_type="   ", malignancy_type="solid")
     except Exception:
@@ -56,7 +54,6 @@ def main() -> int:
     else:
         check("blank cancer_type rejected", False, True)
 
-    # An override without a usable rationale is refused.
     try:
         ProjectInput(
             cancer_type="x",
@@ -68,7 +65,6 @@ def main() -> int:
     else:
         check("override without rationale rejected", False, True)
 
-    # --- stage 1 -----------------------------------------------------------
     spec = build_spec(p)
     blocking = [d for d in spec.required_datasets if d.required]
 
@@ -86,11 +82,9 @@ def main() -> int:
     )
     check("spec target_antigen", spec.inputs.target_antigen, None)
 
-    # Unresolved, every dataset is correctly unconfigured and the score is zero.
     unresolved = build_spec(p, resolve_sources=False)
     check("unresolved availability score", unresolved.data_availability_score, 0.0)
 
-    # Resolved, the score must equal the share of blocking datasets on disk.
     from car_pipeline.schemas.spec import DatasetStatus
 
     available = sum(
@@ -104,7 +98,6 @@ def main() -> int:
         round(available / len(blocking), 3),
     )
 
-    # Validation mode has nothing to screen, so the screening sources drop out.
     validate = build_spec(
         ProjectInput(
             cancer_type="x", malignancy_type="solid", target_antigen="MSLN"
@@ -117,11 +110,9 @@ def main() -> int:
         5,
     )
 
-    # The returned spec must not alias the shared indication config.
     spec.inputs.target_antigen = "SEEDED"
     check("input not mutated by build", PDAC_PROJECT.target_antigen, None)
 
-    # Back-to-back builds must not collide.
     check("project id unique", build_spec(p).project_id != build_spec(p).project_id, True)
 
     failed = 0

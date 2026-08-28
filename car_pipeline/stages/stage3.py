@@ -1,13 +1,4 @@
-"""Stage 3 — screen the surface universe and rank it.
-
-Implements `specs/stage3-target-discovery.md`. Weights, thresholds and
-saturation points are fixed there and are read from here, not tuned.
-
-Three numbers leave this stage per protein and they are never combined:
-attractiveness, normal tissue risk, and evidence confidence. The first is
-tumour-side only. The second is a gate. The third describes how much
-measurement stands behind the other two.
-"""
+"""Stage 3 — screen the surface universe and rank it."""
 
 from __future__ import annotations
 
@@ -56,8 +47,7 @@ WEIGHTS: dict[str, float] = {
 
 MINIMUM_MEASURED_WEIGHT = 0.40
 
-#: Free parameters that set where each component stops rewarding more. Named
-#: here so they can be perturbed as a set by the twelfth rejection criterion.
+
 SATURATION: dict[str, float] = {
     "c1_expression": 100.0,
     "c2_ratio": 50.0,
@@ -65,72 +55,38 @@ SATURATION: dict[str, float] = {
     "c4_prevalence_tpm": 10.0,
     "c5_ectodomain_residues": 200.0,
     "c6_gene_effect": 1.0,
-    # Below this, a normal tissue reading cannot be told apart from zero. It
-    # floors the margin denominator instead of the ratio being taken as
-    # unbounded. Listed here with the other free parameters so the twelfth
-    # criterion perturbs it too: it moves the top of the ranking as hard as any
-    # saturation point does.
     "c3_baseline_floor_tpm": 0.1,
 }
 
-#: How far a protein must depart from the *systematic* offset between the two
-#: denominators before it is flagged. Not deviation from parity: the two normal
-#: tissues differ by construction, so a parity test flags everything and
-#: discriminates nothing.
+
 FOLD_DISAGREEMENT = 2.0
 
-#: Ratio of the two normal tissues for one protein: how much more of it sits in
-#: tumour-adjacent pancreas than in healthy population pancreas.
-#:
-#: The population baseline is pristine acinar tissue. The cohort's adjacent
-#: normal comes from a resected pancreas, which is typically inflamed and often
-#: already carries precursor lesions, so it expresses tumour antigens before any
-#: malignancy is involved. The distance between the two therefore measures how
-#: much of a target's apparent margin comes from the diseased field rather than
-#: from the tumour.
-#:
-#: That distinction is clinical, not academic: what remains in the patient after
-#: resection is field tissue, so an antigen elevated here is an antigen the
-#: therapy will meet in tissue that is staying put. Reported on every row, never
-#: scored — it describes where a margin comes from, not how large it is.
-#:
-#: Named for the magnitude rather than the association, since it is a measured
-#: ratio and the direction matters.
+
 FIELD_ELEVATION = "field_elevation"
 
 STROMAL_COMPARTMENTS = (FIBROBLAST, IMMUNE, ENDOTHELIAL)
 
-# --------------------------------------------------------------------------
-# tissue criticality
-# --------------------------------------------------------------------------
 
 TIER_WEIGHTS = {1: 1.0, 2: 0.6, 3: 0.3}
 
 ORGAN_TIERS: dict[str, int] = {
-    # tier 1
     "brain": 1, "heart": 1, "lung": 1, "liver": 1, "kidney": 1,
     "pancreas": 1, "vascular": 1, "eye": 1,
-    # tier 2
     "gi_tract": 2, "marrow_and_blood": 2, "bladder": 2, "endocrine": 2,
     "muscle": 2, "nerve": 2, "mucosa": 2,
-    # tier 3
     "skin": 3, "adipose": 3, "breast": 3, "reproductive": 3, "salivary": 3,
     "connective": 3,
 }
 
-#: Organs not present in the reference criticality table, assigned here. Marked
-#: in the output so a reader can tell which tiers were inherited and which were
-#: supplied by the platform, rather than having to trust the whole table equally.
+
 PLATFORM_ADDED_ORGANS = frozenset({"vascular", "eye", "mucosa", "connective"})
 
-#: Not normal tissue. Excluded from risk rather than mapped to an organ.
+
 EXCLUDED_LABELS = frozenset(
     {"Cells_Cultured_fibroblasts", "Cells_EBV-transformed_lymphocytes", "N/A"}
 )
 
-#: Exact-match assignments. No substring or keyword test is used anywhere here:
-#: substring matching is what put the adrenal at kidney criticality and folded
-#: the kidney into the brain, and an exhaustive table cannot make either mistake.
+
 BASELINE_ORGANS: dict[str, str] = {
     "Adipose_Subcutaneous": "adipose",
     "Adipose_Visceral_Omentum": "adipose",
@@ -271,16 +227,7 @@ LEVEL_NAMES = {0: "Not detected", 1: "Low", 2: "Medium", 3: "High"}
 
 @dataclass
 class CalibrationCurve:
-    """Staining levels placed on the transcript axis by measurement.
-
-    The two sources describe the same organs in different units, so until they
-    sit on one axis the worst-organ maximum is comparing incomparable numbers.
-    Rather than asserting an evenly spaced ordinal, every organ carrying both a
-    staining call and a transcript value contributes one observation, and each
-    level is represented by the median of its own population. That value is then
-    scored through the same continuous function the transcript side uses, so the
-    two axes are commensurable by construction rather than by assertion.
-    """
+    """Staining levels placed on the transcript axis by measurement."""
 
     tpm: dict[int, float]
     quartiles: dict[int, tuple[float, float, float]]
@@ -290,26 +237,18 @@ class CalibrationCurve:
     observations: int
 
     def score(self, level: int) -> float:
-        # A non-detection scores zero, not the transcript level its population
-        # happens to sit at. The calibrated value for that level is a central
-        # estimate of a wide distribution, and using it as a risk term means an
-        # observation of *absence* raises measured risk — which it cannot.
-        # Scoring it zero still leaves the organ measured, so the maximum below
-        # lets a positive transcript reading stand rather than being cancelled.
+        """This tissue's contribution at the given staining level."""
         if level == 0:
             return 0.0
         return _baseline_score(self.tpm[level])
 
     def as_payload(self) -> dict:
+        """The per-level values, rounded for storage."""
         return {str(k): round(v, 6) for k, v in sorted(self.tpm.items())}
 
 
 def _separation(lower: np.ndarray, upper: np.ndarray) -> float:
-    """Probability that a draw from the upper level exceeds one from the lower.
-
-    0.50 means the two levels say nothing about each other; 1.00 means they
-    separate perfectly. Ties count as half.
-    """
+    """Probability that a draw from the upper level exceeds one from the lower."""
     combined = np.concatenate([lower, upper])
     order = combined.argsort(kind="mergesort")
     ranks = np.empty(len(combined), dtype=float)
@@ -335,14 +274,7 @@ def calibrate_atlas_levels(
     gtex_tissues: list[str],
     model: "RiskModel",
 ) -> CalibrationCurve:
-    """Measure what each staining level is worth in transcript terms.
-
-    Pairs are formed exactly the way risk is computed: the level for an organ is
-    the maximum across its cell types, and the transcript value is the maximum
-    across the tissues mapping to that organ. Calibrating the same quantity that
-    gets scored is what lets the curve absorb whatever inflation that
-    aggregation introduces, instead of leaving it to be argued about.
-    """
+    """Measure what each staining level is worth in transcript terms."""
     populations: dict[int, list[float]] = {k: [] for k in LEVEL_NAMES}
 
     for rec in surface:
@@ -405,20 +337,12 @@ def calibrate_atlas_levels(
 
 BASELINE_TPM_SATURATION = 1000.0
 
-#: The margin component's denominator, and only its denominator. The baseline
-#: names four pancreas entries; three are cell-sorted fractions and one is bulk.
-#: The tumour side of the comparison is bulk, so a median across all four mixes
-#: measurement types on one side of a ratio. The risk gate deliberately keeps
-#: reading all four and taking the worst of them: for safety the question is
-#: whether any pancreatic compartment carries the antigen, not what the organ
-#: averages.
-#: The reference indication's denominator. Every use now goes through the
-#: `margin_label` argument; this is the default so an unparameterised caller
-#: keeps its answer, not a constant the scorer reaches for.
+
 DEFAULT_MARGIN_LABEL = "Pancreas"
 
 
 def _clamp(x: float) -> float:
+    """Hold a score inside the unit interval."""
     return 0.0 if x < 0 else (1.0 if x > 1 else x)
 
 
@@ -431,12 +355,13 @@ def _finite(x: float | None) -> float | None:
 
 @dataclass
 class Component:
-    value: float | None          # the score, or None when not measured
-    raw: float | None = None     # the measurement it came from
+    value: float | None
+    raw: float | None = None
     note: str = ""
 
     @property
     def measured(self) -> bool:
+        """Whether a value was measured at all."""
         return self.value is not None
 
 
@@ -456,26 +381,20 @@ class Ranked:
     sources_disagree: bool
     fold_baseline: float | None = None
     fold_cohort: float | None = None
-    #: How much more of this antigen sits in tumour-adjacent pancreas than in
-    #: healthy pancreas. An annotation, never a score term.
+
     field_elevation: float | None = None
     bridged: bool = False
     tier_rank: int = 0
 
     def component_value(self, key: str) -> float | None:
+        """One component's score, or None where it was not measured."""
         c = self.components.get(key)
         return c.value if c else None
 
 
-# --------------------------------------------------------------------------
-# component scoring
-# --------------------------------------------------------------------------
-
-
 def _score_c1(malignant: float | None, sat: float) -> Component:
+    """Malignant expression, unmeasured below the capture threshold."""
     if malignant is None or math.isnan(malignant) or malignant <= DROPOUT_EPSILON:
-        # At or below the silence threshold this assay is reporting its own
-        # capture failure, not the protein. Unmeasured, never zero.
         return Component(None, malignant, "below capture threshold")
     return Component(
         _clamp(math.log10(1 + malignant) / math.log10(1 + sat)), malignant
@@ -483,13 +402,12 @@ def _score_c1(malignant: float | None, sat: float) -> Component:
 
 
 def _score_c2(malignant: float | None, stromal_peak: float | None, sat: float) -> Component:
+    """Malignant signal against the strongest stromal compartment."""
     if malignant is None or stromal_peak is None:
         return Component(None, None, "no row")
     if math.isnan(malignant) or math.isnan(stromal_peak):
         return Component(None, None, "no row")
     if malignant <= DROPOUT_EPSILON or stromal_peak <= DROPOUT_EPSILON:
-        # A ratio against a denominator this assay failed to capture is not a
-        # specificity measurement, however large it comes out.
         return Component(None, None, "below capture threshold")
     ratio = malignant / stromal_peak
     return Component(_clamp(math.log10(ratio) / math.log10(sat)), ratio)
@@ -501,22 +419,12 @@ def _score_c3(
     cohort_normal: float | None,
     sat: dict[str, float],
 ) -> tuple[Component, float | None, float | None]:
+    """Tumour level against the matched normal baseline."""
     if tumour is None or baseline_pancreas is None:
-        # No row on one side. Genuinely unmeasured.
         return Component(None, None, "no row"), None, None
 
     def _fold(normal: float | None) -> float | None:
-        """Tumour over normal, with the denominator floored at detection.
-
-        A normal reading of zero is a measurement, not a gap — the protein was
-        looked for and not found, which is the most favourable thing this
-        comparison can say. But it cannot be treated as an unbounded ratio
-        either: dividing by it awards a perfect margin to proteins absent from
-        the tumour as well, where there is no margin because there is nothing
-        there. Flooring the denominator at the detection limit keeps the
-        favourable reading favourable while leaving the numerator to decide
-        whether anything is actually present.
-        """
+        """Tumour over normal, with the denominator floored at detection."""
         if normal is None:
             return None
         return tumour / max(normal, floor)
@@ -540,6 +448,7 @@ def _score_c3(
 
 
 def _score_c4(values: np.ndarray | None, threshold: float) -> Component:
+    """The fraction of malignant cells at or above the detection threshold."""
     if values is None or values.size == 0:
         return Component(None, None, "no row")
     frac = float(np.mean(values >= threshold))
@@ -549,20 +458,8 @@ def _score_c4(values: np.ndarray | None, threshold: float) -> Component:
 def _score_c5(
     residues: int | None, at_plasma_membrane: bool, lipid_anchored: bool, sat: float
 ) -> Component:
-    """Accessibility.
+    """Accessibility."""
 
-    The lipid-anchored class reports zero annotated outward residues by
-    construction — there is no transmembrane segment to annotate around — so for
-    that class the residue term is excluded rather than read as zero. Otherwise
-    an unannotated ectodomain is unmeasured, never imputed: a protein nobody
-    annotated must not outrank one measured and found small.
-    """
-    # The anchor special case exists because that class has no transmembrane
-    # segment to annotate topological domains around, so it reports zero
-    # residues by construction. That reasoning only holds while there is no
-    # annotation. A handful of proteins carry both an anchor and a segment, and
-    # for those the ectodomain really was measured — discarding it in favour of
-    # a class default would throw away the better evidence of the two.
     if lipid_anchored and residues is None:
         return Component(1.0 if at_plasma_membrane else 0.6, None, "anchor class")
     if residues is None:
@@ -575,17 +472,14 @@ def _score_c5(
 
 
 def _score_c6(effect: float | None, screened: int, sat: float) -> Component:
+    """Dependency of the tumour lineage on the gene, unmeasured if unscreened."""
     if effect is None or math.isnan(effect) or screened == 0:
         return Component(None, None, "unscreened")
     return Component(_clamp(-effect / sat), effect)
 
 
-# --------------------------------------------------------------------------
-# risk
-# --------------------------------------------------------------------------
-
-
 def _baseline_score(tpm: float) -> float:
+    """Put a normal-tissue level on the same saturating scale as the rest."""
     return _clamp(math.log10(1 + tpm) / math.log10(1 + BASELINE_TPM_SATURATION))
 
 
@@ -595,12 +489,15 @@ class RiskModel:
     fall_through: set[str] = field(default_factory=set)
 
     def tier(self, organ: str) -> int:
+        """The organ's consequence tier, honouring any override."""
         return self.overrides.get(organ, ORGAN_TIERS[organ])
 
     def weight(self, organ: str) -> float:
+        """The weight the organ's tier carries."""
         return TIER_WEIGHTS[self.tier(organ)]
 
     def organ_for_baseline(self, label: str) -> str | None:
+        """Map a normal-tissue label to an organ, recording labels that fall through."""
         if label in EXCLUDED_LABELS:
             return None
         organ = BASELINE_ORGANS.get(label)
@@ -609,6 +506,7 @@ class RiskModel:
         return organ
 
     def organ_for_atlas(self, label: str) -> str | None:
+        """Map an atlas label to an organ, recording labels that fall through."""
         if label in EXCLUDED_LABELS:
             return None
         organ = ATLAS_ORGANS.get(label)
@@ -624,15 +522,7 @@ def per_organ_scores(
     baseline_tissues: list[str],
     calibration: CalibrationCurve,
 ) -> dict[str, float]:
-    """Expression score per organ, before criticality is applied.
-
-    Split out from `compute_risk` so the pairing stage can take a conjunction
-    across two of these before the maximum, rather than reimplementing the
-    mapping. A second implementation of this would be a second place for the
-    tissue-mapping bugs to live.
-
-    An organ absent from the returned mapping was measured by neither source.
-    """
+    """Expression score per organ, before criticality is applied."""
     per_organ: dict[str, float] = {}
 
     if atlas_gene is not None:
@@ -640,9 +530,7 @@ def per_organ_scores(
             organ = model.organ_for_atlas(tissue)
             if organ is None:
                 continue
-            # Converted to its measured transcript equivalent and scored by the
-            # same function the transcript side uses, so the maximum below is
-            # comparing like with like.
+
             score = calibration.score(level)
             if score > per_organ.get(organ, -1.0):
                 per_organ[organ] = score
@@ -653,9 +541,7 @@ def per_organ_scores(
             if organ is None:
                 continue
             score = _baseline_score(float(tpm))
-            # Maximum of the two sources, never the minimum: a "not detected"
-            # staining call must not cancel a positive transcript measurement
-            # for the same organ. That would understate risk.
+
             if score > per_organ.get(organ, -1.0):
                 per_organ[organ] = score
 
@@ -665,12 +551,7 @@ def per_organ_scores(
 def worst_organ(
     model: RiskModel, per_organ: dict[str, float]
 ) -> tuple[float | None, str | None]:
-    """Criticality-weighted maximum over organs.
-
-    Maximum rather than mean: one unmanageable organ disqualifies a target
-    however clean the rest are. Returns None when nothing measured it at all,
-    which fails the gate rather than reading as no risk.
-    """
+    """Criticality-weighted maximum over organs."""
     if not per_organ:
         return None, None
     organ = max(per_organ, key=lambda o: per_organ[o] * model.weight(o))
@@ -684,6 +565,7 @@ def compute_risk(
     baseline_tissues: list[str],
     calibration: CalibrationCurve,
 ) -> tuple[float | None, str | None]:
+    """The worst organ's normal-tissue risk, and which organ it was."""
     return worst_organ(
         model,
         per_organ_scores(
@@ -692,17 +574,10 @@ def compute_risk(
     )
 
 
-# --------------------------------------------------------------------------
-# assembly
-# --------------------------------------------------------------------------
-
-
 def _confidence(
     components: dict[str, Component], row: CoverageRow, wts: dict[str, float]
 ) -> float:
-    # Uses the weights this run actually scored with, not the module defaults,
-    # so a perturbed run cannot report a confidence describing a different
-    # weight set from its own composites.
+    """Evidence confidence, from measured weight and the annotation tier."""
     measured = sum(wts[k] for k, c in components.items() if c.measured)
     tier_bonus = {
         PROTEIN_CONFIRMED: 0.3,
@@ -732,13 +607,10 @@ def rank(
     margin_label: str | None = None,
     weights: dict[str, float] | None = None,
 ) -> tuple[list[Ranked], RiskModel, dict]:
+    """Score every surface protein and return the ranking."""
     sat = dict(SATURATION if saturation is None else saturation)
     wts = dict(WEIGHTS if weights is None else weights)
 
-    # An override naming an organ that does not exist would do nothing at all,
-    # while the output header went on reporting it as an applied relaxation
-    # complete with its rationale. A safety default that only appears to have
-    # been changed is worse than one that was never touched.
     unknown = sorted(set(overrides) - set(ORGAN_TIERS))
     if unknown:
         raise KeyError(
@@ -750,9 +622,6 @@ def rank(
 
     margin_label = margin_label or DEFAULT_MARGIN_LABEL
     if margin_label not in gtex_tissues:
-        # Failing here is the point. Silently having no denominator would make
-        # the margin component unmeasured for every protein at once, and the
-        # evidence floor would then quietly drop a third of the universe.
         raise KeyError(
             f"the baseline has no {margin_label!r} column; "
             "the margin component has no denominator"
@@ -767,7 +636,6 @@ def rank(
         rec = surface_by_accession[row.accession]
         gene = row.gene
 
-        # cell atlas
         cell_hit = cell_index.get(row.accession)
         malignant = stromal_peak = None
         cell_bridged = False
@@ -779,23 +647,19 @@ def rank(
             peaks = [p for p in peaks if not math.isnan(p)]
             stromal_peak = max(peaks) if peaks else None
 
-        # cohort
         tumour_median = cohort_normal_median = None
         prevalence_values = None
         cj = cohort_join.get(row.accession)
         if cj is not None:
             col = cohort.values[:, cj[0]]
             candidate = col[primary_mask]
-            # An empty group has no median, and a not-a-number median is not a
-            # measurement of zero. Either would otherwise flow into the margin
-            # as a real reading and be scored as a target with no enrichment.
+
             if candidate.size:
                 prevalence_values = candidate
                 tumour_median = _finite(float(np.median(candidate)))
             if normal_mask.any():
                 cohort_normal_median = _finite(float(np.median(col[normal_mask])))
 
-        # baseline
         profile = gtex_profiles.get(row.accession)
         baseline_pancreas = None
         if profile is not None:
@@ -848,7 +712,7 @@ def rank(
             gtex_tissues,
             calibration,
         )
-        # Undefined risk is not low risk. It fails.
+
         cleared = risk is not None and risk <= ceiling
 
         out.append(
@@ -864,24 +728,13 @@ def rank(
                 risk_organ=organ,
                 cleared=cleared,
                 confidence=_confidence(components, row, wts),
-                sources_disagree=False,  # set in the second pass, below
+                sources_disagree=False,
                 fold_baseline=fold_b,
                 fold_cohort=fold_c,
-                # Any source reached only after its symbol failed counts, the
-                # cell atlas included. Its join feeds the two heaviest
-                # components, so leaving it out of the audit would exempt the
-                # most consequential bridge from the criterion that polices them.
                 bridged=row.bridged or cell_bridged,
             )
         )
 
-    # -- second pass: the systematic offset, then departures from it ------
-    #
-    # The two denominators describe different tissue, so they disagree by
-    # construction and by a fairly consistent amount. Testing each protein
-    # against parity therefore flags every one of them and identifies none. The
-    # informative question is which proteins depart from the pattern, so the
-    # pattern is measured first and each protein tested against that.
     log_ratios = [
         math.log10(r.fold_cohort / r.fold_baseline)
         for r in out
@@ -895,7 +748,7 @@ def rank(
             continue
         if r.fold_baseline <= 0 or r.fold_cohort <= 0:
             continue
-        # How far the two normal tissues sit apart for this protein.
+
         r.field_elevation = r.fold_baseline / r.fold_cohort
         residual = math.log10(r.fold_cohort / r.fold_baseline) - offset
         r.sources_disagree = abs(residual) > tolerance
@@ -907,7 +760,6 @@ def rank(
         "tolerance_fold": FOLD_DISAGREEMENT,
     }
 
-    # rank within evidence class, scored rows first
     for tier in (PROTEIN_CONFIRMED, RNA_SUPPORTED, DATA_INSUFFICIENT):
         members = [r for r in out if r.evidence_class == tier]
         members.sort(
@@ -919,12 +771,8 @@ def rank(
     return out, model, stats
 
 
-# --------------------------------------------------------------------------
-# reproducibility header
-# --------------------------------------------------------------------------
-
-
 def _revision() -> str:
+    """The current revision, marked dirty when the tree has uncommitted changes."""
     try:
         rev = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -940,6 +788,7 @@ def _revision() -> str:
 
 
 def _repo_root() -> str:
+    """The repository root."""
     from pathlib import Path
 
     return str(Path(__file__).resolve().parents[2])
@@ -953,12 +802,7 @@ def configuration_hash(
     calibration: CalibrationCurve | None = None,
     margin_label: str | None = None,
 ) -> str:
-    """Covers the tissue tables themselves, not only the tier assignments.
-
-    Adding or moving a single label shifts thousands of risk scores. A hash that
-    did not move with it would let two materially different experiments compare
-    as the same one, which is worse than publishing no hash at all.
-    """
+    """Covers the tissue tables themselves, not only the tier assignments."""
     payload = {
         "weight_set_version": WEIGHT_SET_VERSION,
         "weights": WEIGHTS if weights is None else weights,
@@ -966,18 +810,12 @@ def configuration_hash(
         "saturation": SATURATION if saturation is None else saturation,
         "fold_disagreement": FOLD_DISAGREEMENT,
         "dropout_epsilon": DROPOUT_EPSILON,
-        # The column the margin denominator is drawn from. Swapping it moves
-        # every fold change and therefore the whole ranking, so a hash that
-        # ignored it would let two different experiments compare as one.
         "margin_denominator": margin_label or DEFAULT_MARGIN_LABEL,
         "tier_weights": TIER_WEIGHTS,
         "organ_tiers": ORGAN_TIERS,
         "baseline_organs": BASELINE_ORGANS,
         "atlas_organs": ATLAS_ORGANS,
         "excluded_labels": sorted(EXCLUDED_LABELS),
-        # The measured curve, not an assumed scale. It is derived from the
-        # pinned releases, so it belongs to the experiment: two runs that
-        # calibrated differently must not compare as the same one.
         "atlas_level_calibration": (
             calibration.as_payload() if calibration is not None else None
         ),

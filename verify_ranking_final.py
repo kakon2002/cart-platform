@@ -1,10 +1,4 @@
-"""Runs the final ranking and tests it against its criteria.
-
-The Pareto pins are synthetic: a hand-checkable dominated point and a
-hand-checkable non-dominated one, so the front's logic is verified independently
-of what the data contains. A front computed over an empty survivor set would pass
-any check phrased only over its own output.
-"""
+"""Runs the final ranking and tests it against its criteria."""
 
 from __future__ import annotations
 
@@ -26,6 +20,7 @@ from car_pipeline.stages.stage1 import build_spec
 
 
 def main() -> int:
+    """Run the final-ranking criteria."""
     print("loading every upstream stage", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
     records, _bm = stage5.read_binders()
@@ -76,11 +71,11 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
 
-    # Synthetic front: B is dominated by A on every objective.
     a, b, c = (5.0, 5.0, 5.0, 5.0), (1.0, 1.0, 1.0, 1.0), (9.0, 0.0, 0.0, 0.0)
     front = stage11.pareto_front([a, b, c])
     criterion("N1", 1 in front,

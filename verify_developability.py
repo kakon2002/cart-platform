@@ -1,9 +1,4 @@
-"""Runs the developability stage and tests it against its criteria.
-
-The pins are synthetic controls with hand-checkable answers, so the arithmetic is
-verified independently of whatever the data happens to contain. A stage whose
-only checks run over its own output can be uniformly wrong and still pass.
-"""
+"""Runs the developability stage and tests it against its criteria."""
 
 from __future__ import annotations
 
@@ -13,11 +8,10 @@ from car_pipeline.stages import stage4, stage5, stage10
 
 
 def main() -> int:
+    """Run the developability criteria."""
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
-    # From the persisted binder artifact, not the network. Re-querying two
-    # hundred accessions for every downstream stage is slow and loses the whole
-    # run to one dropped connection.
+
     records, binder_manifest = stage5.read_binders()
     binders = {r.gene: r for r in records}
     rows, status = stage10.assess(binders)
@@ -32,6 +26,7 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)

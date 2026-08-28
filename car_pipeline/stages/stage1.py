@@ -20,45 +20,31 @@ from car_pipeline.schemas.spec import (
     RequiredDataset,
 )
 
-# Regulatory and structural elements the construct carries before any binder or
-# signalling domain is added.
+
 BACKBONE_OVERHEAD_KB = 1.2
 
-# tolerance -> (safety switch required, normal tissue risk ceiling)
+
 TOLERANCE_RULES: dict[SafetyTolerance, tuple[bool, float]] = {
     SafetyTolerance.CONSERVATIVE: (True, 0.15),
     SafetyTolerance.MODERATE: (False, 0.35),
     SafetyTolerance.PERMISSIVE: (False, 0.60),
 }
 
-# Sources consulted only when the antigen has to be found. A supplied target
-# means there is nothing to screen, so these drop out in validation mode.
+
 _SCREENING_DATASETS: list[tuple[str, str, list[int]]] = [
     ("UniProt", "membrane topology", [3]),
     ("GDC TCGA", "bulk tumour expression", [3]),
     ("DepMap", "cancer dependency", [3]),
 ]
 
-# Consulted in both modes: they describe the antigen's behaviour rather than
-# nominate it.
+
 _SHARED_DATASETS: list[tuple[str, str, list[int]]] = [
     ("Human Protein Atlas", "surface localisation, normal tissue", [3, 9]),
-    # Named generically. It used to carry the reference accession, which tied
-    # the dataset registry to one submission: a second indication reads a
-    # different series and would have been reported as having no connector at
-    # all while its connector sat unused. Which series was actually read is
-    # reported per run, not asserted here.
     ("Single-cell tumour atlas", "per cell type expression", [3, 9]),
     ("GTEx", "normal tissue baseline", [3, 9]),
 ]
 
-# name, purpose, stages, required
-#
-# The binder sources are two rows, not one. They were declared together while
-# both were assumed unreachable, and a single row cannot carry two statuses: the
-# structures and the antibody annotation over them are separate services that
-# can be connected, cached and fail independently. Merged, one of them being
-# available would have reported the other as available too.
+
 _DOWNSTREAM_DATASETS: list[tuple[str, str, list[int], bool]] = [
     ("PDB", "binder structures", [5], True),
     ("SAbDab", "antibody chain and numbering annotation", [5], True),
@@ -68,9 +54,7 @@ _DOWNSTREAM_DATASETS: list[tuple[str, str, list[int], bool]] = [
 
 _RESOLVER_MODULE = "car_pipeline.data.availability"
 
-#: Every dataset name this stage can emit. The status resolver checks its own
-#: registry against this, so a name that drifts on one side fails loudly rather
-#: than quietly reporting the dataset as having no connector.
+
 KNOWN_DATASET_NAMES = frozenset(
     [n for n, _, _ in _SCREENING_DATASETS]
     + [n for n, _, _ in _SHARED_DATASETS]
@@ -79,19 +63,18 @@ KNOWN_DATASET_NAMES = frozenset(
 
 
 def _slug(text: str) -> str:
+    """Lowercase the text into a hyphenated identifier."""
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
 
 def _project_id(cancer_type: str, created_at: datetime) -> str:
-    """Slug, timestamp and a random suffix.
-
-    The timestamp alone collides on back-to-back builds in the same process.
-    """
+    """Slug, timestamp and a random suffix."""
     stamp = created_at.strftime("%Y%m%dT%H%M%S")
     return f"{_slug(cancer_type)}-{stamp}-{uuid.uuid4().hex[:8]}"
 
 
 def _datasets(mode: DiscoveryMode) -> list[RequiredDataset]:
+    """The datasets this mode needs, screening sources included only in discovery."""
     rows: list[RequiredDataset] = []
     if mode is DiscoveryMode.DISCOVER:
         for name, purpose, stages in _SCREENING_DATASETS:
@@ -108,14 +91,13 @@ def _datasets(mode: DiscoveryMode) -> list[RequiredDataset]:
 
 
 def _design_constraints(inputs: ProjectInput) -> DesignConstraints:
+    """Turn the declared tolerance and manufacturing limits into design constraints."""
     require_switch, ceiling = TOLERANCE_RULES[inputs.safety_tolerance]
     budget = inputs.manufacturing.vector_payload_limit_kb - BACKBONE_OVERHEAD_KB
     return DesignConstraints(
         max_construct_kb=round(budget, 6),
         max_genetic_edits=inputs.manufacturing.max_genetic_edits,
         require_safety_switch=require_switch,
-        # AUTO is a sentinel meaning a later stage picks the format, so it
-        # cannot also be one of the things that stage picks between.
         allowed_car_formats=[f for f in CARFormat if f is not CARFormat.AUTO],
         normal_tissue_risk_ceiling=ceiling,
         terminable_risk_ceiling=inputs.terminable_risk_ceiling,
@@ -123,12 +105,7 @@ def _design_constraints(inputs: ProjectInput) -> DesignConstraints:
 
 
 def build_spec(inputs: ProjectInput, resolve_sources: bool = True) -> ProjectSpec:
-    """Resolve a project definition into a specification.
-
-    The input is deep copied. A later stage writes a discovered target back onto
-    the spec's inputs, and returning a reference would mutate the shared
-    indication config itself and every project built after it in the process.
-    """
+    """Resolve a project definition into a specification."""
     local = copy.deepcopy(inputs)
     created_at = datetime.now(timezone.utc)
     mode = local.discovery_mode
@@ -148,15 +125,7 @@ def build_spec(inputs: ProjectInput, resolve_sources: bool = True) -> ProjectSpe
 
 
 def _resolve(datasets: list[RequiredDataset]) -> list[RequiredDataset]:
-    """Ask the cache what is present, if a resolver has been built yet.
-
-    Until the resolver exists every dataset is correctly ``not_configured``.
-
-    The check is for whether the module exists, not whether importing it
-    succeeds. Catching import failures here would turn a broken dependency
-    anywhere in the connector chain into a clean report that no data is
-    configured — a wrong answer that looks like a valid one.
-    """
+    """Ask the cache what is present, if a resolver has been built yet."""
     if importlib.util.find_spec(_RESOLVER_MODULE) is None:
         return datasets
     from car_pipeline.data.availability import resolve_dataset_statuses

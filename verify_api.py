@@ -1,9 +1,4 @@
-"""Exercises the API end to end against a live server.
-
-The pins are the two shapes that would be easy to get wrong and hard to notice:
-a run must be a job rather than a request, and a pipeline that builds nothing
-must answer 200 with reasons rather than 404, 500, or a bare empty list.
-"""
+"""Exercises the API end to end against a live server."""
 
 from __future__ import annotations
 
@@ -22,6 +17,7 @@ BASE = f"http://{HOST}:{PORT}"
 
 
 def call(method: str, path: str, body: dict | None = None):
+    """Make one HTTP call and return the status and decoded body."""
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(
         BASE + path, data=data, method=method,
@@ -34,6 +30,7 @@ def call(method: str, path: str, body: dict | None = None):
 
 
 def main() -> int:
+    """Run the API criteria against a live server."""
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"  server up on {BASE}")
@@ -41,6 +38,7 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid, is_tripped, detail):
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
@@ -91,12 +89,7 @@ def main() -> int:
         return 2
 
     status, constructs = call("GET", f"/projects/{pid}/constructs")
-    # Re-specified. This used to assert NO_BUILDABLE_CONSTRUCT, which encoded
-    # the old end state as an expectation; Stage 4a now routes eight designs to
-    # an architecture that fits, so the assertion had become a criterion testing
-    # yesterday's answer. What it was really protecting is unchanged and is what
-    # is checked now: every buildable design is counted, and one that carries a
-    # sequence is told apart from one that fits without residues.
+
     states = {row.get("state") for row in constructs.get("constructs", [])}
     counted = constructs.get("complete", 0) + constructs.get("awaiting_binder", 0)
     criterion("A5",
@@ -114,10 +107,7 @@ def main() -> int:
 
     status, result = call("GET", f"/projects/{pid}/result")
     total = sum(step["dropped"] for step in result.get("attrition", []))
-    # The end state is no longer pinned to one value — it is a result, and
-    # pinning it would repeat the mistake A5 carried. What must hold is that the
-    # chain still partitions the pool exactly, and that the survivors decompose
-    # into complete plus awaiting with nothing unaccounted for.
+
     reached = result.get("reached_the_end", 0)
     criterion("A6",
               status != 200
@@ -130,8 +120,7 @@ def main() -> int:
               f"{result.get('awaiting_binder')} awaiting")
 
     status, targets = call("GET", f"/projects/{pid}/targets")
-    # `[{}][0]` only defends a missing key; an empty list would raise
-    # IndexError and crash the check instead of tripping it.
+
     rows = targets.get("targets") or [{}]
     top = rows[0]
     criterion("A7",

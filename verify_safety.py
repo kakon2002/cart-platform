@@ -1,8 +1,4 @@
-"""Runs the safety gate and tests it against the criteria fixed in the spec.
-
-Criteria before biology, and the two positive pins first. Stage 5's lesson was
-that a retrieval route can be dead while every negative check passes.
-"""
+"""Runs the safety gate and tests it against the criteria fixed in the spec."""
 
 from __future__ import annotations
 
@@ -21,19 +17,17 @@ from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import stage3, stage4, stage5, stage6, stage9
 from car_pipeline.stages.stage1 import build_spec
 
-#: Pinned. Both antigens have many registered trials; zero would mean the route is
-#: dead rather than the antigen untried.
+
 PINNED_TRIALS = ["MSLN", "CLDN18"]
-#: Pinned. Both are `-xi-` names and must classify chimeric.
+
 PINNED_ORIGIN = {"Amatuximab": "chimeric", "Zolbetuximab": "chimeric"}
 
 
 def main() -> int:
+    """Run the safety-gate criteria."""
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
-    # As in the construct verifier: read what Stage 5 blessed rather than
-    # spending five minutes and 200 requests re-deriving it. The hash gates
-    # reuse on the configuration, not just the gene set.
+
     records = stage5.load_or_retrieve(
         decisions, AntibodySource(), manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
@@ -78,6 +72,7 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
@@ -119,8 +114,6 @@ def main() -> int:
               "epitope immunogenicity is NOT_CONNECTED on every row"
               if not leaked else f"{len(leaked)} rows carry a value")
 
-    # Against the manifest's recorded pool size, not against this run's own input.
-    # Comparing output to input cannot fail, and the specification pins 200.
     expected_rows = manifest["pool_size"]
     out_genes = {g.gene for g in gated}
     criterion("S6",
@@ -140,7 +133,6 @@ def main() -> int:
         print(f"\n  STOPPING: {', '.join(tripped)} tripped.")
         return 2
 
-    # ---------------- the biology ---------------------------------------
     print()
     print("=" * 72)
     print("WHAT THE GATE SAYS")
@@ -151,9 +143,7 @@ def main() -> int:
     for verdict in (stage9.PASSES, stage9.FLAGGED, stage9.BLOCKED, stage9.NO_GATE):
         n = counts.get(verdict, 0)
         print(f"    {verdict:22s} {n:4d}  ({n / len(gated):.0%})")
-    # Which of this gate's own questions actually ran. Reported because a
-    # criterion that passes on a code path nothing reached has not been tested,
-    # and Stage 5 has already shown what that looks like.
+
     reached = [g for g in gated if g.verdict in (stage9.PASSES, stage9.FLAGGED)]
     print()
     print("  WHICH QUESTIONS THIS RUN ACTUALLY EXERCISED")

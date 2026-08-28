@@ -1,14 +1,4 @@
-"""Stage 9 — safety gate.
-
-Implements `specs/stage9-safety-gate.md`. Aggregates what earlier stages measured
-and adds two readings of its own. It does not re-decide anything Stage 3 decided:
-off-tumour risk is carried, never recomputed, because a second implementation of
-the tissue mapping would be a second place for its bugs to live.
-
-Passing this gate is not a safety claim. It means three specific questions failed
-to show a problem, which is why the verdict is named `PASSES_STATED_CHECKS` and
-not `SAFE`.
-"""
+"""Stage 9 — safety gate."""
 
 from __future__ import annotations
 
@@ -25,10 +15,7 @@ PASSES = "PASSES_STATED_CHECKS"
 NOT_CONNECTED = "NOT_CONNECTED"
 ORIGIN_UNKNOWN = "ORIGIN_UNKNOWN"
 
-#: Source-species stems in international non-proprietary names, longest first so
-#: that `-xizu-` and `-xi-` cannot be confused. A CONVENTION, not a measurement:
-#: a molecule re-engineered after naming keeps its original stem, and a binder
-#: with no INN has no stem at all.
+
 ORIGIN_STEMS = [
     ("xizu", "chimeric/humanised"),
     ("xi", "chimeric"),
@@ -36,18 +23,14 @@ ORIGIN_STEMS = [
     ("o", "murine"),
     ("u", "human"),
 ]
-#: Origins that carry an anti-CAR immunogenicity risk worth flagging.
+
 FOREIGN_ORIGINS = {"chimeric", "murine", "chimeric/humanised"}
 
 _SUFFIX = re.compile(r"(.*)(mab|tug|tamig|tamab|tocel)$", re.IGNORECASE)
 
 
 def binder_origin(name: str) -> str:
-    """Source species implied by the name's stem, or ORIGIN_UNKNOWN.
-
-    Read from the two or three letters before the terminal `-mab`. Never guessed
-    from sequence, and never asserted where no stem is recognisable.
-    """
+    """Source species implied by the name's stem, or ORIGIN_UNKNOWN."""
     if not name:
         return ORIGIN_UNKNOWN
     match = _SUFFIX.match(name.strip())
@@ -71,16 +54,14 @@ class SafetyRecord:
     ceiling: float = 0.15
     binder_name: str = ""
     binder_origin: str = ORIGIN_UNKNOWN
-    #: Every distinct origin among this target's named binders, because a target
-    #: with both a human and a murine binder is not described by either alone.
+
     binder_origins: list[str] = field(default_factory=list)
-    #: Not a lookup. See the specification: answering it needs a k-mer scan of the
-    #: variable region against the bulk epitope table, which this stage does not do.
+
     epitope_immunogenicity: str = NOT_CONNECTED
     trials_total: int = 0
     trials_stopped: int = 0
     trials_stopped_ids: list[str] = field(default_factory=list)
-    #: True when the tallies cover fewer studies than the registry holds.
+
     trials_truncated: bool = False
     reasons: list[str] = field(default_factory=list)
 
@@ -98,9 +79,7 @@ def gate(
         gene = row["gene"]
         risk, organ = risks.get(gene, (None, None))
         record = binders.get(gene)
-        # Both routes. Stage 5 defines a structure-route binder as a binder, and
-        # counting only sequences here would contradict it — a target with a
-        # solved complex and no named therapeutic would read as ungateable.
+
         usable = ([c for c in record.sequence if c.name]
                   + [c for c in record.structure if c.identifier]) if record else []
         named = [c for c in usable if getattr(c, "route", "") == "sequence"]
@@ -120,22 +99,15 @@ def gate(
             trials_truncated=bool(summary.truncated) if summary else False,
         )
 
-        # Every named binder, not the alphabetically first. Picking one would
-        # have read CLDN18 as ORIGIN_UNKNOWN from Ciletatug while Zolbetuximab,
-        # the spec's own example, sits in the same set and is chimeric.
         origins = sorted({binder_origin(c.name) for c in named})
         entry.binder_origins = origins
         foreign = [o for o in origins if o in FOREIGN_ORIGINS]
         if named:
             entry.binder_name = ", ".join(sorted(c.name for c in named)[:3])
-            # The conservative reading: if any binder for this target is foreign,
-            # the target carries that risk, because the design may use it.
+
             entry.binder_origin = foreign[0] if foreign else (
                 origins[0] if origins else ORIGIN_UNKNOWN)
 
-        # Carried from Stage 3, never recomputed. Undefined risk blocks: Stage 3
-        # §"Undefined risk is not low risk" makes that explicit, and treating a
-        # missing measurement as a pass would invert it.
         if risk is None:
             entry.verdict = BLOCKED
             entry.reasons.append(
@@ -144,12 +116,7 @@ def gate(
             )
             out.append(entry)
             continue
-        # The ceiling this target was actually routed against, not the
-        # persistent one. Stage 4a selects an architecture from the risk profile
-        # and the ceiling follows from it; gating every target on the persistent
-        # ceiling here would re-apply the blind gate that routing exists to
-        # replace, and would block an adaptor design for the very risk its
-        # architecture was chosen to carry.
+
         applied = row.get("route_ceiling") or ceiling
         exposure = row.get("route_exposure") or "persistent"
         entry.ceiling = applied
@@ -162,9 +129,6 @@ def gate(
             out.append(entry)
             continue
         if exposure == "terminable":
-            # Recorded, not silent. This target is admitted on a tolerance for
-            # an exposure that can be stopped, which is a different claim from
-            # clearing the persistent ceiling, and a reader must see which.
             entry.reasons.append(
                 f"admitted against the terminable ceiling {applied}, not the "
                 f"persistent {ceiling}: activation requires a separately dosed "
@@ -197,12 +161,11 @@ def gate(
 def configuration_hash(
     stage6_hash: str, genes: list[str], ceiling: float
 ) -> str:
+    """Fingerprint the safety-gate configuration, ceiling included."""
     payload = {
         "stage6": stage6_hash,
         "genes": genes,
         "origin_stems": ORIGIN_STEMS,
-        # The ceiling decides every BLOCKED verdict, so a run at a different
-        # tolerance must not hash the same as this one.
         "ceiling": ceiling,
         "foreign_origins": sorted(FOREIGN_ORIGINS),
         "epitope": NOT_CONNECTED,

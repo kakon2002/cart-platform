@@ -1,16 +1,4 @@
-"""Stage 10 — developability.
-
-Implements `specs/stage10-developability.md`. Arithmetic over sequences that
-already exist; no source is added.
-
-Scores the binder variable regions from Stage 5 rather than constructs, because
-Stage 6 produces zero buildable constructs and scoring those would score nothing.
-
-**Nothing here predicts manufacturing failure.** These are sequence liabilities —
-properties that correlate with difficulty — reported as counts and values. They
-are never summed: one number would let a strong liability be averaged away by
-four weak absences.
-"""
+"""Stage 10 — developability."""
 
 from __future__ import annotations
 
@@ -20,22 +8,20 @@ from dataclasses import dataclass, field
 
 NOTHING_TO_SCORE = "NOTHING_TO_SCORE"
 
-#: Side-chain pKa values, plus the termini. One fixed table so the isoelectric
-#: point is reproducible; the exact values differ between published sets and the
-#: choice is stated rather than left implicit.
+
 PKA_SIDE = {"C": 8.5, "D": 3.9, "E": 4.1, "H": 6.0, "K": 10.5, "R": 12.5, "Y": 10.1}
 PKA_N_TERM = 9.7
 PKA_C_TERM = 2.3
 POSITIVE = {"K", "R", "H"}
 
-#: Kyte–Doolittle hydropathy.
+
 HYDROPATHY = {
     "A": 1.8, "R": -4.5, "N": -3.5, "D": -3.5, "C": 2.5, "Q": -3.5, "E": -3.5,
     "G": -0.4, "H": -3.2, "I": 4.5, "L": 3.8, "K": -3.9, "M": 1.9, "F": 2.8,
     "P": -1.6, "S": -0.8, "T": -0.7, "W": -0.9, "Y": -1.3, "V": 4.2,
 }
 
-#: Fixed before the run. See the specification.
+
 FORMULATION_PH = 7.4
 PI_WINDOW = 1.0
 CHARGE_FLOOR = 1.0
@@ -59,11 +45,7 @@ def net_charge(sequence: str, ph: float) -> float:
 
 
 def isoelectric_point(sequence: str) -> float:
-    """pH of zero net charge, by bisection.
-
-    Bounded to 1..14 by construction. A sequence with no ionisable side chain
-    still has termini, so the point always exists inside those bounds.
-    """
+    """pH of zero net charge, by bisection."""
     low, high = 1.0, 14.0
     for _ in range(100):
         mid = (low + high) / 2
@@ -75,11 +57,7 @@ def isoelectric_point(sequence: str) -> float:
 
 
 def glycosylation_sequons(sequence: str) -> list[int]:
-    """Positions of `N-X-S/T` where X is not proline, one-based.
-
-    The proline exclusion is the part of this rule most easily dropped, and
-    dropping it silently inflates every count. It is pinned by a criterion.
-    """
+    """Positions of `N-X-S/T` where X is not proline, one-based."""
     out = []
     for i in range(len(sequence) - 2):
         n, x, t = sequence[i], sequence[i + 1], sequence[i + 2]
@@ -103,6 +81,7 @@ def aggregation_prone(sequence: str) -> list[int]:
 
 
 def gravy(sequence: str) -> float | None:
+    """Mean hydropathy, or None when no residue could be scored."""
     values = [HYDROPATHY.get(r) for r in sequence]
     usable = [v for v in values if v is not None]
     if not usable:
@@ -126,22 +105,23 @@ class Developability:
 
     @property
     def flag_count(self) -> int:
+        """How many flags this binder raised."""
         return len(self.flags)
 
     @property
     def kinds(self) -> list[str]:
+        """The kinds of flag raised, without their detail."""
         return [kind for kind, _ in self.flags]
 
 
 def score(sequence: str, gene: str, binder: str) -> Developability:
+    """Assess one binder's developability."""
     pi = isoelectric_point(sequence)
     charge = round(net_charge(sequence, FORMULATION_PH), 4)
     cys = sequence.count("C")
     sequons = glycosylation_sequons(sequence)
     aprs = aggregation_prone(sequence)
 
-    # (kind, detail). The kind is a stable key so the report can group without
-    # parsing prose back out of a sentence.
     flags = []
     if abs(pi - FORMULATION_PH) <= PI_WINDOW:
         flags.append(("pI near formulation pH",
@@ -166,8 +146,6 @@ def score(sequence: str, gene: str, binder: str) -> Developability:
         isoelectric_point=pi,
         net_charge=charge,
         cysteines=cys,
-        # Never "unpaired: 0". Pairing cannot be read from sequence, and an even
-        # count is only the absence of a guarantee, not evidence of pairing.
         cysteine_parity="odd" if cys % 2 else "even",
         sequons=sequons,
         apr_starts=aprs,
@@ -177,12 +155,7 @@ def score(sequence: str, gene: str, binder: str) -> Developability:
 
 
 def assess(binders: dict) -> tuple[list[Developability], str]:
-    """Score every binder carrying a sequence, in pool order.
-
-    Returns the rows and a status. An empty result is `NOTHING_TO_SCORE`, never
-    an empty table: a table with no rows reads as "nothing had liabilities",
-    which is the opposite of "nothing was examined".
-    """
+    """Score every binder carrying a sequence, in pool order."""
     rows: list[Developability] = []
     for gene, record in binders.items():
         for candidate in record.sequence:
@@ -195,6 +168,7 @@ def assess(binders: dict) -> tuple[list[Developability], str]:
 
 
 def configuration_hash(stage5_hash: str, genes: list[str]) -> str:
+    """Fingerprint the developability configuration and its thresholds."""
     payload = {
         "stage5": stage5_hash,
         "genes": genes,

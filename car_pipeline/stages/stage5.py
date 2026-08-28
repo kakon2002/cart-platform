@@ -1,33 +1,4 @@
-"""Stage 5 — binder discovery.
-
-Implements `specs/stage5-binder-discovery.md`. Retrieval only: this stage finds
-and characterises binders that already exist. It does not design one, does not
-predict affinity and does not dock anything, because a prediction printed beside
-a measurement is read as one.
-
-**Two routes, reported apart and never summed.**
-
-* the **structure route** — a deposited complex, found by accession and confirmed
-  as antibody-containing by curated chain annotation rather than by reading entity
-  description text. It carries an epitope.
-* the **sequence route** — a named therapeutic with its variable-region
-  sequences, a clinical stage and a target annotation. It carries no epitope, and
-  it carries the thing a construct is actually built from.
-
-A target with a sequence-route binder and no structure is **not** `NO_BINDER`.
-Collapsing the two would discard the sequences, which are the more useful half.
-
-**Affinity is `NOT_CONNECTED` for every candidate**, and the reason is measured
-rather than assumed: the curated structure summary carried affinity in a previous
-release and does not in this one, and the bioactivity database returns zero
-records for both validation molecules and both validation targets. "We did not
-rank on affinity" and "we could not" are different statements and only the second
-is true.
-
-**This stage does not re-rank targets.** Binder availability tracks how much
-attention a protein has had. Ordering anything by it would let the literature
-choose the targets, which is the thing the discovery stages exist to avoid.
-"""
+"""Stage 5 — binder discovery."""
 
 from __future__ import annotations
 
@@ -46,10 +17,7 @@ BINDER_SEQUENCE_ONLY = "BINDER_SEQUENCE_ONLY"
 NOT_CONNECTED = "NOT_CONNECTED"
 ISOFORM_UNRESOLVED = "ISOFORM_UNRESOLVED"
 
-#: Coding length of the antigen-recognition domain once converted to a
-#: single-chain format, in base pairs: heavy variable, a linker, light variable.
-#: Three times the residue count, stated so the arithmetic is visible rather than
-#: hidden inside a number.
+
 SCFV_RESIDUES = 250
 SCFV_BP = SCFV_RESIDUES * 3
 
@@ -67,11 +35,9 @@ class Candidate:
     antigen_chain: str = ""
     antigen_name: str = ""
     method: str = ""
-    #: Never a number. See the module docstring.
+
     affinity: str = NOT_CONNECTED
-    #: Neither route can say which isoform a binder engages: the therapeutic
-    #: table records the gene, and the structure route would need the deposited
-    #: antigen sequence aligned against each isoform. Reported, never guessed.
+
     isoform: str = ISOFORM_UNRESOLVED
 
     @property
@@ -94,17 +60,14 @@ class TargetBinders:
     entries: list[str] = field(default_factory=list)
     structure: list[Candidate] = field(default_factory=list)
     sequence: list[Candidate] = field(default_factory=list)
-    #: Entries that exist for this accession but carry no antibody instance.
-    #: Reported because "the protein has structures" and "the protein has a
-    #: binder" are different claims and the gap between them is the point.
+
     entries_without_antibody: int = 0
-    #: Entries dropped because their coordinates are computed rather than
-    #: measured. Kept apart from the row above: "no antibody in it" and "not an
-    #: experiment" are different reasons to discard an entry.
+
     entries_excluded_as_model: int = 0
 
     @property
     def verdict(self) -> str:
+        """What was found for this target across both routes."""
         if self.structure and self.sequence:
             return STRUCTURE_AND_SEQUENCE
         if self.structure:
@@ -115,14 +78,17 @@ class TargetBinders:
 
     @property
     def structure_verdict(self) -> str:
+        """What the structure route alone found."""
         return BINDER_STRUCTURE_ONLY if self.structure else NO_BINDER
 
     @property
     def sequence_verdict(self) -> str:
+        """What the sequence route alone found."""
         return BINDER_SEQUENCE_ONLY if self.sequence else NO_BINDER
 
 
 def _sequence_candidates(therapeutics: list[Therapeutic]) -> list[Candidate]:
+    """Candidates from named therapeutics, ordered by name."""
     out = []
     for t in sorted(therapeutics, key=lambda x: x.name):
         out.append(
@@ -145,10 +111,7 @@ def retrieve(
     source: AntibodySource | None = None,
     progress: bool = True,
 ) -> list[TargetBinders]:
-    """One record per pool member, in the order Stage 4 emitted them.
-
-    The order is carried unchanged and nothing here reorders it.
-    """
+    """One record per pool member, in the order Stage 4 emitted them."""
     source = source or AntibodySource()
     by_pdb = source.structures()
     by_target = source.therapeutics_by_target()
@@ -172,8 +135,6 @@ def retrieve(
                 continue
             summary = entry_summary(entry_id)
             if summary["is_model"]:
-                # A computed model is not retrieved evidence. Counted, so the
-                # structures-versus-binders gap reported downstream stays exact.
                 record.entries_excluded_as_model += 1
                 continue
             for inst in instances:
@@ -197,6 +158,7 @@ def retrieve(
 
 
 def configuration_hash(stage4_hash: str, genes: list[str]) -> str:
+    """Fingerprint the binder configuration so a stale cache cannot be reused."""
     payload = {
         "stage4": stage4_hash,
         "genes": genes,
@@ -208,21 +170,12 @@ def configuration_hash(stage4_hash: str, genes: list[str]) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
-# --------------------------------------------------------------------------
-# persistence
-# --------------------------------------------------------------------------
-#
-# Retrieval makes one network call per pool member. Re-running it for every
-# downstream stage is slow, fragile — one dropped connection loses the lot — and
-# pointless, since the answer is pinned by the same hashes everything else is.
-# Written under the discipline the sources use: payload, then manifest as the
-# commit marker.
-
 BINDERS_KEY = "binders"
 BINDERS_MANIFEST_VERSION = 1
 
 
 def _candidate_payload(c: "Candidate") -> dict:
+    """One candidate, flattened for storage."""
     return {
         "route": c.route, "identifier": c.identifier, "name": c.name,
         "fmt": c.fmt, "clinical_stage": c.clinical_stage, "status": c.status,
@@ -233,6 +186,7 @@ def _candidate_payload(c: "Candidate") -> dict:
 
 
 def write_binders(records: list["TargetBinders"], stage4_hash: str, root=None):
+    """Persist the binder records with a manifest committing them."""
     from car_pipeline.data.source import CACHE_ROOT, _write_json_atomic
 
     base = (root or CACHE_ROOT) / "stage5"
@@ -274,44 +228,16 @@ def load_or_retrieve(
     stage4_hash: str | None = None,
     root=None,
 ) -> list["TargetBinders"]:
-    """The blessed cache if it belongs to this run, otherwise a fresh retrieval.
-
-    Retrieval makes one network call per pool member and takes about five
-    minutes. Every stage downstream of this one needs the same records, so a
-    driver that retrieves rather than reads pays that cost again and puts the
-    load on an external service a second and third time for nothing.
-
-    Two things have to match before the cache is usable, and the gene set is
-    only one of them. **The Stage 4 hash is the other, and it is the one that
-    catches a silent error:** changing a criticality override or the risk
-    ceiling changes the configuration hash while leaving the top-200 pool
-    identical, so a gene-set check alone would hand back binders retrieved
-    under the previous configuration and record the wrong provenance in every
-    artifact that chains from this one. ``stage4_hash`` is therefore required
-    to reuse a cache — omitting it means "retrieve", not "trust whatever is
-    on disk".
-
-    A pool or configuration change falls back to retrieval, because both are
-    ordinary events. A cache that fails its *integrity* check is not ordinary
-    and is re-raised: a truncated payload is an operator's problem, and
-    swallowing it here turns it into an unexplained five-minute pause and
-    leaves the bad artifact in place for the next stage to crash on.
-    """
+    """The blessed cache if it belongs to this run, otherwise a fresh retrieval."""
     from car_pipeline.data.source import CacheError
 
     if stage4_hash is not None:
         try:
             records, manifest = read_binders(root=root)
         except CacheError as exc:
-            # "no manifest" means nothing was ever written; anything else means
-            # something *was* written and does not survive its own checks.
             if "no manifest" not in str(exc):
                 raise
         except (TypeError, KeyError, ValueError) as exc:
-            # A payload that passed its digest but cannot be rebuilt: written
-            # under a layout this revision no longer understands. Recoverable
-            # by retrieving, but not silently — it means the manifest version
-            # was not bumped when the record shape changed.
             print(f"  stage5 cache unreadable ({type(exc).__name__}: {exc}); "
                   "retrieving instead")
         else:

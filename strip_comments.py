@@ -1,18 +1,4 @@
-"""Remove every comment and reduce each docstring to one line.
-
-The reasoning this codebase carried in its comments is preserved in
-specs/design-decisions.md before this runs. Run it after that file exists, never
-before.
-
-Token-based rather than line-based. A regex for `#` would corrupt any string
-containing one, and this repository has several: URL fragments, format strings,
-and the `#:` attribute-doc markers. `tokenize` knows which `#` starts a comment
-and which is inside a literal, and reconstructing from the token stream is the
-only way to be sure a strip changed nothing but comments.
-
-    .venv\\Scripts\\python.exe strip_comments.py --check   # report, change nothing
-    .venv\\Scripts\\python.exe strip_comments.py           # strip in place
-"""
+"""Remove every comment and reduce each docstring to one line."""
 
 from __future__ import annotations
 
@@ -52,16 +38,15 @@ def strip_comments(source: str) -> str:
         if kind == tokenize.COMMENT:
             last_row, last_col = erow, ecol
             continue
-        # An FSTRING_MIDDLE token carries the *unescaped* text, so a source
-        # `{{12}}` arrives as `{12}`. Writing it back verbatim turns a literal
-        # brace into a format field -- a behaviour change, in a regex, silently.
-        # Re-doubling also restores the original span, keeping the columns right.
+
+        if kind in (tokenize.NEWLINE, tokenize.NL):
+            last_row, last_col = erow, ecol
+            continue
+
         if kind == getattr(tokenize, "FSTRING_MIDDLE", None):
             text = text.replace("{", "{{").replace("}", "}}")
             result.append(text)
-            # The reported end column stops at the first brace of an escape
-            # pair, so it understates what was consumed and the next token
-            # looks displaced. Advance by the re-escaped text instead.
+
             last_row = erow
             last_col = (scol if erow == srow else 0) + len(text.split(chr(10))[-1])
             continue
@@ -85,6 +70,7 @@ def shorten_docstrings(source: str) -> str:
     edits: list[tuple[int, int, str]] = []
 
     def visit(node):
+        """Record the docstring edit for this node and its nested definitions."""
         body = getattr(node, "body", None)
         if not isinstance(body, list) or not body:
             return
@@ -124,28 +110,27 @@ def process(path: Path, write: bool) -> tuple[int, int]:
     stripped = shorten_docstrings(original)
     stripped = strip_comments(stripped)
 
-    # Blank-line collapse: removing a comment block leaves a run of blank lines
-    # where a paragraph used to be.
     out_lines: list[str] = []
-    blanks = 0
+    pending = 0
     for line in stripped.splitlines():
         if not line.strip():
-            blanks += 1
-            if blanks > 2:
-                continue
-        else:
-            blanks = 0
+            pending += 1
+            continue
+
+        allowed = 2 if line[:1] not in (" ", chr(9)) else 1
+
+        prev = out_lines[-1].rstrip() if out_lines else ""
+        if prev.endswith((":", "(", "[", "{", ",")) or                 line.lstrip()[:1] in (")", "]", "}"):
+            allowed = 0
+        if out_lines:
+            out_lines.extend([""] * min(pending, allowed))
+        pending = 0
         out_lines.append(line.rstrip())
     text = "\n".join(out_lines).rstrip() + "\n"
 
-    # The strip must not change what the file means. Comparing the parsed trees
-    # catches any edit that altered a statement rather than a comment, which is
-    # the only failure this tool can have.
     a = ast.dump(ast.parse(original))
     b = ast.dump(ast.parse(text))
     if a != b:
-        # Docstrings are part of the tree, so they are normalised out of both
-        # sides before comparing; everything else must match exactly.
         a = ast.dump(_drop_docstrings(ast.parse(original)))
         b = ast.dump(_drop_docstrings(ast.parse(text)))
         if a != b:
@@ -163,8 +148,7 @@ def _drop_docstrings(tree: ast.AST) -> ast.AST:
     """Blank every docstring so two trees compare on code alone."""
     for node in ast.walk(tree):
         body = getattr(node, "body", None)
-        # IfExp and Lambda carry a `body` that is a single expression, not a
-        # list of statements. Indexing it raises rather than matching nothing.
+
         if not isinstance(body, list) or not body:
             continue
         if isinstance(body[0], ast.Expr) and isinstance(
@@ -174,6 +158,7 @@ def _drop_docstrings(tree: ast.AST) -> ast.AST:
 
 
 def main() -> int:
+    """Strip every file, or report what would change."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--check", action="store_true",
                         help="report what would change and write nothing")
