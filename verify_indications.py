@@ -112,18 +112,41 @@ def main() -> int:
               f"indication-specific module constants remaining: "
               f"{leftovers or 'none'}")
 
-    # M4 / M5 -- an atlas-less indication refuses, and says why
+    # M4 / M5 -- an atlas-less indication refuses, and says why.
+    #
+    # These used to assert that a constructed object carried atlas=None and that
+    # a string appeared in the source. Both passed while the real behaviour was
+    # an AttributeError 55 lines before the refusal was ever computed. They call
+    # run() now: a criterion that greps for the words it wants is a criterion
+    # testing that someone wrote them.
     from car_pipeline.configs.indication import Indication
-    bare = Indication(key="none", cancer_type="x", tcga_project=None,
-                      depmap_lineage=None, gtex_bulk_label=None, atlas=None)
-    criterion("M4", bare.atlas is not None,
-              "an indication with no atlas is expressible and carries "
-              "atlas=None, which the driver maps to NOT_USABLE")
-    src = Path("car_pipeline/api/pipeline.py").read_text(encoding="utf-8")
-    names_c2 = "malignant_vs_stroma" in src and "NOT_USABLE" in src
-    criterion("M5", not names_c2,
-              "the atlas-less path names malignant_vs_stroma as what is lost, "
-              "not just a weight")
+    bare = Indication(
+        key="atlasless", cancer_type="Atlas-less Control",
+        tcga_project="TCGA-PAAD", depmap_lineage="Pancreas",
+        gtex_bulk_label="Pancreas", atlas=None)
+    from car_pipeline.configs import registry as _reg
+    _reg.INDICATIONS[bare.cancer_type.lower()] = bare
+    _reg.PROJECTS[bare.cancer_type.lower()] = _reg.PROJECTS["pancreatic ductal adenocarcinoma"]
+    try:
+        bare_run = pipeline.run(bare.cancer_type, progress=lambda s, n="": None)
+        crashed = None
+    except Exception as exc:                       # noqa: BLE001
+        bare_run, crashed = None, f"{type(exc).__name__}: {exc}"
+    finally:
+        _reg.INDICATIONS.pop(bare.cancer_type.lower(), None)
+        _reg.PROJECTS.pop(bare.cancer_type.lower(), None)
+
+    criterion("M4", crashed is not None
+              or bare_run.get("usability") != pipeline.NOT_USABLE
+              or bare_run.get("final"),
+              f"an atlas-less indication returns {(bare_run or {}).get('usability')} "
+              f"with no ranking"
+              + (f" -- it raised {crashed}" if crashed else ""))
+
+    reasons_text = " ".join((bare_run or {}).get("reasons", []))
+    criterion("M5", "malignant_vs_stroma" not in reasons_text,
+              "the refusal names malignant_vs_stroma as the missing "
+              "discriminator, not just a lost weight")
 
     # M6 / M7 / M8 -- Mode A
     verdict = pipeline.validate("pdac", MODE_A_PIN)
@@ -132,7 +155,10 @@ def main() -> int:
               f"with {len(verdict.get('reasons', []))} reasons")
 
     rank = verdict.get("rank")
-    criterion("M7", rank is not None and rank <= 20,
+    # An absent rank trips this rather than satisfying it. Written the other way
+    # round, the criterion whose job is to prove the verdict is not
+    # self-agreement passed hardest exactly when the verdict meant least.
+    criterion("M7", rank is None or rank <= 20,
               f"{MODE_A_PIN} ranks {rank} of {verdict.get('of')} -- outside the "
               "top 20, so the verdict is not self-agreement")
 
@@ -163,10 +189,30 @@ def main() -> int:
               f"hash {ref['stage3_hash']}, outcomes {dict(outcomes)}")
 
     # M10 -- a missing source is named
-    named = all(":" in u for u in ref.get("unavailable", []))
+    # Also exercised against an indication that really is degraded, so this
+    # cannot pass merely because nothing was unavailable.
+    degraded = Indication(
+        key="nodep", cancer_type="No-Dependency Control",
+        tcga_project="TCGA-PAAD", depmap_lineage="NoSuchLineage",
+        gtex_bulk_label="Pancreas", atlas=INDICATIONS["pancreatic ductal adenocarcinoma"].atlas)
+    _reg.INDICATIONS[degraded.cancer_type.lower()] = degraded
+    _reg.PROJECTS[degraded.cancer_type.lower()] = _reg.PROJECTS["pancreatic ductal adenocarcinoma"]
+    try:
+        deg = pipeline.run(degraded.cancer_type, progress=lambda s, n="": None)
+        deg_unavailable = deg.get("unavailable", [])
+    except Exception as exc:                       # noqa: BLE001
+        deg_unavailable = [f"RAISED {type(exc).__name__}: {exc}"]
+    finally:
+        _reg.INDICATIONS.pop(degraded.cancer_type.lower(), None)
+        _reg.PROJECTS.pop(degraded.cancer_type.lower(), None)
+
+    named = (bool(deg_unavailable)
+             and all(":" in u for u in deg_unavailable)
+             and not any(u.startswith("RAISED") for u in deg_unavailable)
+             and all(":" in u for u in ref.get("unavailable", [])))
     criterion("M10", not named,
-              f"unavailable components name their source "
-              f"({ref.get('unavailable') or 'none unavailable'})")
+              f"a degraded indication names its missing source: "
+              f"{deg_unavailable}")
 
     print("=" * 72)
     print(f"  {10 - len(tripped)}/10 criteria clear")
