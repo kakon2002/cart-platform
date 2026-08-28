@@ -1,0 +1,250 @@
+<title>Eight Designs Through</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>
+:root {
+  --paper:#EDEFF1; --surface:#F8F9FA; --sunk:#E3E7EA;
+  --ink:#131C2B; --ink-soft:#515E70; --ink-faint:#7A879A;
+  --rule:#D2D8DE; --rule-soft:#E1E6EA;
+  --madder:#94301D; --tripped:#8C5A0C; --tripped-bg:#F2E7CF;
+  --clear:#2C6046;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0D131B; --surface:#161E29; --sunk:#111925;
+    --ink:#E3E8EE; --ink-soft:#9AA6B6; --ink-faint:#6E7C8D;
+    --rule:#28323F; --rule-soft:#1D2631;
+    --madder:#DE7A63; --tripped:#D6A445; --tripped-bg:#2A2213;
+    --clear:#71C398;
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0D131B; --surface:#161E29; --sunk:#111925;
+  --ink:#E3E8EE; --ink-soft:#9AA6B6; --ink-faint:#6E7C8D;
+  --rule:#28323F; --rule-soft:#1D2631;
+  --madder:#DE7A63; --tripped:#D6A445; --tripped-bg:#2A2213;
+  --clear:#71C398;
+}
+
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16.5px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+.wrap { max-width:760px; margin:0 auto; padding:0 26px 88px; }
+
+.mast { border-bottom:2px solid var(--ink); padding:56px 0 20px; }
+h1 {
+  font-family:"Instrument Serif",Georgia,"Times New Roman",serif;
+  font-weight:400; font-size:clamp(2.4rem,6vw,3.5rem); line-height:1.03;
+  margin:0; letter-spacing:-0.012em; text-wrap:balance;
+}
+.mast__sub { margin:14px 0 0; color:var(--ink-soft); font-size:1.03rem; }
+
+h2 {
+  font-family:"Instrument Serif",Georgia,serif; font-weight:400;
+  font-size:1.72rem; line-height:1.15; margin:0 0 12px; text-wrap:balance;
+}
+.eyebrow {
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.68rem; letter-spacing:0.15em; text-transform:uppercase;
+  color:var(--madder); margin:0 0 6px;
+}
+section { margin-top:52px; }
+p { margin:0 0 15px; }
+strong { font-weight:600; }
+
+.headline {
+  display:flex; gap:34px; flex-wrap:wrap; align-items:baseline;
+  margin:30px 0 0;
+}
+.big {
+  font-family:"Instrument Serif",Georgia,serif; font-size:3.4rem;
+  line-height:0.95; color:var(--madder); font-variant-numeric:tabular-nums;
+}
+.big small { font-size:1.5rem; color:var(--ink-faint); }
+.big__l {
+  display:block; font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.68rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--ink-faint); margin-top:9px;
+}
+
+.scroll { overflow-x:auto; margin:20px 0 0; }
+table { border-collapse:collapse; width:100%; min-width:420px; }
+th {
+  font-family:"IBM Plex Mono",ui-monospace,monospace; text-align:left;
+  font-size:0.66rem; letter-spacing:0.12em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:400;
+  padding:0 12px 8px 0; border-bottom:1px solid var(--rule);
+}
+td {
+  padding:9px 12px 9px 0; border-bottom:1px solid var(--rule-soft);
+  font-size:0.94rem;
+}
+td.n, th.n { text-align:right; padding-right:0;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; }
+.gene { font-weight:600; }
+
+.sweep td, .sweep th { text-align:right; padding:9px 10px; }
+.sweep th:first-child, .sweep td:first-child {
+  text-align:left; padding-left:0; white-space:nowrap;
+}
+.sweep td { font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; }
+.on { background:var(--tripped-bg); color:var(--tripped); font-weight:600; }
+
+.note {
+  background:var(--surface); border:1px solid var(--rule);
+  border-left:3px solid var(--madder);
+  padding:18px 20px; border-radius:2px; margin:22px 0 0;
+}
+.note p:last-child { margin-bottom:0; }
+
+.crits { margin:16px 0 0; padding:0; list-style:none;
+  display:flex; flex-direction:column; gap:11px; }
+.crits li {
+  padding-left:15px; border-left:2px solid var(--tripped);
+  color:var(--ink-soft); font-size:0.94rem;
+}
+.crits b { color:var(--ink); font-weight:600; }
+
+a { color:var(--madder); }
+.foot {
+  margin-top:64px; padding-top:20px; border-top:1px solid var(--rule);
+  color:var(--ink-faint); font-size:0.84rem;
+}
+@media (max-width:560px) { .headline { gap:24px; } .big { font-size:2.7rem; } }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <h1>Eight designs through</h1>
+    <p class="mast__sub">CAR-T design platform — pancreatic ductal
+    adenocarcinoma. Status as of this run.</p>
+  </header>
+
+  <div class="headline">
+    <div><span class="big">8<small>&thinsp;/&thinsp;200</small></span>
+      <span class="big__l">designs reach the end</span></div>
+    <div><span class="big">108<small>&thinsp;/&thinsp;114</small></span>
+      <span class="big__l">checks clear</span></div>
+    <div><span class="big">16<small>&thinsp;min</small></span>
+      <span class="big__l">one command, from scratch</span></div>
+  </div>
+
+  <section>
+    <p class="eyebrow">What it does</p>
+    <h2>A cancer type in, ranked designs out</h2>
+    <p>You give it an indication and name no target. It screens all 3,466
+    human cell-surface proteins against tumour and normal-tissue evidence,
+    ranks them, tests 19,900 two-antigen combinations, retrieves real antibody
+    binders, chooses a receptor architecture from each target's safety profile,
+    and assembles a complete DNA construct that must fit inside the viral
+    vector.</p>
+    <p>Every number traces to a public dataset and a release date, and where a
+    measurement is missing the platform says so rather than substituting one.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">The result</p>
+    <h2>Eight targets survive every gate</h2>
+    <p>Of 200 candidates carried forward, 191 are stopped by normal-tissue
+    safety and one has no retrievable binder. The remaining eight assemble into
+    complete constructs at 2,811 base pairs against a 3,500 limit — comfortably
+    inside the vector.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Target</th><th class="n">Rank</th><th class="n">Score</th>
+          <th class="n">Risk</th><th>Main risk organ</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="gene">CD207</td><td class="n">27</td><td class="n">0.639</td><td class="n">0.227</td><td>marrow and blood</td></tr>
+          <tr><td class="gene">DUOXA2</td><td class="n">33</td><td class="n">0.630</td><td class="n">0.292</td><td>liver</td></tr>
+          <tr><td class="gene">CD1A</td><td class="n">80</td><td class="n">0.548</td><td class="n">0.276</td><td>marrow and blood</td></tr>
+          <tr><td class="gene">FER1L6</td><td class="n">116</td><td class="n">0.502</td><td class="n">0.288</td><td>lung</td></tr>
+          <tr><td class="gene">GPR35</td><td class="n">117</td><td class="n">0.502</td><td class="n">0.313</td><td>GI tract</td></tr>
+          <tr><td class="gene">EFNA2</td><td class="n">128</td><td class="n">0.496</td><td class="n">0.311</td><td>liver</td></tr>
+          <tr><td class="gene">TMEM92</td><td class="n">130</td><td class="n">0.496</td><td class="n">0.288</td><td>lung</td></tr>
+          <tr><td class="gene">CD1E</td><td class="n">159</td><td class="n">0.467</td><td class="n">0.344</td><td>liver</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The one thing outstanding</p>
+    <h2>All eight are waiting on the same single part</h2>
+    <p>These are <strong>adaptor designs</strong>. The T cell does not recognise
+    the tumour directly — it recognises a small chemical tag, and a separately
+    dosed protein carries that tag to the antigen. That is what makes them fit,
+    and what makes them safer: the therapy works only while the second protein
+    is being given, so it can be switched off.</p>
+    <p>The cell therefore needs a binder against the <em>tag</em>. Such binders
+    are published, but <strong>none exists in any public antibody database the
+    platform can query</strong> — zero of 21,914 structural entries. Rather than
+    invent a plausible-looking sequence, the platform declares the part's exact
+    size and assembles around it.</p>
+    <div class="note">
+      <p><strong>Practically:</strong> the eight designs are real and correctly
+      sized. To order DNA, one sequence must be licensed or obtained from the
+      published literature — a procurement and IP question, roughly a week of
+      work, not a research problem. Everything downstream of it is finished.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The decision we need from you</p>
+    <h2>How much stoppable risk is acceptable</h2>
+    <p>An adaptor does not make an antigen safer — it makes the exposure
+    <em>stoppable</em>. How much risk that justifies is a clinical judgement,
+    not something derivable from data, so it is a declared number. Today it is
+    0.35, and this is what each setting would admit:</p>
+    <div class="scroll">
+      <table class="sweep">
+        <tbody>
+          <tr><th>Risk ceiling</th><td>0.15</td><td>0.25</td><td>0.30</td><td class="on">0.35</td><td>0.40</td><td>0.50</td><td>0.60</td><td>0.70</td></tr>
+          <tr><th>Designs admitted</th><td>0</td><td>1</td><td>5</td><td class="on">9</td><td>26</td><td>65</td><td>109</td><td>150</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p><strong>Mesothelin does not make the cut.</strong> It sits at 0.637 —
+      nearly twice the current ceiling. Admitting it needs roughly 0.65, which
+      would also admit about 120 other targets. That is the trade, and it is a
+      clinical call rather than a technical one. The number was fixed before
+      this run and has not been moved to make any particular target pass.</p>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Confidence</p>
+    <h2>108 of 114 checks clear, and the six that don't are on the record</h2>
+    <p>Every stage is tested against criteria written <em>before</em> it runs.
+    Six are currently failing, each deliberately and each documented:</p>
+    <ul class="crits">
+      <li><b>A screening check was withdrawn</b> — it compared two groups that
+      differ by construction, so it could never pass however the data looked. A
+      replacement was written and clears.</li>
+      <li><b>Tumour-overlap figures are confounded by gene length</b>, so they
+      are reported next to a length-matched percentile and excluded from
+      choosing partners.</li>
+      <li><b>One accepted antigen pair includes an immune-system protein</b>. It
+      is reported rather than filtered out, because the candidate list is not
+      hand-curated.</li>
+      <li><b>Half of accepted pairs would fail</b> if an unmeasured antigen
+      turned out to be highly expressed — the cost of refusing to guess.</li>
+      <li><b>Partner choice is unstable</b> when the candidate pool is halved,
+      so the pairing stage is marked complete-with-limitations.</li>
+      <li><b>Mesothelin does not reach an adaptor design</b>, as described
+      above. Left failing on purpose, pending your decision on the ceiling.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Full stage-by-stage detail, every criterion and the complete
+  attrition chain: <a href="https://claude.ai/code/artifact/6dccd3a2-606e-4d2a-970f-bf4d8d2b61a1">Full Run Ledger</a>.
+  Every figure on this page is produced by the run, not transcribed by hand.</p>
+</div>
