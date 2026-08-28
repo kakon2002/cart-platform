@@ -58,14 +58,27 @@ class Part:
     feature: str = ""
     start: int | None = None
     end: int | None = None
+    #: A size without a sequence. Set only where the length is known and the
+    #: residues genuinely are not — the adaptor receptor's anti-tag binder is
+    #: the one such part. Size is what the payload budget needs and size is
+    #: something this pipeline has measured; the sequence is withheld rather
+    #: than invented. `supplied` is what every consumer must branch on.
+    declared_residues: int | None = None
+
+    @property
+    def supplied(self) -> bool:
+        """Whether this part carries an actual sequence."""
+        return bool(self.sequence)
 
     @property
     def residues(self) -> int:
+        if not self.sequence and self.declared_residues is not None:
+            return self.declared_residues
         return len(self.sequence)
 
     @property
     def bases(self) -> int:
-        return len(self.sequence) * 3
+        return self.residues * 3
 
     @property
     def described(self) -> bool:
@@ -227,6 +240,25 @@ SYNTHETIC_PARTS = {
     "linker": Part("(G4S)x3 linker", SYNTHETIC, "GGGGSGGGGSGGGGS"),
     "switch_linker": Part("SGGGS linker", SYNTHETIC, "SGGGS"),
     "skip": Part("T2A skip peptide", SYNTHETIC, "EGRGSLLTCGDVEENPGP"),
+    # The adaptor receptor's binding domain. It binds a tag, not a human
+    # protein, so it is not retrievable from the proteome the way every other
+    # proteome part is -- and no anti-tag antibody exists in the cached
+    # structural set either: 0 of 21,914 SAbDab entries name fluorescein as
+    # antigen. It is therefore declared here rather than fetched.
+    #
+    # **The sequence is deliberately not supplied.** Writing a plausible-looking
+    # scFv here would put an unverified binder inside a construct that reads as
+    # designed, which is the single thing this stage exists to prevent. What is
+    # declared instead is its SIZE: 240 aa, the median of the 30 real scFvs
+    # Stage 5 retrieved (705-765 bp, median 720 bp). Size is what the payload
+    # budget question needs, and size is something this pipeline has measured.
+    #
+    # Stage 6 carries `binder_supplied=False` on any construct using it and
+    # withholds the amino-acid sequence rather than emitting a fabricated one.
+    "adaptor_binder": Part(
+        "anti-tag binder (sequence not supplied)", SYNTHETIC, "",
+        declared_residues=240,
+    ),
 }
 
 

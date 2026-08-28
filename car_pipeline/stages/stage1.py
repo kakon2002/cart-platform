@@ -113,6 +113,7 @@ def _design_constraints(inputs: ProjectInput) -> DesignConstraints:
         # cannot also be one of the things that stage picks between.
         allowed_car_formats=[f for f in CARFormat if f is not CARFormat.AUTO],
         normal_tissue_risk_ceiling=ceiling,
+        terminable_risk_ceiling=inputs.terminable_risk_ceiling,
     )
 
 

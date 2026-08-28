@@ -30,6 +30,8 @@ from car_pipeline.stages.stage3 import RiskModel, Ranked
 #: The pool is the top of the tumour-side ranking with risk ignored entirely.
 #: Risk is the thing pairing exists to fix, so filtering on it first would leave
 #: the stage unable to reach the targets a dual design is for.
+from car_pipeline.stages import routing
+
 POOL_SIZE = 200
 
 #: A cell carries an antigen when at least one molecule was captured. Reported
@@ -57,6 +59,11 @@ MIN_DETECTED_CELLS = 10
 SINGLE = "SINGLE"
 DUAL = "DUAL"
 NO_DESIGN = "NO_DESIGN"
+#: Routed to an adaptor design: the target does not clear the persistent
+#: ceiling alone and has no admissible pair, but its risk is within the
+#: terminable ceiling declared for the project. The antigen is no safer; the
+#: exposure is stoppable. See specs/stage4a-architecture-routing.md.
+ADAPTOR = "ADAPTOR"
 UNRESOLVED = "UNRESOLVED"
 
 
@@ -512,6 +519,15 @@ class Decision:
     #: round trip and can be checked rather than trusted.
     pool_index: int = -1
 
+    #: What Stage 4a routed this target to, and why. Carried on every decision
+    #: including the ones that route nowhere: a target that would have gone to
+    #: an unbuilt architecture is a different finding from one that goes
+    #: nowhere at all, and the reason is what distinguishes them.
+    architecture: str = ""
+    route_reason: str = ""
+    route_ceiling: float | None = None
+    route_exposure: str | None = None
+
 
 #: Span buckets for the percentile. Quintiles: enough to separate a 7 kb gene
 #: from a 1.1 Mb one without slicing the pool so finely that a bucket holds too
@@ -605,6 +621,7 @@ def decide(
     pool: list[Ranked],
     pairs: list[Pair],
     tumour_tpm: dict[str, float] | None = None,
+    tolerances: "routing.Tolerances | None" = None,
 ) -> list[Decision]:
     """Single, dual, unresolved or no design, per pool member.
 
@@ -623,6 +640,13 @@ def decide(
 
     cleared = {r.gene: r.cleared for r in pool}
     accession_of = {r.gene: r.accession for r in pool}
+    risk_of = {r.gene: (r.risk, r.risk_organ) for r in pool}
+    # Absent tolerances the stage behaves exactly as it did before routing
+    # existed. Deliberately NOT a fabricated default: `Ranked` carries no
+    # ceiling, so inventing one here would have set it to 0.0 and quietly
+    # routed nothing to CONVENTIONAL. A caller that has not been updated keeps
+    # its old answers and every decision reports NOT_CONFIGURED.
+    tol = tolerances
 
     def eligible_partner(gene: str) -> bool:
         if tumour_tpm is None:
@@ -646,12 +670,38 @@ def decide(
         # on an artefact.
         admissible.sort(key=lambda p: (p.risk.combined, _other(p, r.gene)))
 
+        # Stage 4a. The profile picks the architecture; the ceiling follows
+        # from it. `best_pair_risk` is the combined risk of the best admissible
+        # partner, which is what an AND gate would actually carry.
+        risk, organ = risk_of.get(r.gene, (None, None))
+        best_pair_risk = admissible[0].risk.combined if admissible else None
+        if tol is None:
+            decided = None
+            route_fields = dict(
+                architecture=routing.NOT_CONFIGURED,
+                route_reason="no tolerances supplied; routing disabled",
+                route_ceiling=None, route_exposure=None,
+            )
+        else:
+            decided = routing.route(
+                gene=r.gene, risk=risk, risk_organ=organ, tolerances=tol,
+                pair_risk=best_pair_risk,
+                partner=_other(admissible[0], r.gene) if admissible else None,
+            )
+            route_fields = dict(
+                architecture=decided.architecture,
+                route_reason=decided.reason,
+                route_ceiling=decided.ceiling,
+                route_exposure=decided.exposure,
+            )
+
         if cleared[r.gene]:
             best = admissible[0] if admissible else None
             out.append(
                 Decision(
                     gene=r.gene,
                     outcome=SINGLE,
+                    **route_fields,
                     partner=_other(best, r.gene) if best else None,
                     pair=best,
                     accession=r.accession,
@@ -669,11 +719,29 @@ def decide(
                 Decision(
                     gene=r.gene,
                     outcome=DUAL,
+                    **route_fields,
                     partner=_other(best, r.gene),
                     pair=best,
                     accession=r.accession,
                     partner_accession=accession_of.get(_other(best, r.gene)),
                     pool_index=index,
+                )
+            )
+            continue
+
+        # Routed to an adaptor. Reached only when the target cleared neither
+        # alone nor paired, so this is the row that recovers targets the old
+        # blind gate discarded. The risk number is unchanged; only the ceiling
+        # it was compared against is different.
+        if decided is not None and decided.architecture == routing.ADAPTOR:
+            out.append(
+                Decision(
+                    gene=r.gene,
+                    outcome=ADAPTOR,
+                    partner=None,
+                    accession=r.accession,
+                    pool_index=index,
+                    **route_fields,
                 )
             )
             continue
@@ -721,6 +789,7 @@ def decide(
                 gene=r.gene,
                 outcome=UNRESOLVED if salvageable else NO_DESIGN,
                 failed_on=failed,
+                **route_fields,
                 accession=r.accession,
                 pool_index=index,
             )
@@ -737,7 +806,11 @@ def _other(pair: Pair, gene: str) -> str:
 # --------------------------------------------------------------------------
 
 
-def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
+def configuration_hash(
+    stage3_hash: str,
+    pool_genes: list[str],
+    tolerances: "routing.Tolerances | None" = None,
+) -> str:
     """Covers the stage 3 hash as well as this stage's own parameters.
 
     A pairing result is not interpretable without knowing which ranking produced
@@ -745,6 +818,11 @@ def configuration_hash(stage3_hash: str, pool_genes: list[str]) -> str:
     """
     payload = {
         "stage3": stage3_hash,
+        # The declared ceilings decide which architecture each target routes
+        # to, so a run under different tolerances is a different experiment and
+        # must not hash as the same one.
+        "routing": (routing.configuration_payload(tolerances)
+                    if tolerances is not None else None),
         "pool_size": POOL_SIZE,
         "pool": pool_genes,
         "detection_counts": DETECTION_COUNTS,
@@ -795,6 +873,10 @@ def _decision_payload(d: Decision) -> dict:
         # Present only where the outcome is terminal. An absent mapping and a
         # mapping of zeros mean different things and are kept apart.
         "failed_on": d.failed_on or None,
+        "architecture": d.architecture or None,
+        "route_reason": d.route_reason or None,
+        "route_ceiling": d.route_ceiling,
+        "route_exposure": d.route_exposure,
     }
 
 
