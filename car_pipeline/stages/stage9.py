@@ -144,14 +144,32 @@ def gate(
             )
             out.append(entry)
             continue
-        if risk > ceiling:
+        # The ceiling this target was actually routed against, not the
+        # persistent one. Stage 4a selects an architecture from the risk profile
+        # and the ceiling follows from it; gating every target on the persistent
+        # ceiling here would re-apply the blind gate that routing exists to
+        # replace, and would block an adaptor design for the very risk its
+        # architecture was chosen to carry.
+        applied = row.get("route_ceiling") or ceiling
+        exposure = row.get("route_exposure") or "persistent"
+        entry.ceiling = applied
+        if risk > applied:
             entry.verdict = BLOCKED
             entry.reasons.append(
-                f"Stage 3 risk {risk:.4f} exceeds the ceiling {ceiling} "
-                f"(peak organ {organ})"
+                f"Stage 3 risk {risk:.4f} exceeds the {exposure} ceiling "
+                f"{applied} (peak organ {organ})"
             )
             out.append(entry)
             continue
+        if exposure == "terminable":
+            # Recorded, not silent. This target is admitted on a tolerance for
+            # an exposure that can be stopped, which is a different claim from
+            # clearing the persistent ceiling, and a reader must see which.
+            entry.reasons.append(
+                f"admitted against the terminable ceiling {applied}, not the "
+                f"persistent {ceiling}: activation requires a separately dosed "
+                "adaptor, so the exposure is stoppable"
+            )
 
         if not usable:
             entry.verdict = NO_GATE

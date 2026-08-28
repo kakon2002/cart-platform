@@ -1,0 +1,37 @@
+  persistent ceiling 0.15   terminable ceiling 0.35
+
+loading the ranked pool
+  200 pool members
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    A1: architecture is order-independent; 0 differ on a reversed pool
+  clear    A2: 0 targets routed ADAPTOR that CONVENTIONAL would have admitted
+  clear    A3: 0 routed risks differ from the Stage 3 risk
+  clear    A4: 0 CONVENTIONAL targets sit above the persistent ceiling
+  clear    A5: NPSR1 (risk 0.0277) routes CONVENTIONAL
+  TRIPPED  A6: MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
+  clear    A7: 0 targets resolve to NO_ARCHITECTURE with no reason
+  clear    A8: with no declared terminable ceiling, 0 targets still route ADAPTOR
+  clear    A9: adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->1, 0.3->5, 0.35->9, 0.4->26, 0.5->65, 0.6->109, 0.7->150
+  clear    A10: declared ceiling 0.35 matches the spec value 0.35
+  clear    A11: 8 adaptor constructs; 0 emit a sequence despite an unsupplied binder
+========================================================================
+  10/11 criteria clear
+
+========================================================================
+WHAT ROUTING CHANGED
+========================================================================
+    NO_ARCHITECTURE     190
+    ADAPTOR               9
+    CONVENTIONAL          1
+
+    stage 4 outcomes: {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
+    CD207       2811 bp  headroom   689  BUILDABLE  sequence_supplied=False
+    DUOXA2      2811 bp  headroom   689  BUILDABLE  sequence_supplied=False
+    CD1A        2811 bp  headroom   689  BUILDABLE  sequence_supplied=False
+    FER1L6      2811 bp  headroom   689  BUILDABLE  sequence_supplied=False
+    GPR35       2811 bp  headroom   689  BUILDABLE  sequence_supplied=False
+
+  STOPPING: A6 tripped.

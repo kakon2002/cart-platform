@@ -1,5 +1,5 @@
 loading stage 4 decisions
-  200 decisions, stage4 hash 13939f3a4dad1de4, usable as a result: no
+  200 decisions, stage4 hash d1c12f892f3f9b17, usable as a result: no
   upstream tripped P15, P4, P7, P8 — this stage annotates them and does not treat them as settled
 retrieving binders
     retrieved 25/200
@@ -84,5 +84,5 @@ WHAT THE LITERATURE HOLDS FOR THIS POOL
     MUC1      STRUCTURE_AND_SEQUENCE   entries  23  structure  29  sequence   3
 
   binders written to C:\cart-platform\data\stage5\binders.json
-  configuration hash ff56844b012fdb34
+  configuration hash a7c70c36e4bfb243
   affinity: NOT_CONNECTED for every candidate, and that is measured

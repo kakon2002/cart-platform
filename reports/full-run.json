@@ -1,7 +1,7 @@
 {
-  "clear": 98,
-  "total": 103,
-  "minutes": 6.9,
+  "clear": 108,
+  "total": 114,
+  "minutes": 16.1,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -9,22 +9,20 @@
     "4/P4": "Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.",
     "4/P7": "One cleared pair contains HLA-A. Recorded rather than filtered, because the pool is not curated by hand.",
     "4/P8": "48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.",
-    "4/P15": "Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision."
+    "4/P15": "Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.",
+    "4a/A6": "A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row's condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible."
   },
   "unexpected": [],
   "stale": [],
   "api": [
-    "    GET /constructs -> NO_BUILDABLE_CONSTRUCT",
-    "      - Conservative safety tolerance mandates a safety switch (1308 bp).",
-    "      - The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.",
-    "      - Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.",
-    "      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.",
-    "    GET /result     -> NO_DESIGN_REACHES_THE_END",
-    "      blocked on normal tissue risk      - 199     1 remain",
-    "      no design recommended              -   0     1 remain",
-    "      no binder retrieved                -   1     0 remain",
-    "      no construct assembled             -   0     0 remain",
-    "      construct over budget              -   0     0 remain"
+    "    GET /constructs -> BUILDABLE_AWAITING_BINDER",
+    "      - 8 design(s) fit the 3500 bp budget but carry no binder sequence: the adaptor receptor binds a tag, and no anti-tag binder exists in the connected sources, so its size is declared and its sequence is not invented.",
+    "    GET /result     -> RANKED_AWAITING_BINDER",
+    "      blocked on normal tissue risk      - 191     9 remain",
+    "      no design recommended              -   0     9 remain",
+    "      no binder retrieved                -   1     8 remain",
+    "      no construct assembled             -   0     8 remain",
+    "      construct over budget              -   0     8 remain"
   ],
   "stages": [
     {
@@ -220,7 +218,7 @@
       "clear": 12,
       "total": 13,
       "ok": false,
-      "seconds": 19.9,
+      "seconds": 19.7,
       "exit": 1,
       "criteria": [
         {
@@ -372,12 +370,78 @@
       ]
     },
     {
+      "number": "4a",
+      "name": "Architecture routing",
+      "clear": 10,
+      "total": 11,
+      "ok": false,
+      "seconds": 312.9,
+      "exit": 2,
+      "criteria": [
+        {
+          "id": "A1",
+          "tripped": false,
+          "detail": "architecture is order-independent; 0 differ on a reversed pool"
+        },
+        {
+          "id": "A2",
+          "tripped": false,
+          "detail": "0 targets routed ADAPTOR that CONVENTIONAL would have admitted"
+        },
+        {
+          "id": "A3",
+          "tripped": false,
+          "detail": "0 routed risks differ from the Stage 3 risk"
+        },
+        {
+          "id": "A4",
+          "tripped": false,
+          "detail": "0 CONVENTIONAL targets sit above the persistent ceiling"
+        },
+        {
+          "id": "A5",
+          "tripped": false,
+          "detail": "NPSR1 (risk 0.0277) routes CONVENTIONAL"
+        },
+        {
+          "id": "A6",
+          "tripped": true,
+          "detail": "MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE"
+        },
+        {
+          "id": "A7",
+          "tripped": false,
+          "detail": "0 targets resolve to NO_ARCHITECTURE with no reason"
+        },
+        {
+          "id": "A8",
+          "tripped": false,
+          "detail": "with no declared terminable ceiling, 0 targets still route ADAPTOR"
+        },
+        {
+          "id": "A9",
+          "tripped": false,
+          "detail": "adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->1, 0.3->5, 0.35->9, 0.4->26, 0.5->65, 0.6->109, 0.7->150"
+        },
+        {
+          "id": "A10",
+          "tripped": false,
+          "detail": "declared ceiling 0.35 matches the spec value 0.35"
+        },
+        {
+          "id": "A11",
+          "tripped": false,
+          "detail": "8 adaptor constructs; 0 emit a sequence despite an unsupplied binder"
+        }
+      ]
+    },
+    {
       "number": "5",
       "name": "Binder discovery",
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 366.6,
+      "seconds": 303.9,
       "exit": 0,
       "criteria": [
         {
@@ -423,7 +487,7 @@
       "clear": 8,
       "total": 8,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.4,
       "exit": 0,
       "criteria": [
         {
@@ -474,7 +538,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 3.9,
+      "seconds": 3.7,
       "exit": 0,
       "criteria": [
         {
@@ -561,7 +625,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 4.0,
+      "seconds": 3.8,
       "exit": 0,
       "criteria": [
         {
@@ -602,7 +666,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 10.9,
+      "seconds": 311.4,
       "exit": 0,
       "criteria": [
         {
@@ -618,22 +682,22 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job d5be32d25c38 rather than blocking"
+          "detail": "a run returns 202 with job 73841f0df19f rather than blocking"
         },
         {
           "id": "A4",
           "tripped": false,
-          "detail": "job finished complete after stages ['sources', 'pairing', 'ranking']"
+          "detail": "job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']"
         },
         {
           "id": "A5",
           "tripped": false,
-          "detail": "zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows"
+          "detail": "200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons"
         },
         {
           "id": "A6",
           "tripped": false,
-          "detail": "end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200"
+          "detail": "end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting"
         },
         {
           "id": "A7",

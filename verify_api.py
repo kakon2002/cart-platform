@@ -91,22 +91,43 @@ def main() -> int:
         return 2
 
     status, constructs = call("GET", f"/projects/{pid}/constructs")
+    # Re-specified. This used to assert NO_BUILDABLE_CONSTRUCT, which encoded
+    # the old end state as an expectation; Stage 4a now routes eight designs to
+    # an architecture that fits, so the assertion had become a criterion testing
+    # yesterday's answer. What it was really protecting is unchanged and is what
+    # is checked now: every buildable design is counted, and one that carries a
+    # sequence is told apart from one that fits without residues.
+    states = {row.get("state") for row in constructs.get("constructs", [])}
+    counted = constructs.get("complete", 0) + constructs.get("awaiting_binder", 0)
     criterion("A5",
               status != 200
-              or constructs.get("status") != "NO_BUILDABLE_CONSTRUCT"
-              or not constructs.get("reasons"),
-              f"zero buildable constructs answers {status} "
-              f"{constructs.get('status')} with {len(constructs.get('reasons', []))} "
-              f"reasons and {constructs.get('assembled')} assembled rows")
+              or not constructs.get("reasons")
+              or counted != constructs.get("buildable")
+              or (constructs.get("awaiting_binder")
+                  and "AWAITING_BINDER" not in states),
+              f"{status} {constructs.get('status')}: "
+              f"{constructs.get('buildable')} buildable = "
+              f"{constructs.get('complete')} complete + "
+              f"{constructs.get('awaiting_binder')} awaiting a binder; "
+              f"{constructs.get('over_budget')} over budget, "
+              f"{len(constructs.get('reasons', []))} reasons")
 
     status, result = call("GET", f"/projects/{pid}/result")
     total = sum(step["dropped"] for step in result.get("attrition", []))
+    # The end state is no longer pinned to one value — it is a result, and
+    # pinning it would repeat the mistake A5 carried. What must hold is that the
+    # chain still partitions the pool exactly, and that the survivors decompose
+    # into complete plus awaiting with nothing unaccounted for.
+    reached = result.get("reached_the_end", 0)
     criterion("A6",
               status != 200
-              or result.get("status") != "NO_DESIGN_REACHES_THE_END"
-              or total + result.get("reached_the_end", 0) != result.get("pool_size"),
+              or total + reached != result.get("pool_size")
+              or result.get("complete", 0) + result.get("awaiting_binder", 0)
+                 != reached,
               f"end state {result.get('status')}, attrition accounts for "
-              f"{total} + {result.get('reached_the_end')} of {result.get('pool_size')}")
+              f"{total} + {reached} of {result.get('pool_size')}; {reached} "
+              f"reached = {result.get('complete')} complete + "
+              f"{result.get('awaiting_binder')} awaiting")
 
     status, targets = call("GET", f"/projects/{pid}/targets")
     # `[{}][0]` only defends a missing key; an empty list would raise

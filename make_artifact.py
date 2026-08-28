@@ -143,6 +143,59 @@ def render(run: dict) -> str:
       </section>""")
 
     tripped_total = run.get("total", 0) - run.get("clear", 0)
+
+    # The chain's own last "remaining" is how many got through. Read from the
+    # data rather than assumed, because this number changed once already and a
+    # page asserting the old one would be the exact failure the run reports on.
+    reached = steps[-1]["remaining"] if steps else 0
+    if reached:
+        headline = f"{reached} of {pool} designs reach the end"
+        result_note = (
+            f"{reached} reach it. The pipeline produced designs rather than a "
+            "wall, and the gates that stopped the rest are measurements of the "
+            "constraints, not failures of the run.")
+    else:
+        headline = f"Where {pool} candidate targets stop"
+        result_note = ("Nothing reaches the end, and that is a measurement of "
+                       "the constraints — not a failure of the run.")
+
+    # The ceiling sweep, lifted out of criterion A9 and given its own section.
+    # It is the number this pipeline cannot measure, so what it buys at every
+    # setting is put in front of whoever can decide it rather than left inside a
+    # criterion line.
+    sweep_block = ""
+    a9 = next((c["detail"] for s in run["stages"] for c in s["criteria"]
+               if c["id"] == "A9" and "sweep" in c["detail"]), "")
+    pairs_found = re.findall(r"([\d.]+)->(\d+)", a9)
+    if pairs_found:
+        declared = "0.35"
+        cells = "".join(
+            f'<td class="{"sw--on" if v == declared else ""}">{E(v)}</td>'
+            for v, _n in pairs_found)
+        counts_row = "".join(
+            f'<td class="{"sw--on" if v == declared else ""}">{E(n)}</td>'
+            for v, n in pairs_found)
+        sweep_block = f"""
+  <section class="block">
+    <p class="eyebrow">The one number this pipeline cannot measure</p>
+    <h2>What each ceiling would admit</h2>
+    <p class="lede">An adaptor design does not make an antigen safer — the
+    adaptor still binds it — it makes the exposure stoppable. How much risk that
+    justifies is a clinical policy decision, not something derivable from
+    expression data, so the ceiling is a declared input and this is what every
+    setting of it buys. The declared value is highlighted.</p>
+    <div class="scroll">
+      <table class="sweep">
+        <tbody>
+          <tr><th>terminable ceiling</th>{cells}</tr>
+          <tr><th>designs admitted</th>{counts_row}</tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lede" style="margin-top:18px">The reference antigen MSLN sits at
+    risk 0.6366 and is <em>not</em> admitted at 0.35. Admitting it needs roughly
+    0.65, which also admits about 120 others. That trade is the decision.</p>
+  </section>"""
     new = run.get("unexpected", [])
     stale = run.get("stale", [])
     # The lede must not claim every trip is a recorded limitation when one of
@@ -351,6 +404,22 @@ tbody td {{ padding:11px 12px; border-bottom:1px solid var(--rule-soft); }}
 .crit__note--new {{ color:var(--madder); border-left-color:var(--madder);
   font-weight:500; }}
 
+.sweep {{ min-width:520px; }}
+.sweep th {{
+  text-align:left; padding:9px 14px 9px 0; white-space:nowrap;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:0.72rem; letter-spacing:0.1em; text-transform:uppercase;
+  color:var(--ink-faint); font-weight:400;
+}}
+.sweep td {{
+  padding:9px 12px; text-align:right; border-bottom:1px solid var(--rule-soft);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-variant-numeric:tabular-nums; font-size:0.92rem;
+}}
+.sweep tr:first-child td {{ color:var(--ink-soft); }}
+.sweep .sw--on {{
+  background:var(--tripped-bg); color:var(--tripped); font-weight:500;
+}}
 .foot {{
   margin-top:80px; padding-top:22px; border-top:1px solid var(--rule);
   color:var(--ink-faint); font-size:0.83rem;
@@ -393,19 +462,21 @@ tbody td {{ padding:11px 12px; border-bottom:1px solid var(--rule-soft); }}
 
   <section class="block">
     <p class="eyebrow">The result</p>
-    <h2>Where {pool} candidate targets stop</h2>
+    <h2>{headline}</h2>
     <p class="lede">Every candidate is attributed to the first gate it fails, so
-    the drops sum to the pool rather than overlapping. Nothing reaches the end,
-    and that is a measurement of the constraints — not a failure of the run.</p>
+    the drops sum to the pool rather than overlapping. {result_note}</p>
     <ol class="gates">{''.join(chain)}</ol>
   </section>
 
+  {sweep_block}
+
   <section class="block">
     <p class="eyebrow">Served over HTTP</p>
-    <h2>An empty pipeline answers 200</h2>
-    <p class="lede">The endpoints return a named status with the reasons
-    computed from this run — never a 404, a 500, or a bare empty list. An empty
-    list would read as having looked and found nothing to say.</p>
+    <h2>Every answer is a named status</h2>
+    <p class="lede">The endpoints return a status with the reasons computed from
+    this run — never a 404, a 500, or a bare empty list. A design that fits but
+    has no binder sequence is reported as its own state, distinct both from a
+    finished design and from one the budget stopped.</p>
     <div class="endings">{''.join(endings)}</div>
   </section>
 

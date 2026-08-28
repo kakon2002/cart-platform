@@ -2,20 +2,21 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**98/103 criteria clear across 10 stages**, 6.9 minutes.
+**108/114 criteria clear across 11 stages**, 16.1 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
-| 1 | Design spec | 31/31 | clear | 1s |
+| 1 | Design spec | 31/31 | clear | 0s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 12/13 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
-| 5 | Binder discovery | 7/7 | clear | 367s |
-| 6 | Construct assembly | 8/8 | clear | 1s |
+| 4a | Architecture routing | 10/11 | **TRIPPED** | 313s |
+| 5 | Binder discovery | 7/7 | clear | 304s |
+| 6 | Construct assembly | 8/8 | clear | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 9/9 | clear | 11s |
+| API | HTTP surface | 9/9 | clear | 311s |
 
 ## Every criterion
 
@@ -91,6 +92,20 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `P14` — top pair is NPSR1+PTPRN2, top two singles are CEACAM5+TMC5
 - **TRIPPED** `P15` — pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)
 
+### Stage 4a — Architecture routing (10/11)
+
+- clear `A1` — architecture is order-independent; 0 differ on a reversed pool
+- clear `A2` — 0 targets routed ADAPTOR that CONVENTIONAL would have admitted
+- clear `A3` — 0 routed risks differ from the Stage 3 risk
+- clear `A4` — 0 CONVENTIONAL targets sit above the persistent ceiling
+- clear `A5` — NPSR1 (risk 0.0277) routes CONVENTIONAL
+- **TRIPPED** `A6` — MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
+- clear `A7` — 0 targets resolve to NO_ARCHITECTURE with no reason
+- clear `A8` — with no declared terminable ceiling, 0 targets still route ADAPTOR
+- clear `A9` — adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->1, 0.3->5, 0.35->9, 0.4->26, 0.5->65, 0.6->109, 0.7->150
+- clear `A10` — declared ceiling 0.35 matches the spec value 0.35
+- clear `A11` — 8 adaptor constructs; 0 emit a sequence despite an unsupplied binder
+
 ### Stage 5 — Binder discovery (7/7)
 
 - clear `B1` — 73 targets have entries but no antibody among them (an inert stage would have none); 6 of 127 with entries echo their count
@@ -144,10 +159,10 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job d5be32d25c38 rather than blocking
-- clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
-- clear `A5` — zero buildable constructs answers 200 NO_BUILDABLE_CONSTRUCT with 4 reasons and 2 assembled rows
-- clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200
+- clear `A3` — a run returns 202 with job 73841f0df19f rather than blocking
+- clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
+- clear `A5` — 200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons
+- clear `A6` — end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting
 - clear `A7` — top target CEACAM5 with a 6-component breakdown
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
@@ -155,17 +170,14 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 ## What the platform returns for this indication
 
 ```
-    GET /constructs -> NO_BUILDABLE_CONSTRUCT
-      - Conservative safety tolerance mandates a safety switch (1308 bp).
-      - The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.
-      - Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.
-      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
-    GET /result     -> NO_DESIGN_REACHES_THE_END
-      blocked on normal tissue risk      - 199     1 remain
-      no design recommended              -   0     1 remain
-      no binder retrieved                -   1     0 remain
-      no construct assembled             -   0     0 remain
-      construct over budget              -   0     0 remain
+    GET /constructs -> BUILDABLE_AWAITING_BINDER
+      - 8 design(s) fit the 3500 bp budget but carry no binder sequence: the adaptor receptor binds a tag, and no anti-tag binder exists in the connected sources, so its size is declared and its sequence is not invented.
+    GET /result     -> RANKED_AWAITING_BINDER
+      blocked on normal tissue risk      - 191     9 remain
+      no design recommended              -   0     9 remain
+      no binder retrieved                -   1     8 remain
+      no construct assembled             -   0     8 remain
+      construct over budget              -   0     8 remain
 ```
 
 ## Tripped
@@ -180,3 +192,5 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
   - Accepted: 48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.
 - Stage 4 `P15` — pool halved to 100: 5 of 7 shared dual targets change partner (71.4%, limit 50%)
   - Accepted: Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.
+- Stage 4a `A6` — MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
+  - Accepted: A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row's condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible.

@@ -39,6 +39,7 @@ STAGES = [
     ("2", "Surface proteome", "verify_surface.py"),
     ("3", "Target discovery", "verify_ranking.py"),
     ("4", "Target pairing", "verify_pairing.py"),
+    ("4a", "Architecture routing", "verify_routing.py"),
     ("5", "Binder discovery", "verify_binders.py"),
     ("6", "Construct assembly", "verify_construct.py"),
     ("9", "Safety gate", "verify_safety.py"),
@@ -75,6 +76,15 @@ ACCEPTED = {
                  "missing as a third state instead of imputing it.",
     ("4", "P15"): "Partner choice is unstable under pool halving (71.4%). "
                   "The pairing stage is complete-with-limitations by decision.",
+    ("4a", "A6"): "A positive pin written before the run. It expected MSLN to "
+                  "route to an adaptor because it matches that row's condition "
+                  "in words: serious normal-tissue expression. It does not, "
+                  "because its measured risk 0.6366 is nearly twice the "
+                  "declared terminable ceiling of 0.35. Admitting it needs a "
+                  "ceiling near 0.65, which also admits about 120 others - a "
+                  "clinical policy decision, not a code change. The ceiling "
+                  "stays where the spec pinned it and A9 reports the whole "
+                  "sweep so the trade is visible.",
 }
 
 # Both spacings are in use across the verifiers; matching only one would
