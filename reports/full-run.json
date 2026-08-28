@@ -1,7 +1,7 @@
 {
-  "clear": 108,
-  "total": 114,
-  "minutes": 16.1,
+  "clear": 106,
+  "total": 111,
+  "minutes": 27.5,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -215,78 +215,12 @@
     {
       "number": "3",
       "name": "Target discovery",
-      "clear": 12,
-      "total": 13,
+      "clear": 0,
+      "total": 0,
       "ok": false,
-      "seconds": 19.7,
+      "seconds": 3.9,
       "exit": 1,
-      "criteria": [
-        {
-          "id": "R1",
-          "tripped": false,
-          "detail": "outside top decile: none"
-        },
-        {
-          "id": "R2",
-          "tripped": false,
-          "detail": "cleared the ceiling: none (across 4 accessions)"
-        },
-        {
-          "id": "R3",
-          "tripped": false,
-          "detail": "CEACAM5 composite=0.8769 measured_weight=0.55 tier_rank=1"
-        },
-        {
-          "id": "R4",
-          "tripped": false,
-          "detail": "non-surface entries present: 0"
-        },
-        {
-          "id": "R5",
-          "tripped": false,
-          "detail": "highest |rho| tumour_vs_normal=0.815 (over measured targets only)"
-        },
-        {
-          "id": "R6",
-          "tripped": false,
-          "detail": "worst retention 94% at malignant_expression x0.8"
-        },
-        {
-          "id": "R7",
-          "tripped": false,
-          "detail": "cleared 646 of 3,466"
-        },
-        {
-          "id": "R8",
-          "tripped": false,
-          "detail": "most repeated composite 0.1273 occurs 17x (0.50%)"
-        },
-        {
-          "id": "R9",
-          "tripped": false,
-          "detail": "best unresolved None vs best protein-confirmed 0.8769"
-        },
-        {
-          "id": "R10",
-          "tripped": false,
-          "detail": "0 of 100 reached only after a symbol failed"
-        },
-        {
-          "id": "R11",
-          "tripped": false,
-          "detail": "22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread"
-        },
-        {
-          "id": "R12",
-          "tripped": false,
-          "detail": "worst retention 82% at c3_fold x0.5"
-        },
-        {
-          "id": "R13",
-          "tripped": true,
-          "detail": "clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x"
-        }
-      ]
+      "criteria": []
     },
     {
       "number": "4",
@@ -294,7 +228,7 @@
       "clear": 10,
       "total": 14,
       "ok": false,
-      "seconds": 8.9,
+      "seconds": 9.1,
       "exit": 2,
       "criteria": [
         {
@@ -375,7 +309,7 @@
       "clear": 10,
       "total": 11,
       "ok": false,
-      "seconds": 312.9,
+      "seconds": 353.5,
       "exit": 2,
       "criteria": [
         {
@@ -441,7 +375,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 303.9,
+      "seconds": 290.8,
       "exit": 0,
       "criteria": [
         {
@@ -487,7 +421,7 @@
       "clear": 8,
       "total": 8,
       "ok": true,
-      "seconds": 0.4,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -538,7 +472,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 3.7,
+      "seconds": 3.8,
       "exit": 0,
       "criteria": [
         {
@@ -625,7 +559,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 3.8,
+      "seconds": 3.9,
       "exit": 0,
       "criteria": [
         {
@@ -666,7 +600,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 311.4,
+      "seconds": 296.5,
       "exit": 0,
       "criteria": [
         {
@@ -682,7 +616,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 73841f0df19f rather than blocking"
+          "detail": "a run returns 202 with job 05722cdbe6cf rather than blocking"
         },
         {
           "id": "A4",
@@ -713,6 +647,67 @@
           "id": "A9",
           "tripped": false,
           "detail": "evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11"
+        }
+      ]
+    },
+    {
+      "number": "MULTI",
+      "name": "Multi-indication",
+      "clear": 10,
+      "total": 10,
+      "ok": true,
+      "seconds": 688.2,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "M1",
+          "tripped": false,
+          "detail": "34 indication-tagged artifacts; 0 changed, 0 disappeared after running both"
+        },
+        {
+          "id": "M2",
+          "tripped": false,
+          "detail": "shared sources carry no per-indication copy (0 found)"
+        },
+        {
+          "id": "M3",
+          "tripped": false,
+          "detail": "indication-specific module constants remaining: none"
+        },
+        {
+          "id": "M4",
+          "tripped": false,
+          "detail": "an indication with no atlas is expressible and carries atlas=None, which the driver maps to NOT_USABLE"
+        },
+        {
+          "id": "M5",
+          "tripped": false,
+          "detail": "the atlas-less path names malignant_vs_stroma as what is lost, not just a weight"
+        },
+        {
+          "id": "M6",
+          "tripped": false,
+          "detail": "Mode A on CD19 returns UNSUITABLE with 3 reasons"
+        },
+        {
+          "id": "M7",
+          "tripped": false,
+          "detail": "CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement"
+        },
+        {
+          "id": "M8",
+          "tripped": false,
+          "detail": "Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)"
+        },
+        {
+          "id": "M9",
+          "tripped": false,
+          "detail": "reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}"
+        },
+        {
+          "id": "M10",
+          "tripped": false,
+          "detail": "unavailable components name their source (none unavailable)"
         }
       ]
     }
