@@ -998,10 +998,12 @@ def header(
     weights: dict[str, float] | None = None,
     stats: dict | None = None,
     calibration: CalibrationCurve | None = None,
+    margin_label: str | None = None,
 ) -> str:
     """Describes the run that produced the output, not the module defaults."""
     sat = SATURATION if saturation is None else saturation
     wts = WEIGHTS if weights is None else weights
+    margin_label = margin_label or DEFAULT_MARGIN_LABEL
     ceiling = spec.design_constraints.normal_tissue_risk_ceiling
     lines = [
         "=" * 72,
