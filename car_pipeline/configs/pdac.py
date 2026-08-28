@@ -5,6 +5,7 @@ mode, and filling it in would turn the screen into a validation of something
 already assumed.
 """
 
+from car_pipeline.configs.indication import AtlasSchema, Indication, geo_url
 from car_pipeline.schemas.project import (
     CARFormat,
     MalignancyType,
@@ -13,6 +14,29 @@ from car_pipeline.schemas.project import (
     ProjectInput,
     SafetyTolerance,
     TissueCriticalityOverride,
+)
+
+#: The reference atlas, described rather than assumed. Every value here was a
+#: module-level constant inside the loader until a second indication needed a
+#: different one; the loader now reads them from this object.
+PDAC_ATLAS = AtlasSchema(
+    series="GSE202051",
+    archive="GSE202051_totaldata-final-toshare.h5ad.gz",
+    url=geo_url("GSE202051", "GSE202051_totaldata-final-toshare.h5ad.gz"),
+    level1_column="Level 1 Annotation",
+    level3_column="Level 3 Annotation",
+    malignant_label="Epithelial (malignant)",
+    compartment_map={
+        "Epithelial (malignant)": "malignant",
+        "Cancer-associated fibroblast": "fibroblast",
+        "Epithelial (non-malignant)": "epithelial non-malignant",
+        "Lymphoid": "immune",
+        "Myeloid": "immune",
+        "Endothelial": "endothelial",
+    },
+    treatment_column="treatment_status",
+    untreated_label="Untreated",
+    patient_column="pid",
 )
 
 PANCREAS_RATIONALE = (

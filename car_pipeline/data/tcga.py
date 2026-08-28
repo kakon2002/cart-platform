@@ -34,7 +34,10 @@ from car_pipeline.data.source import (
     post_json,
 )
 
-PROJECT = "TCGA-PAAD"
+#: The reference cohort. Kept as the default so an unparameterised caller keeps
+#: its old behaviour, but every cache entry now carries the project it came
+#: from, so two cohorts coexist on disk instead of overwriting one slot.
+DEFAULT_PROJECT = "TCGA-PAAD"
 WORKFLOW = "STAR - Counts"
 MEASURE = "tpm_unstranded"
 BATCH_SIZE = 30
@@ -78,15 +81,39 @@ class TCGASource(DataSource):
     name = "GDC TCGA"
     namespace = "tcga"
 
+    def __init__(self, project: str | None = None, root=None) -> None:
+        super().__init__(root=root)
+        self.project = project or DEFAULT_PROJECT
+
+    def _entry(self, kind: str) -> CacheEntry:
+        """Look an entry up by its unqualified kind.
+
+        Callers ask for "cohort"; the entry is keyed `cohort__TCGA-BRCA`. Doing
+        the join here means no call site has to know the naming scheme, and a
+        missed one raises here rather than silently matching nothing.
+        """
+        want = f"{kind}__{self.project}"
+        for entry in self.cache_entries():
+            if entry.key == want:
+                return entry
+        raise KeyError(f"no cache entry {want!r} for project {self.project!r}")
+
     def cache_entries(self) -> Iterable[CacheEntry]:
+        # The project is in BOTH the key and the filename. The key matters as
+        # much: manifest paths are derived from the key alone, so namespacing
+        # only the payload leaves two cohorts sharing one manifest -- the same
+        # bug with a longer fuse.
+        tag = self.project
         fp = {
-            "project": PROJECT,
+            "project": self.project,
             "workflow": WORKFLOW,
             "measure": MEASURE,
         }
         return [
-            CacheEntry(key="file_index", filename="file_index.json", fingerprint=fp),
-            CacheEntry(key="cohort", filename="cohort.npz", fingerprint=fp),
+            CacheEntry(key=f"file_index__{tag}",
+                       filename=f"file_index__{tag}.json", fingerprint=fp),
+            CacheEntry(key=f"cohort__{tag}",
+                       filename=f"cohort__{tag}.npz", fingerprint=fp),
         ]
 
     # -- file index -------------------------------------------------------
@@ -100,7 +127,7 @@ class TCGASource(DataSource):
                         "op": "in",
                         "content": {
                             "field": "cases.project.project_id",
-                            "value": [PROJECT],
+                            "value": [self.project],
                         },
                     },
                     {
@@ -154,7 +181,7 @@ class TCGASource(DataSource):
         return rows
 
     def file_index(self) -> list[dict]:
-        entry = next(e for e in self.cache_entries() if e.key == "file_index")
+        entry = self._entry("file_index")
 
         def fetcher(tmp: Path) -> dict:
             print("  querying cohort file index", flush=True)
@@ -221,7 +248,7 @@ class TCGASource(DataSource):
         return gene_ids, symbols, np.asarray(values, dtype=np.float32)
 
     def build_cohort(self) -> Path:
-        entry = next(e for e in self.cache_entries() if e.key == "cohort")
+        entry = self._entry("cohort")
         rows = self.file_index()
 
         def fetcher(tmp: Path) -> dict:

@@ -37,7 +37,10 @@ WANTED_FILES = {
     "model": "Model.csv",
 }
 
-LINEAGE = "Pancreas"
+#: The reference lineage. The raw DepMap files are pan-cancer and stay shared;
+#: only the derived per-lineage matrix is namespaced, because that is the one
+#: artifact whose contents depend on the indication.
+DEFAULT_LINEAGE = "Pancreas"
 DEPENDENCY_THRESHOLD = -0.5
 
 
@@ -66,6 +69,10 @@ class DepMapSource(DataSource):
     name = "DepMap"
     namespace = "depmap"
 
+    def __init__(self, lineage: str | None = None, root=None) -> None:
+        super().__init__(root=root)
+        self.lineage = lineage or DEFAULT_LINEAGE
+
     def cache_entries(self) -> Iterable[CacheEntry]:
         return [
             CacheEntry(
@@ -76,9 +83,9 @@ class DepMapSource(DataSource):
             for key, name in WANTED_FILES.items()
         ] + [
             CacheEntry(
-                key="lineage_matrix",
-                filename="lineage_dependency.npz",
-                fingerprint={"release": RELEASE_PIN, "lineage": LINEAGE},
+                key=f"lineage_matrix__{self.lineage}",
+                filename=f"lineage_dependency__{self.lineage}.npz",
+                fingerprint={"release": RELEASE_PIN, "lineage": self.lineage},
             )
         ]
 
@@ -111,7 +118,7 @@ class DepMapSource(DataSource):
     def fetch(self) -> None:
         urls: dict[str, str] | None = None
         for entry in self.cache_entries():
-            if entry.key == "lineage_matrix" or self.cache.is_valid(entry):
+            if entry.key.startswith("lineage_matrix__") or self.cache.is_valid(entry):
                 continue
             if urls is None:
                 urls = self._resolve_by_name()
@@ -141,12 +148,13 @@ class DepMapSource(DataSource):
         out: dict[str, str] = {}
         with open(self.path_for("model"), encoding="utf-8", newline="") as fh:
             for row in csv.DictReader(fh):
-                if row.get("OncotreeLineage") == LINEAGE:
+                if row.get("OncotreeLineage") == self.lineage:
                     out[row["ModelID"]] = row.get("OncotreePrimaryDisease", "")
         return out
 
     def build_matrix(self) -> Path:
-        entry = next(e for e in self.cache_entries() if e.key == "lineage_matrix")
+        entry = next(e for e in self.cache_entries()
+                     if e.key == f"lineage_matrix__{self.lineage}")
 
         def fetcher(tmp: Path) -> dict:
             wanted = self.lineage_models()

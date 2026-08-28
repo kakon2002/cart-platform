@@ -113,18 +113,34 @@ class SingleCellSource(DataSource):
     name = f"GEO {SERIES}"
     namespace = "singlecell"
 
+    def __init__(self, atlas=None, root=None) -> None:
+        """`atlas` is an AtlasSchema; None keeps the reference submission.
+
+        Every reference to a column name, a category value or a filename now
+        goes through this object, so a second atlas is a declaration rather than
+        an edit to library code.
+        """
+        super().__init__(root=root)
+        if atlas is None:
+            from car_pipeline.configs.pdac import PDAC_ATLAS
+            atlas = PDAC_ATLAS
+        self.atlas = atlas
+        self.name = f"GEO {atlas.series}"
+
     def cache_entries(self) -> Iterable[CacheEntry]:
-        fp = {"series": SERIES, "file": ARCHIVE}
+        a = self.atlas
+        tag = a.slug
+        fp = {"series": a.series, "file": a.archive}
         return [
-            CacheEntry(key="archive", filename=ARCHIVE, fingerprint=fp),
+            CacheEntry(key=f"archive__{tag}", filename=a.archive, fingerprint=fp),
             CacheEntry(
-                key="matrix",
-                filename="totaldata-final-toshare.h5ad",
+                key=f"matrix__{tag}",
+                filename=f"matrix__{tag}.h5ad",
                 fingerprint=fp,
             ),
             CacheEntry(
-                key="group_means",
-                filename="group_means.npz",
+                key=f"group_means__{tag}",
+                filename=f"group_means__{tag}.npz",
                 fingerprint={
                     **fp,
                     "epsilon": DROPOUT_EPSILON,
@@ -137,8 +153,13 @@ class SingleCellSource(DataSource):
             ),
         ]
 
-    def _entry(self, key: str) -> CacheEntry:
-        return next(e for e in self.cache_entries() if e.key == key)
+    def _entry(self, kind: str) -> CacheEntry:
+        """Look an entry up by unqualified kind; the key carries the accession."""
+        want = f"{kind}__{self.atlas.slug}"
+        for entry in self.cache_entries():
+            if entry.key == want:
+                return entry
+        raise KeyError(f"no cache entry {want!r} for atlas {self.atlas.series!r}")
 
     def archive_path(self) -> Path:
         entry = self._entry("archive")
@@ -456,14 +477,15 @@ class SingleCellSource(DataSource):
 
     def malignant_entry(self, genes: list[str]) -> CacheEntry:
         digest = _gene_digest(genes)
+        tag = self.atlas.slug
         return CacheEntry(
-            key=f"malignant_cells_{digest}",
-            filename=f"malignant_cells_{digest}.npz",
+            key=f"malignant_cells__{tag}_{digest}",
+            filename=f"malignant_cells__{tag}_{digest}.npz",
             fingerprint={
-                "series": SERIES,
-                "file": ARCHIVE,
-                "layer": COUNTS_LAYER,
-                "compartment": MALIGNANT_LEVEL1,
+                "series": self.atlas.series,
+                "file": self.atlas.archive,
+                "layer": self.atlas.counts_layer,
+                "compartment": self.atlas.malignant_label,
                 # The gene set is part of what this artifact *is*. Without it a
                 # changed pool would silently reuse the wrong columns.
                 "genes": digest,
