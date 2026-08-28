@@ -107,6 +107,7 @@ API rather than request-response.
 | | |
 | --- | --- |
 | [API.md](API.md) | every endpoint, real captured responses, the states a frontend must handle |
+| [FRONTEND.md](FRONTEND.md) | what a UI can display today, what is degraded or awaiting a part, and what nothing produces |
 | [DEPLOY.md](DEPLOY.md) | fresh clone to a public URL, for someone who has never seen this project |
 | [specs/design-decisions.md](specs/design-decisions.md) | why the code is shaped the way it is |
 | [specs/](specs/) | one specification per stage, written before its implementation |
