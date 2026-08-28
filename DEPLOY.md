@@ -10,12 +10,20 @@ Budget about **35 minutes**, most of it waiting on a container build.
 ## 0. What you are deploying, in one paragraph
 
 You give it a cancer type. It screens the whole human surface proteome for
-targets, pairs them, retrieves antibody binders, assembles CAR constructs, and
-ranks what survives. For the indication configured here — pancreatic ductal
-adenocarcinoma — **nothing survives**, and that is the finding rather than a
-fault. 199 of 200 candidates are blocked on normal-tissue risk and the last one
-has no retrievable binder. The API reports that as a result with reasons, not as
-an error or an empty list. If you see `NO_BUILDABLE_CONSTRUCT`, it is working.
+targets, pairs them, routes each to a receptor architecture, retrieves antibody
+binders, assembles CAR constructs, and ranks what survives.
+
+Two indications are configured — pancreatic ductal adenocarcinoma and invasive
+breast carcinoma — and the deployment holds both without rebuilding. For PDAC,
+191 of 200 candidates are blocked on normal-tissue risk and one more has no
+retrievable binder; **eight designs reach the end**, all of them
+`BUILDABLE_AWAITING_BINDER`. They route to an adaptor receptor, which binds a
+tag rather than the antigen, and no anti-tag binder exists in the connected
+sources — so the platform declares each construct's size and refuses to invent
+its sequence.
+
+The API reports that as a result with reasons, not as an error or an empty
+list. If you see `RANKED_AWAITING_BINDER`, it is working.
 
 ---
 
@@ -42,7 +50,7 @@ You do **not** need Docker. The image is built in the cloud from source.
 
 ## 2. Clone, and get the data
 
-**`data/` is not in git.** It is 680 MB of cached scientific sources — the human
+**`data/` is not in git.** It is 852 MB of cached scientific sources — the human
 proteome, a tumour cohort, expression atlases, a single-cell atlas, antibody
 structures. A clone has none of it, and nothing runs without it.
 
@@ -52,7 +60,7 @@ cd cart-platform
 python bootstrap.py --from-release
 ```
 
-That downloads a 298 MB archive from the repository's private release, verifies
+That downloads a 471 MB archive from the repository's private release, verifies
 its checksum, and unpacks it. **Two minutes.** It refuses to unpack on a
 checksum mismatch rather than proceeding — a truncated transfer would give you a
 cache that reads as present and answers with the wrong data.
@@ -242,11 +250,21 @@ gcloud run services update cart-platform --region us-central1 \
 
 ## 5. Cancer type to final result
 
-Eight calls. Substitute your URL.
+Nine calls. Substitute your URL.
 
 ```bash
 BASE=https://cart-platform-<hash>-uc.a.run.app
 ```
+
+### 0 — Ask what it can answer for
+
+```bash
+curl -s "$BASE/indications"
+```
+
+Returns every configured indication with the cohort, atlas, dependency lineage
+and normal denominator behind it. Call this first rather than guessing a cancer
+type: anything not on the list is refused at creation.
 
 ### 1 — Create a project
 
@@ -268,8 +286,10 @@ curl -s -X POST "$BASE/projects" \
 **`target_antigen` is null on purpose and stays null.** No target is ever seeded;
 that null is what selects discovery mode. Keep the `project_id`.
 
-Only this indication is configured. Any other cancer type is refused at creation
-with `400`, rather than answered with these results under a different name.
+Two indications are configured. Any other cancer type is refused at creation
+with `400` naming what is available, rather than answered with these results
+under a different name. Short aliases work — `PDAC`, `breast` — so a caller
+need not reproduce the full oncological name.
 
 ### 2 — Start the screen
 
@@ -278,9 +298,10 @@ PID=e8fbcc74b537
 curl -s -X POST "$BASE/projects/$PID/runs"
 ```
 
-Returns `202` **immediately** with a `job_id`. It does not wait — a screen reads
-a 9 GB matrix and evaluates 19,900 pairs, so a synchronous endpoint would time
-out in every client.
+Returns `202` **immediately** with a `job_id`. It does not wait — a screen scores
+3,466 proteins and evaluates 19,900 pairs, taking about six minutes, so a
+synchronous endpoint would time out in every client. It reads the derived
+single-cell summaries, not the 8.3 GB matrix they came from.
 
 ### 3 — Poll
 
@@ -297,7 +318,7 @@ failed job while discarding the body that explains it.
 
 Progresses through `sources → screen → pairing → binders → constructs → safety
 → developability → ranking`, ending at
-`"status": "complete", "note": "NO_DESIGN_REACHES_THE_END"`.
+`"status": "complete", "note": "RANKED_AWAITING_BINDER"`.
 
 ### 4 — Ranked targets
 
@@ -305,9 +326,12 @@ Progresses through `sources → screen → pairing → binders → constructs �
 curl -s "$BASE/projects/$PID/targets?limit=10"
 ```
 
-3,466 proteins screened. Top result is **CEACAM5**, composite 0.8769, with a
-six-component breakdown. `null` components are genuinely unmeasured, never
-imputed as zero.
+3,466 proteins screened, 3,400 scored. Top result is **CEACAM5**, composite
+0.8769, with a six-component breakdown.
+
+`null` components are genuinely unmeasured, never imputed as zero — CEACAM5 has
+two of them, and `measured_weight: 0.55` says its composite rests on 55% of the
+evidence. Render them as "not measured", never as `0`.
 
 ### 5 — Pairs
 
@@ -328,26 +352,43 @@ curl -s "$BASE/projects/$PID/constructs"
 
 ```json
 {
-  "status": "NO_BUILDABLE_CONSTRUCT",
-  "counts": {"NO_CONSTRUCT": 198, "BUDGET_EXCEEDED": 2},
-  "buildable": 0,
-  "assembled": 2,
-  "reasons": [
-    "Conservative safety tolerance mandates a safety switch (1308 bp).",
-    "The largest assembled design reaches 3894 bp against a 3500 bp payload budget, over by 394.",
-    "Single-domain binders would fit; 1 of 735 retrieved candidates are single-domain.",
-    "This is a constraint result, not a pipeline failure."
+  "status": "BUILDABLE_AWAITING_BINDER",
+  "usability": "USABLE",
+  "unavailable": [],
+  "indication": "Pancreatic Ductal Adenocarcinoma",
+  "counts": {"NO_CONSTRUCT": 190, "BUILDABLE": 8, "BUDGET_EXCEEDED": 2},
+  "buildable": 8,
+  "complete": 0,
+  "awaiting_binder": 8,
+  "over_budget": 2,
+  "constructs": [
+    {
+      "gene": "CD207",
+      "verdict": "BUILDABLE",
+      "state": "AWAITING_BINDER",
+      "architecture": "adaptor, anti-tag receptor, antigen on the adaptor",
+      "binder_supplied": false,
+      "total_bp": 2811,
+      "budget_bp": 3500,
+      "headroom_bp": 689,
+      "amino_acid_sequence": null,
+      "dna": null
+    }
   ]
 }
 ```
 
 > ### This is HTTP 200. It is a result, not an error.
 >
-> No design fits the payload budget. That is a real measurement about the
-> constraints, and the endpoint reports it as one: a named status, the counts,
-> the two designs that *did* assemble with their exact overage, and the reasons
-> nothing fits — every number computed from this run rather than written down,
-> so they cannot drift from it.
+> Eight designs fit the budget and none can be ordered. They route to an
+> adaptor receptor, which binds a tag rather than the antigen, and no anti-tag
+> binder exists in the connected sources — so the platform declares each
+> construct's length and domain map and **refuses to invent its sequence**.
+> `amino_acid_sequence` and `dna` are null, and that null is the point.
+>
+> `AWAITING_BINDER` is a third state, deliberately not merged with either
+> neighbour: it is not a design that failed to fit, and it is not a finished
+> one.
 >
 > **Never a 404, never a 500, never a bare `[]`.** An empty list would read as
 > "we looked and had nothing to say." Something specific and measured stopped
@@ -361,21 +402,31 @@ curl -s "$BASE/projects/$PID/result"
 
 ```json
 {
-  "status": "NO_DESIGN_REACHES_THE_END",
+  "status": "RANKED_AWAITING_BINDER",
+  "usability": "USABLE",
+  "unavailable": [],
+  "indication": "Pancreatic Ductal Adenocarcinoma",
   "pool_size": 200,
-  "reached_the_end": 0,
+  "reached_the_end": 8,
+  "complete": 0,
+  "awaiting_binder": 8,
   "attrition": [
-    {"gate": "blocked on normal tissue risk", "dropped": 199, "remaining": 1},
-    {"gate": "no design recommended",         "dropped": 0,   "remaining": 1},
-    {"gate": "no binder retrieved",           "dropped": 1,   "remaining": 0},
-    {"gate": "no construct assembled",        "dropped": 0,   "remaining": 0},
-    {"gate": "construct over budget",         "dropped": 0,   "remaining": 0}
+    {"gate": "blocked on normal tissue risk", "dropped": 191, "remaining": 9},
+    {"gate": "no design recommended",         "dropped": 0,   "remaining": 9},
+    {"gate": "no binder retrieved",           "dropped": 1,   "remaining": 8},
+    {"gate": "no construct assembled",        "dropped": 0,   "remaining": 8},
+    {"gate": "construct over budget",         "dropped": 0,   "remaining": 8}
   ]
 }
 ```
 
 Every one of the 200 candidates is attributed to the **first** gate it failed,
 so the drops sum to the pool rather than overlapping.
+
+`usability`, `unavailable` and `indication` ride on every collection response,
+not just this one — so a caller reading `/targets` never has to know to ask
+elsewhere whether the ranking beneath it is supported. Full reference in
+[API.md](API.md).
 
 ### 8 — Evidence for one gene
 
@@ -390,17 +441,25 @@ safety, developability, ranking — with the provenance behind each.
 
 ## 6. What this deployment cannot do
 
-**One indication.** The design is cancer-agnostic; *this deployment* is not, and
-the difference is a cache fingerprint. The single-cell summaries are keyed by a
-digest of the gene pool, so a second cancer type means a different pool, a cache
-miss, and the 8.3 GB matrix back in the serving path — the file this whole
-shape exists by leaving out. The container fails fast with a named error rather
-than trying to download it, which on an in-memory filesystem would kill the
-instance mid-job.
+**Only the indications that are configured.** Two are: pancreatic ductal
+adenocarcinoma and invasive breast carcinoma. The deployment holds both without
+rebuilding, because every tumour-side cache is namespaced by indication in both
+its filename and its key. A third needs its cohort, atlas, dependency lineage
+and normal denominator declared in `car_pipeline/configs/`, and its caches
+provisioned by `bootstrap.py --from-sources`, which iterates the registry.
 
-Closing that is roughly **a week**, not an afternoon: a batch job that
-materialises the summaries per indication ahead of time, plus moving the job
-table and the run out of the process. See [specs/deployment.md](specs/deployment.md).
+That provisioning is the slow part, not the code: deriving the single-cell
+summaries streams the whole atlas, which for PDAC took **2 h 19 min**. The
+container never carries those atlases — 8.3 GB for one, 844 MB for the other.
+They are build-time inputs; the derived summaries are what a served run reads.
+
+**Where a source does not exist for an indication, the pipeline degrades rather
+than substituting.** It names the components it could not measure, and if the
+missing evidence undermines the ranking it refuses to present one at all —
+`usability: NOT_USABLE` with reasons, not numbers with a caveat attached. Every
+collection endpoint carries that judgement, so a caller reading `/targets`
+never has to know to ask somewhere else whether the ranking beneath it is
+supported.
 
 **One run at a time**, globally, and jobs do not survive a restart. Both follow
 from the same in-memory job table.
@@ -429,6 +488,10 @@ To verify the whole pipeline instead of just serving it:
 .venv\Scripts\python.exe run_all.py --fresh
 ```
 
-Ten stages, **98/103 criteria clear in about seven minutes**. The five that trip
-are recorded limitations, each with the decision that accepted it; a criterion
-tripping *without* one is reported as a regression and exits non-zero.
+Twelve stages, **118/124 criteria clear**, about 35 minutes with `--fresh` and
+under ten without. The six that trip are recorded limitations, each with the
+decision that accepted it; a criterion tripping *without* one is reported as a
+regression and exits non-zero.
+
+For a single page showing the whole run, `make_artifact.py` renders
+`reports/full-run.html` from the run's own JSON.
