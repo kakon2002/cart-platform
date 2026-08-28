@@ -124,12 +124,18 @@ class RunNotComplete(LookupError):
     """No completed run for this project. A statement about the job."""
 
 
+class UnknownProject(LookupError):
+    """No project with this id. A statement about the id, not the job."""
+
+
 class NotFound(LookupError):
     """The run completed and does not contain what was asked for."""
 
 
 def _result(project_id: str) -> dict:
-    """The finished result for a project, or a refusal if it is not done."""
+    """The finished result for a project, or a refusal naming which it is."""
+    if project_id not in PROJECTS:
+        raise UnknownProject(project_id)
     result = RESULTS.get(project_id)
     if result is None:
         raise RunNotComplete(project_id)
@@ -565,7 +571,12 @@ class Handler(BaseHTTPRequestHandler):
 
                     snapshot = dict(job) if job else None
                 if snapshot is None:
-                    return self._send(404, {"status": "NOT_FOUND"})
+                    return self._send(404, {
+                        "status": "NOT_FOUND",
+                        "error": m.group(1),
+                        "reasons": ["No job with this id. Jobs live in memory "
+                                    "and do not survive a restart."],
+                    })
                 return self._send(200, snapshot)
 
             m = re.match(r"^/projects/([0-9a-f]{12})/validation$", path)
@@ -584,11 +595,21 @@ class Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/projects/([0-9a-f]{12})/evidence/([A-Za-z0-9_.-]+)$", path)
             if m:
                 return self._send(200, evidence_view(m.group(1), m.group(2)))
+        except UnknownProject as exc:
+            return self._send(404, {
+                "status": "NOT_FOUND",
+                "error": str(exc),
+                "reasons": ["No project with this id. It was never created, or "
+                            "the service restarted: projects live in memory "
+                            "and do not survive one. POST /projects to create "
+                            "one. This is not a run that has yet to finish."],
+            })
         except RunNotComplete:
             return self._send(409, {
                 "status": "RUN_NOT_COMPLETE",
-                "reasons": ["No completed run for this project. POST "
-                            "/projects/{id}/runs, then poll /jobs/{job_id}."],
+                "reasons": ["This project exists and has no completed run. "
+                            "POST /projects/{id}/runs, then poll "
+                            "/jobs/{job_id}."],
             })
         except NotFound as exc:
             return self._send(404, {

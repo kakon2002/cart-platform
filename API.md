@@ -497,8 +497,10 @@ design.
 | code | `status` | when |
 | --- | --- | --- |
 | `400` | `BAD_REQUEST` | blank or missing `cancer_type`; an unconfigured indication |
+| `404` | `NOT_FOUND` | no project with this id |
+| `404` | `NOT_FOUND` | no job with this id |
 | `404` | `NOT_FOUND` | a gene that is not in the completed run |
-| `409` | `RUN_NOT_COMPLETE` | results requested before the run finished |
+| `409` | `RUN_NOT_COMPLETE` | the project exists; its run has not finished |
 | `409` | `RUN_IN_PROGRESS` | a second run started while one is active |
 
 An unconfigured indication names what is available rather than failing blankly:
@@ -510,10 +512,51 @@ An unconfigured indication names what is available rather than failing blankly:
 }
 ```
 
-> **An unknown project id returns `409 RUN_NOT_COMPLETE`, not `404`.** Result
-> endpoints cannot distinguish a project that never existed from one whose run
-> has not finished. Treat `409` as "not ready or not found" and keep the
-> `project_id` you were given at creation.
+### `404` and `409` are different questions
+
+A bad id and a run in progress are separate conditions and answer separately,
+on every result endpoint — `/targets`, `/pairs`, `/constructs`, `/result`,
+`/validation` and `/evidence/{gene}`.
+
+**`404` — no such project. Stop polling.**
+
+```json
+{
+  "status": "NOT_FOUND",
+  "error": "ffffffffffff",
+  "reasons": ["No project with this id. It was never created, or the service restarted: projects live in memory and do not survive one. POST /projects to create one. This is not a run that has yet to finish."]
+}
+```
+
+**`409` — the project exists and its run has not finished. Keep polling.**
+
+```json
+{
+  "status": "RUN_NOT_COMPLETE",
+  "reasons": ["This project exists and has no completed run. POST /projects/{id}/runs, then poll /jobs/{job_id}."]
+}
+```
+
+A UI must branch on these: `404` is a dead end and should surface "no such
+project", while `409` means come back. Treating them alike either polls a typo
+forever or tells someone their finished run does not exist.
+
+`/jobs/{job_id}` answers `404` the same way, with the same distinction — a job
+id that never existed, or one lost to a restart:
+
+```json
+{
+  "status": "NOT_FOUND",
+  "error": "ffffffffffff",
+  "reasons": ["No job with this id. Jobs live in memory and do not survive a restart."]
+}
+```
+
+> **Both are also what a restart looks like.** Projects and jobs are held in
+> the process, so an id that worked a minute ago can become a `404`. That is
+> the same response as a typo and is not distinguishable from one; a client
+> holding an id across a possible restart should be prepared to create the
+> project again.
 
 ### One run at a time
 

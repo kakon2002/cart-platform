@@ -137,6 +137,21 @@ def main() -> int:
               f"({first.get('coverage_f_ab')} at percentile "
               f"{first.get('coverage_span_percentile')})")
 
+    s_unknown, unknown = call("GET", "/projects/ffffffffffff/result")
+    _s, fresh = call("POST", "/projects",
+                     {"cancer_type": "Pancreatic Ductal Adenocarcinoma"})
+    s_unrun, unrun = call("GET", f"/projects/{fresh.get('project_id')}/result")
+    criterion("A10",
+              s_unknown != 404
+              or unknown.get("status") != "NOT_FOUND"
+              or not unknown.get("reasons")
+              or s_unrun != 409
+              or unrun.get("status") != "RUN_NOT_COMPLETE",
+              f"an unknown project answers {s_unknown} "
+              f"{unknown.get('status')} and one that exists without a finished "
+              f"run answers {s_unrun} {unrun.get('status')}: a client can tell "
+              "a bad id from a run in progress")
+
     status, evidence = call("GET", f"/projects/{pid}/evidence/MSLN")
     stages = [k for k in evidence if k.startswith("stage")]
     criterion("A9",
