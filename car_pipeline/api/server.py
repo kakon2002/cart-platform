@@ -1,22 +1,4 @@
-"""HTTP API over the pipeline. Standard library only.
-
-**Job and poll, not request and response.** A screen takes minutes: it reads a
-9 GB single-cell matrix, evaluates 19,900 pairs and makes a network call per pool
-member. A synchronous endpoint would time out in every client, so a run is
-submitted, a job identifier comes back, and the client polls.
-
-**A zero-construct pipeline is a result.** Every collection endpoint returns a
-`status` and a `reasons` list beside its rows. A run that assembles nothing
-answers 200 with `status: NO_BUILDABLE_CONSTRUCT` and the reasons it did not —
-never 404, never 500, and never a bare empty list. An empty list reads as "we
-looked and there was nothing to say"; the truth is that something specific and
-measured stopped each design, and the caller needs that rather than the absence
-of it.
-
-Deployment shape: one process, an in-memory job table, a thread per run.
-Restarting loses jobs and loses nothing else, because every stage's real output
-is on disk under its own manifest.
-"""
+"""HTTP API over the pipeline. Standard library only."""
 
 from __future__ import annotations
 
@@ -29,7 +11,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from car_pipeline.api import pipeline
-from car_pipeline.data.source import CacheError  # noqa: F401
+from car_pipeline.data.source import CacheError
 from car_pipeline.stages import stage6, stage10, stage11
 
 _LOCK = threading.Lock()
@@ -37,14 +19,7 @@ PROJECTS: dict[str, dict] = {}
 JOBS: dict[str, dict] = {}
 RESULTS: dict[str, dict] = {}
 
-#: How many completed runs to keep. A result holds the ranked surface proteome
-#: and 19,900 evaluated pairs, so this is the difference between a bounded
-#: process and one whose memory grows with every caller. The endpoint is open,
-#: the single instance has nowhere to shed load, and without a cap a caller
-#: creating projects in a loop takes it out of memory — at which point the job
-#: table dies with it and every outstanding poll answers 404.
-#:
-#: Oldest first, and never the run currently in flight.
+
 MAX_RESULTS = 8
 
 
@@ -55,34 +30,24 @@ def _evict_results() -> None:
 
 
 def _now() -> str:
+    """The current UTC time, to the second."""
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-# --------------------------------------------------------------------------
-# projects and jobs
-# --------------------------------------------------------------------------
-
-
 def create_project(cancer_type: str, target_antigen: str | None = None) -> dict:
+    """Register a project and choose the discovery mode from the target."""
     if not isinstance(cancer_type, str) or not cancer_type.strip():
         raise ValueError("cancer_type is required and must be a string")
     if target_antigen is not None and not str(target_antigen).strip():
-        # An empty string is not the same as an absent field. Absent selects
-        # discovery; empty is a caller who meant to supply something.
         raise ValueError(
             "target_antigen was supplied but is empty; omit it entirely to "
             "screen for targets")
-    # Refused here rather than at run time, so a caller learns immediately that
-    # only some indications are configured instead of receiving another
-    # indication's results under their own name.
+
     pipeline.project_for(cancer_type)
     project_id = uuid.uuid4().hex[:12]
     project = {
         "project_id": project_id,
         "cancer_type": cancer_type.strip(),
-        # The null is what selects discovery mode. It stays null unless a
-        # caller supplies a target, in which case the question changes from
-        # "which targets" to "is this one suitable" and the mode follows.
         "target_antigen": (target_antigen or "").strip().upper() or None,
         "discovery_mode": "A" if target_antigen else "B",
         "created_at": _now(),
@@ -93,18 +58,11 @@ def create_project(cancer_type: str, target_antigen: str | None = None) -> dict:
 
 
 def start_run(project_id: str) -> dict:
+    """Queue a screen for this project unless one is already running."""
     with _LOCK:
         if project_id not in PROJECTS:
             raise KeyError(project_id)
-        # One run at a time **across the whole process**, not per project.
-        #
-        # Per-project was not enough and could not be fixed by deployment. A run
-        # is a detached thread: the request returns 202 in milliseconds, so a
-        # request-concurrency limit never sees two runs overlap and cannot
-        # serialise them. Two *different* projects would each start a thread,
-        # both would write the shared binder cache, and its writer replaces the
-        # payload before the manifest — a reader landing between those two steps
-        # gets an artifact nothing blessed.
+
         running = [j for j in JOBS.values()
                    if j["status"] in ("queued", "running")]
         if running:
@@ -126,7 +84,9 @@ def start_run(project_id: str) -> dict:
         JOBS[job_id] = job
 
     def worker():
+        """Run the screen on a background thread and record the outcome."""
         def progress(stage, note=""):
+            """Record which stage the run has reached."""
             with _LOCK:
                 job["status"] = "running"
                 job["stage"] = stage
@@ -142,8 +102,6 @@ def start_run(project_id: str) -> dict:
             else:
                 result = pipeline.run(project["cancer_type"], progress)
             with _LOCK:
-                # Re-inserted rather than updated in place, so the eviction
-                # order below is genuinely least-recently-completed.
                 RESULTS.pop(project_id, None)
                 RESULTS[project_id] = result
                 _evict_results()
@@ -151,7 +109,7 @@ def start_run(project_id: str) -> dict:
                 job["stage"] = "ranking"
                 job["note"] = result["status"]
                 job["finished_at"] = _now()
-        except Exception as exc:                       # noqa: BLE001
+        except Exception as exc:
             with _LOCK:
                 job["status"] = "failed"
                 job["error"] = f"{type(exc).__name__}: {exc}"
@@ -160,11 +118,6 @@ def start_run(project_id: str) -> dict:
 
     threading.Thread(target=worker, daemon=True).start()
     return job
-
-
-# --------------------------------------------------------------------------
-# views
-# --------------------------------------------------------------------------
 
 
 class RunNotComplete(LookupError):
@@ -176,6 +129,7 @@ class NotFound(LookupError):
 
 
 def _result(project_id: str) -> dict:
+    """The finished result for a project, or a refusal if it is not done."""
     result = RESULTS.get(project_id)
     if result is None:
         raise RunNotComplete(project_id)
@@ -183,18 +137,7 @@ def _result(project_id: str) -> dict:
 
 
 def _evidence(r: dict) -> dict:
-    """The run-level evidence judgement, attached to every view.
-
-    `usability` and `unavailable` were computed and returned by the pipeline and
-    then served by nothing, so an HTTP caller received a fully-formed ranking
-    with no indication that a component was unmeasured. That is the "served with
-    a caveat" outcome the pipeline refuses -- except the caveat was not served
-    either.
-
-    Put on every collection view rather than behind its own endpoint: a caller
-    reading /targets should not have to know to ask elsewhere whether the
-    ranking beneath it is supported.
-    """
+    """The run-level evidence judgement, attached to every view."""
     unavailable = r.get("unavailable") or []
     out = {
         "usability": r.get("usability", pipeline.USABLE),
@@ -212,6 +155,7 @@ def _evidence(r: dict) -> dict:
 
 
 def targets_view(project_id: str, limit: int = 50) -> dict:
+    """The ranked targets, or the refusal when the evidence cannot support a ranking."""
     r = _result(project_id)
     if r.get("usability") == pipeline.NOT_USABLE:
         return {
@@ -220,9 +164,7 @@ def targets_view(project_id: str, limit: int = 50) -> dict:
             "targets": [],
             "reasons": r.get("reasons", []),
         }
-    # Sorted here. stage3.rank() emits in universe order, not ranked order, and
-    # an endpoint called /targets returning that would be unranked rows under a
-    # ranked name. Same key the pool uses, so the two orders agree.
+
     scored = sorted(
         (x for x in r["ranked"] if x.composite is not None and x.gene),
         key=lambda x: (-x.composite, x.gene, x.accession),
@@ -259,12 +201,11 @@ def targets_view(project_id: str, limit: int = 50) -> dict:
 
 
 def pairs_view(project_id: str, limit: int = 50) -> dict:
+    """The admissible pairs, ordered by how far under the ceiling they sit."""
     r = _result(project_id)
     measured = [p for p in r["pairs"] if p.coverage.measured]
     rows = []
-    # `or 9` would treat a combined risk of exactly 0.0 — the safest pair
-    # reachable, since a per-organ score of 0.0 is a real measurement — as the
-    # worst and sort it off the page.
+
     ordered = sorted(
         measured,
         key=lambda x: (x.risk.combined is None, x.risk.combined or 0.0),
@@ -278,7 +219,6 @@ def pairs_view(project_id: str, limit: int = 50) -> dict:
             "coverage_f_ab": p.coverage.f_ab,
             "coverage_span_kb": p.coverage.span_geomean_kb,
             "coverage_span_percentile": p.coverage.span_percentile,
-            # Carried on the number, not in a footnote.
             "coverage_caveat": (
                 "span-confounded; read the percentile beside the fraction"),
         })
@@ -304,32 +244,24 @@ def constructs_view(project_id: str) -> dict:
     counts: dict[str, int] = {}
     for c in constructs:
         counts[c.verdict] = counts.get(c.verdict, 0) + 1
-    # Three states, and they are genuinely different answers. A design that
-    # fits and carries its sequence is finished. One that fits but whose binder
-    # sequence was never supplied is a real design waiting on one part. One
-    # that does not fit is stopped by the budget. Counting only the first, as
-    # this view used to, reported two designs where there were ten.
+
     buildable = [c for c in constructs if c.verdict == stage6.BUILDABLE]
     complete = [c for c in buildable if c.amino_acid_sequence]
     awaiting = [c for c in buildable if not c.amino_acid_sequence]
     over_budget = [c for c in constructs if c.verdict == stage6.BUDGET_EXCEEDED]
 
     def state(c):
+        """How far a construct got: complete, awaiting a binder, or over budget."""
         if c.verdict != stage6.BUILDABLE:
             return "BUDGET_EXCEEDED"
         return "COMPLETE" if c.amino_acid_sequence else "AWAITING_BINDER"
 
-    # Everything that assembled to a length, whether or not it carries residues.
-    # An over-budget design is reported too: its overage is the measurement.
     rows = []
     for c in buildable + over_budget:
         rows.append({
             "gene": c.gene, "partner": c.partner, "verdict": c.verdict,
             "state": state(c),
             "architecture": c.architecture,
-            # False where a part declares a size but no sequence. The length and
-            # the domain map are real; the residues were never supplied and were
-            # not invented.
             "binder_supplied": c.binder_supplied,
             "binder": c.binder_name, "partner_binder": c.partner_binder_name,
             "total_bp": c.total_bp, "budget_bp": stage6.BUDGET_BP,
@@ -349,8 +281,6 @@ def constructs_view(project_id: str) -> dict:
             "reason": c.reason,
         })
 
-    # Reasons are computed from this run. Prose with a hardcoded fallback number
-    # would present a remembered figure as a measurement.
     reasons = []
     if not buildable:
         switch_bp = sum(
@@ -391,8 +321,6 @@ def constructs_view(project_id: str) -> dict:
     elif complete:
         status = "BUILDABLE"
     else:
-        # Every design that fits is waiting on a binder sequence. Reporting this
-        # as plain BUILDABLE would promise something that cannot be ordered yet.
         status = "BUILDABLE_AWAITING_BINDER"
 
     if buildable and not complete:
@@ -420,8 +348,6 @@ def validation_view(project_id: str) -> dict:
     r = _result(project_id)
     v = r.get("validation")
     if v is None:
-        # A discovery run has no validation to report. Saying so is different
-        # from returning an empty verdict, which would read as "unsuitable".
         return {
             "status": "NOT_APPLICABLE",
             "reasons": ["This project supplied no target, so it ran in "
@@ -447,6 +373,7 @@ def validation_view(project_id: str) -> dict:
 
 
 def result_view(project_id: str) -> dict:
+    """The whole run: attrition chain, end states and recommendations."""
     r = _result(project_id)
     running = len(r["final"])
     chain = []
@@ -458,9 +385,6 @@ def result_view(project_id: str) -> dict:
     complete = [x for x in survivors if x.binder_supplied]
     awaiting = [x for x in survivors if not x.binder_supplied]
 
-    # Reasons computed from this run, as everywhere else in this file. The
-    # zero-design wording describes a case that no longer holds and is not
-    # printed over a run that produced designs.
     if not survivors:
         reasons = [
             "Every drop is a measurement, not a failure of the stage that made it.",
@@ -556,14 +480,11 @@ def evidence_view(project_id: str, gene: str) -> dict:
     }
 
 
-# --------------------------------------------------------------------------
-# HTTP
-# --------------------------------------------------------------------------
-
 class Handler(BaseHTTPRequestHandler):
     server_version = "car-platform/1"
 
     def _send(self, code: int, payload: dict) -> None:
+        """Write one JSON response."""
         body = json.dumps(payload, indent=2, default=str).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
@@ -571,16 +492,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-    def log_message(self, fmt, *args):        # quieter default logging
+    def log_message(self, fmt, *args):
+        """Silence the default request logging."""
         return
 
     def _body(self) -> dict:
+        """The decoded JSON request body, or an empty mapping."""
         length = int(self.headers.get("Content-Length") or 0)
         if not length:
             return {}
         return json.loads(self.rfile.read(length) or b"{}")
 
-    def do_POST(self):                        # noqa: N802
+    def do_POST(self):
+        """Route the write endpoints."""
         path = self.path.split("?")[0]
         try:
             if path == "/projects":
@@ -597,9 +521,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(409, {"status": "RUN_IN_PROGRESS", "error": str(exc)})
         except KeyError as exc:
             return self._send(404, {"status": "NOT_FOUND", "error": str(exc)})
-        except Exception as exc:                       # noqa: BLE001
-            # Nothing leaves this handler without an HTTP response. A closed
-            # connection is the one failure a client cannot interpret.
+        except Exception as exc:
             return self._send(500, {
                 "status": "INTERNAL_ERROR",
                 "error": f"{type(exc).__name__}: {exc}",
@@ -617,7 +539,8 @@ class Handler(BaseHTTPRequestHandler):
                     return default
         return default
 
-    def do_GET(self):                         # noqa: N802
+    def do_GET(self):
+        """Route the read endpoints."""
         path = self.path.split("?")[0]
         try:
             if path == "/indications":
@@ -639,9 +562,7 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 with _LOCK:
                     job = JOBS.get(m.group(1))
-                    # Copied inside the lock: the worker adds a "trace" key on
-                    # failure, and serialising the live dict can raise
-                    # "dictionary changed size during iteration".
+
                     snapshot = dict(job) if job else None
                 if snapshot is None:
                     return self._send(404, {"status": "NOT_FOUND"})
@@ -664,21 +585,17 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 return self._send(200, evidence_view(m.group(1), m.group(2)))
         except RunNotComplete:
-            # Not an error about the data. A statement about the job, naming the
-            # call that would fix it.
             return self._send(409, {
                 "status": "RUN_NOT_COMPLETE",
                 "reasons": ["No completed run for this project. POST "
                             "/projects/{id}/runs, then poll /jobs/{job_id}."],
             })
         except NotFound as exc:
-            # The run completed and does not contain this. Telling the caller to
-            # re-run would send them round a loop that cannot help.
             return self._send(404, {
                 "status": "NOT_FOUND", "error": str(exc),
                 "reasons": ["The run completed; this identifier is not in it."],
             })
-        except Exception as exc:                       # noqa: BLE001
+        except Exception as exc:
             return self._send(500, {
                 "status": "INTERNAL_ERROR",
                 "error": f"{type(exc).__name__}: {exc}",
@@ -687,6 +604,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(host: str = "127.0.0.1", port: int = 8000) -> None:
+    """Start the HTTP server and block."""
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"  listening on http://{host}:{port}")
     server.serve_forever()
@@ -697,15 +615,9 @@ if __name__ == "__main__":
     import os
 
     parser = argparse.ArgumentParser(description="Serve the design platform.")
-    # 127.0.0.1 is the default on purpose: this binds only the loopback
-    # interface, so a laptop demo is not also serving the internet. A container
-    # has to be told 0.0.0.0 explicitly.
+
     parser.add_argument("--host", default=os.environ.get("HOST") or "127.0.0.1")
-    # PORT from the environment because every managed container runtime assigns
-    # one and expects the process to honour it. Left as None here and resolved
-    # after parsing: converting the environment value while *building* the
-    # parser means an empty or malformed PORT raises an uncaught ValueError
-    # before argparse runs, so an explicit --port could not override it.
+
     parser.add_argument("--port", type=int, default=None)
     options = parser.parse_args()
 

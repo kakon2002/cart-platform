@@ -1,15 +1,4 @@
-"""Multi-indication, against the criteria in specs/multi-indication.md.
-
-M1 is the reason this file exists. Two indications sharing one cache slot is the
-worst failure shape available here: the second overwrites the first in place,
-and the first then screens against the other's atlas and produces a ranked list
-that looks entirely plausible. So M1 does not inspect the code -- it runs both
-indications and asserts that neither one's artifacts moved.
-
-M7 exists because a Mode A pin drawn from the platform's own top 20 would pass
-by agreeing with itself. The pin is a target the platform ranks nowhere near the
-top, so the check exercises validation rather than self-agreement.
-"""
+"""Multi-indication, against the criteria in specs/multi-indication.md."""
 
 from __future__ import annotations
 
@@ -25,15 +14,10 @@ from car_pipeline.configs.registry import INDICATIONS, registered, resolve
 
 DATA = Path(__file__).resolve().parent / "data"
 
-#: Sources describing the human body rather than a tumour. M2 asserts none of
-#: these gained a per-indication copy: duplicating them would assert that
-#: normal-tissue biology changes with the diagnosis.
+
 SHARED = ("uniprot", "gtex", "hpa", "genespan", "antibodies", "domains")
 
-#: The Mode A pin. CD19 is the canonical CAR-T target -- approved therapies use
-#: it -- but for B-cell malignancy, not for a solid tumour. The platform ranks
-#: it around 1,300 of 3,400 here, so a passing verdict cannot come from the
-#: platform agreeing with its own ranking.
+
 MODE_A_PIN = "CD19"
 
 
@@ -54,9 +38,11 @@ def digests(prefixes: tuple[str, ...]) -> dict[str, str]:
 
 
 def main() -> int:
+    """Run the multi-indication criteria."""
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
@@ -86,7 +72,6 @@ def main() -> int:
     print("REJECTION CRITERIA")
     print("=" * 72)
 
-    # M1 -- the priority defect
     moved = sorted(k for k in before if before[k] != after.get(k))
     vanished = sorted(set(before) - set(after))
     criterion("M1", bool(moved or vanished),
@@ -94,13 +79,11 @@ def main() -> int:
               f"{len(vanished)} disappeared after running both"
               + (f" -> {moved + vanished}" if (moved or vanished) else ""))
 
-    # M2 -- shared sources not duplicated
     dupes = [p.name for ns in SHARED for p in (DATA / ns).glob("*")
              if p.is_file() and "__" in p.name]
     criterion("M2", bool(dupes),
               f"shared sources carry no per-indication copy ({len(dupes)} found)")
 
-    # M3 -- no indication-specific module constant survives
     import car_pipeline.data.singlecell as sc
     import car_pipeline.data.tcga as tc
     import car_pipeline.data.depmap as dm
@@ -112,13 +95,6 @@ def main() -> int:
               f"indication-specific module constants remaining: "
               f"{leftovers or 'none'}")
 
-    # M4 / M5 -- an atlas-less indication refuses, and says why.
-    #
-    # These used to assert that a constructed object carried atlas=None and that
-    # a string appeared in the source. Both passed while the real behaviour was
-    # an AttributeError 55 lines before the refusal was ever computed. They call
-    # run() now: a criterion that greps for the words it wants is a criterion
-    # testing that someone wrote them.
     from car_pipeline.configs.indication import Indication
     bare = Indication(
         key="atlasless", cancer_type="Atlas-less Control",
@@ -130,7 +106,7 @@ def main() -> int:
     try:
         bare_run = pipeline.run(bare.cancer_type, progress=lambda s, n="": None)
         crashed = None
-    except Exception as exc:                       # noqa: BLE001
+    except Exception as exc:
         bare_run, crashed = None, f"{type(exc).__name__}: {exc}"
     finally:
         _reg.INDICATIONS.pop(bare.cancer_type.lower(), None)
@@ -148,16 +124,13 @@ def main() -> int:
               "the refusal names malignant_vs_stroma as the missing "
               "discriminator, not just a lost weight")
 
-    # M6 / M7 / M8 -- Mode A
     verdict = pipeline.validate("pdac", MODE_A_PIN)
     criterion("M6", not verdict.get("verdict"),
               f"Mode A on {MODE_A_PIN} returns {verdict.get('verdict')} "
               f"with {len(verdict.get('reasons', []))} reasons")
 
     rank = verdict.get("rank")
-    # An absent rank trips this rather than satisfying it. Written the other way
-    # round, the criterion whose job is to prove the verdict is not
-    # self-agreement passed hardest exactly when the verdict meant least.
+
     criterion("M7", rank is None or rank <= 20,
               f"{MODE_A_PIN} ranks {rank} of {verdict.get('of')} -- outside the "
               "top 20, so the verdict is not self-agreement")
@@ -171,7 +144,6 @@ def main() -> int:
               f"Mode A and Mode B report the same evidence for {MODE_A_PIN} "
               f"(risk {verdict.get('risk')}, composite {verdict.get('composite')})")
 
-    # M9 -- the reference indication is unchanged
     ref = results["pdac"]
     ref_scored = sorted((x for x in ref["ranked"]
                          if x.composite is not None and x.gene),
@@ -188,9 +160,6 @@ def main() -> int:
               f"reference unchanged: top3 {actual_top}, pool {len(ref['pool'])}, "
               f"hash {ref['stage3_hash']}, outcomes {dict(outcomes)}")
 
-    # M10 -- a missing source is named
-    # Also exercised against an indication that really is degraded, so this
-    # cannot pass merely because nothing was unavailable.
     degraded = Indication(
         key="nodep", cancer_type="No-Dependency Control",
         tcga_project="TCGA-PAAD", depmap_lineage="NoSuchLineage",
@@ -200,7 +169,7 @@ def main() -> int:
     try:
         deg = pipeline.run(degraded.cancer_type, progress=lambda s, n="": None)
         deg_unavailable = deg.get("unavailable", [])
-    except Exception as exc:                       # noqa: BLE001
+    except Exception as exc:
         deg_unavailable = [f"RAISED {type(exc).__name__}: {exc}"]
     finally:
         _reg.INDICATIONS.pop(degraded.cancer_type.lower(), None)

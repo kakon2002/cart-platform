@@ -1,9 +1,4 @@
-"""Runs the construct stage and tests it against the criteria fixed in the spec.
-
-Criteria before biology. K1 and K2 are the two that would have caught Stage 5's
-dead route: one checks the assembly did not corrupt the sequence, the other that
-the binder arrived at all. Both are positive pins.
-"""
+"""Runs the construct stage and tests it against the criteria fixed in the spec."""
 
 from __future__ import annotations
 
@@ -13,29 +8,16 @@ from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.data.domains import PROTEOME, SYNTHETIC
 from car_pipeline.stages import stage4, stage5, stage6
 
-#: Pinned before the run. The construct for each of these must contain the named
-#: therapeutic's variable regions verbatim. This is the Stage 5 to Stage 6 join,
-#: and the equivalent join one stage earlier is the one that silently returned
-#: nothing for all 200 targets.
-#: Of the fourteen recommendations, only two duals have a binder on both arms.
-#: They are the pins because they are the constructs the stage actually builds:
-#: MSLN and CLDN18 both carry binders but Stage 4 returned NO_DESIGN for the
-#: first and a partner without a binder for the second, so neither yields a
-#: construct and neither can test the join.
+
 PINNED_ASSEMBLED = ["MUC16", "MUC17"]
 
 
 def main() -> int:
+    """Run the construct-assembly criteria."""
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
     source = AntibodySource()
-    # The cache Stage 5 wrote, not a second retrieval: this is the path the
-    # API takes, so the join under test here is the real one. The hash is
-    # what makes reuse safe, and passing it also persists the records when
-    # the cache is cold, so the next verifier does not retrieve them again.
-    #
-    # The live-route check this used to carry now lives in verify_binders,
-    # which run_all runs first and which retrieves for real.
+
     records = stage5.load_or_retrieve(
         decisions, source, manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
@@ -53,6 +35,7 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
@@ -64,8 +47,7 @@ def main() -> int:
               if not bad_round_trip else f"round trip fails for {bad_round_trip[:5]}")
 
     k2_bad = []
-    # A stage that assembled nothing would pass a check phrased only over what it
-    # assembled. The pins make that impossible.
+
     for gene in PINNED_ASSEMBLED:
         c = by_gene.get(gene)
         if c is None or not c.amino_acid_sequence:
@@ -121,9 +103,6 @@ def main() -> int:
 
     k5_bad = []
     for c in built:
-        # Both terms recomputed from the segments rather than from the construct's
-        # own properties. Comparing `headroom_bp` against its own definition is a
-        # tautology and cannot fail.
         summed = sum(s.residues for s in c.segments) * 3 + len(stage6.STOP)
         expected_headroom = stage6.BUDGET_BP - summed
         if summed != c.total_bp or expected_headroom != c.headroom_bp:
@@ -138,10 +117,8 @@ def main() -> int:
               "every buildable construct carries the mandatory safety switch"
               if not no_switch else f"{no_switch[:5]} buildable without a switch")
 
-    # Per spec 5.1: a binder is necessary and not sufficient. A construct is owed
-    # only where the target also carries a recommendation, and for a dual, where
-    # the partner has a binder too.
     def usable(gene):
+        """Whether the target has a binder whose regions can actually be assembled."""
         r = binders.get(gene)
         return bool(r and [t for t in r.sequence
                            if t.heavy_sequence and t.light_sequence
@@ -166,8 +143,6 @@ def main() -> int:
               f"{withheld_by_outcome} targets have a binder but no recommendation "
               f"(§5.1)" if not k7_bad else "; ".join(k7_bad[:3]))
 
-    # Against the manifest's recorded pool size. Comparing the output to the
-    # input it was built from cannot fail.
     expected_rows = manifest["pool_size"]
     out_genes = {c.gene for c in constructs}
     criterion("K8",
@@ -181,7 +156,6 @@ def main() -> int:
         print(f"\n  STOPPING: {', '.join(tripped)} tripped.")
         return 2
 
-    # ---------------- the biology ---------------------------------------
     print()
     print("=" * 72)
     print("WHAT CAN BE BUILT")
@@ -230,7 +204,6 @@ def main() -> int:
             print("      single-domain binder in 720 candidates, so the smaller")
             print("      format that would fit has no inventory to draw on.")
 
-    # ---------------- the chain, and what each exit costs ----------------
     print()
     print("=" * 72)
     print("WHY NOTHING FITS — THE CHAIN, STATED AS A FINDING")

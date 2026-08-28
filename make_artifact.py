@@ -1,13 +1,4 @@
-"""Render the full-run report as a single page.
-
-Reads ``reports/full-run.json`` — the structured result ``run_all.py`` writes
-straight from the objects it already holds. Deliberately not the markdown: a
-regex pinned to another file's f-strings breaks when that file is reformatted,
-and worse, can half-match and render confident headings above empty lists.
-
-    .venv\\Scripts\\python.exe run_all.py --fresh
-    .venv\\Scripts\\python.exe make_artifact.py [reports/full-run.json]
-"""
+"""Render the full-run report as a single page."""
 
 from __future__ import annotations
 
@@ -19,10 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-#: Stages 7 and 8 are absent from the pipeline, not from this page. Showing the
-#: gap is information: a reader counting 1..11 and finding nine entries should
-#: be told why rather than left to wonder whether two were dropped from the
-#: report.
+
 ABSENT = {
     "7": ("Manufacturing", "schema only; not on the path to the end state"),
     "8": ("Trial design", "schema only; not on the path to the end state"),
@@ -57,6 +45,7 @@ E = html.escape
 
 
 def render(run: dict) -> str:
+    """Render the run as one page."""
     steps = attrition(run["api"])
     ends = statuses(run["api"])
     pool = steps[0]["dropped"] + steps[0]["remaining"] if steps else 0
@@ -107,9 +96,6 @@ def render(run: dict) -> str:
           {f'<ul class="ending__why">{items}</ul>' if items else ''}
         </div>""")
 
-    # A tripped criterion with a decision on record and one without are not the
-    # same thing, and rendering them identically is exactly the silencing this
-    # page claims not to do.
     accepted = run.get("accepted", {})
     sections = []
     for stage in run["stages"]:
@@ -144,9 +130,6 @@ def render(run: dict) -> str:
 
     tripped_total = run.get("total", 0) - run.get("clear", 0)
 
-    # The chain's own last "remaining" is how many got through. Read from the
-    # data rather than assumed, because this number changed once already and a
-    # page asserting the old one would be the exact failure the run reports on.
     reached = steps[-1]["remaining"] if steps else 0
     if reached:
         headline = f"{reached} of {pool} designs reach the end"
@@ -159,10 +142,6 @@ def render(run: dict) -> str:
         result_note = ("Nothing reaches the end, and that is a measurement of "
                        "the constraints — not a failure of the run.")
 
-    # The ceiling sweep, lifted out of criterion A9 and given its own section.
-    # It is the number this pipeline cannot measure, so what it buys at every
-    # setting is put in front of whoever can decide it rather than left inside a
-    # criterion line.
     sweep_block = ""
     a9 = next((c["detail"] for s in run["stages"] for c in s["criteria"]
                if c["id"] == "A9" and "sweep" in c["detail"]), "")
@@ -198,8 +177,7 @@ def render(run: dict) -> str:
   </section>"""
     new = run.get("unexpected", [])
     stale = run.get("stale", [])
-    # The lede must not claim every trip is a recorded limitation when one of
-    # them is not. This is the sentence the accepted list exists to make true.
+
     if new:
         verdict = (f"<strong>{len(new)} of them are not on the accepted list "
                    "and are new.</strong> They are marked below.")
@@ -496,9 +474,7 @@ tbody td {{ padding:11px 12px; border-bottom:1px solid var(--rule-soft); }}
 
 
 def main() -> int:
-    # Taken as an argument rather than hardcoded: run_all.py accepts --report,
-    # and a fixed path here would happily render a *previous* run's page while
-    # printing a confident success line.
+    """Render the named run, or the default report."""
     source = Path(sys.argv[1]) if len(sys.argv) > 1 else (
         ROOT / "reports" / "full-run.json")
     if not source.exists():

@@ -1,8 +1,4 @@
-"""Runs the ranking and tests it against all twelve rejection criteria.
-
-The criteria were fixed in the specification before any output existed. A
-tripped criterion is reported and the run stops; it is not adjusted away.
-"""
+"""Runs the ranking and tests it against all twelve rejection criteria."""
 
 from __future__ import annotations
 
@@ -43,10 +39,12 @@ UBIQUITOUS_IMMUNE = ["HLA-A", "HLA-B", "CD74", "PTPRC"]
 
 
 def spearman(a: list[float], b: list[float]) -> float:
+    """Rank correlation between two series."""
     if len(a) < 3:
         return 0.0
 
     def ranks(xs):
+        """Ordinal ranks for a series."""
         order = sorted(range(len(xs)), key=lambda i: xs[i])
         r = [0.0] * len(xs)
         i = 0
@@ -70,12 +68,14 @@ def spearman(a: list[float], b: list[float]) -> float:
 
 
 def top_n(rows, n=50):
+    """The first n genes of the ranking."""
     scored = [r for r in rows if r.composite is not None]
     scored.sort(key=lambda r: -r.composite)
     return [r.accession for r in scored[:n]]
 
 
 def main() -> int:
+    """Run the ranking criteria."""
     print("loading sources", flush=True)
     surface, _ = load_surface()
     surface_by_acc = {r.accession: r for r in surface}
@@ -101,15 +101,13 @@ def main() -> int:
         for organ, ov in spec.inputs.tissue_criticality_overrides.items()
     }
 
-    # Measured before anything is scored. The staining axis and the transcript
-    # axis are put on one scale by observation rather than by assertion, and the
-    # curve is reported and hashed as part of the run.
     calibration = stage3.calibrate_atlas_levels(
         surface, by_acc, by_sym, gtex_profiles, gtex_tissues,
         stage3.RiskModel(overrides=overrides),
     )
 
     def run(saturation=None, weights=None):
+        """Score the pool and return the ranking with its report."""
         return stage3.rank(
             coverage_rows, surface_by_acc, by_acc, by_sym,
             cells, cell_index, gtex_profiles, gtex_tissues,
@@ -120,9 +118,6 @@ def main() -> int:
 
     rows, model, stats = run()
 
-    # Several symbols carry more than one accession. Keeping only the last one
-    # would let a second entry under the same name go untested, which is exactly
-    # how a ubiquitous protein could clear the ceiling unnoticed.
     all_by_gene: dict[str, list] = {}
     for r in rows:
         if r.gene:
@@ -155,7 +150,6 @@ def main() -> int:
         )
     )
 
-    # -- structural report ------------------------------------------------
     scored = [r for r in rows if r.composite is not None]
     floored = [r for r in rows if r.below_evidence_floor]
     print(f"\n  ranked            {len(rows):,}")
@@ -170,9 +164,6 @@ def main() -> int:
 
     print(f"  symbols carrying more than one accession: {len(duplicated)}")
 
-    # The specification requires the hash to be stable across processes. A hash
-    # seeded by anything process-local defeats itself silently, so it is checked
-    # here rather than assumed.
     hash_a = stage3.configuration_hash(
         overrides, ceiling, stage3.SATURATION, stage3.WEIGHTS, calibration
     )
@@ -207,9 +198,9 @@ def main() -> int:
     results: list[tuple[str, bool, str]] = []
 
     def criterion(cid: str, tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         results.append((cid, tripped, detail))
 
-    # -- R1 ---------------------------------------------------------------
     outside = []
     for g in KNOWN_TARGETS:
         r = by_gene.get(g)
@@ -225,8 +216,6 @@ def main() -> int:
         f"outside top decile: {outside or 'none'}",
     )
 
-    # -- R2 ---------------------------------------------------------------
-    # Tested across every accession carrying the symbol, not just one.
     breached = [
         f"{g}({r.accession})"
         for g in UBIQUITOUS_IMMUNE
@@ -239,7 +228,6 @@ def main() -> int:
         f"cleared the ceiling: {breached or 'none'} (across {checked} accessions)",
     )
 
-    # -- R3 ---------------------------------------------------------------
     c5 = by_gene.get("CEACAM5")
     r3 = c5 is None or c5.composite is None
     criterion(
@@ -249,12 +237,10 @@ def main() -> int:
         f"tier_rank={c5.tier_rank if c5 else None}",
     )
 
-    # -- R4 ---------------------------------------------------------------
     surface_accessions = set(surface_by_acc)
     strays = [r.accession for r in rows if r.accession not in surface_accessions]
     criterion("R4", bool(strays), f"non-surface entries present: {len(strays)}")
 
-    # -- R5 ---------------------------------------------------------------
     worst = ("", 0.0)
     for key in stage3.WEIGHTS:
         pairs = [
@@ -272,7 +258,6 @@ def main() -> int:
         f"highest |rho| {worst[0]}={worst[1]:.3f} (over measured targets only)",
     )
 
-    # -- R6 ---------------------------------------------------------------
     base_top = set(top_n(rows))
     worst_overlap = (None, 1.0)
     for key in stage3.WEIGHTS:
@@ -288,20 +273,16 @@ def main() -> int:
         f"worst retention {worst_overlap[1]:.0%} at {worst_overlap[0]}",
     )
 
-    # -- R7 ---------------------------------------------------------------
     cleared = sum(1 for r in rows if r.cleared)
     criterion(
         "R7", cleared == 0 or cleared == len(rows),
         f"cleared {cleared:,} of {len(rows):,}",
     )
 
-    # -- R8 ---------------------------------------------------------------
     counts: dict[float, int] = {}
     for r in scored:
         counts[r.composite] = counts.get(r.composite, 0) + 1
     if not counts:
-        # Nothing scored at all is a degenerate run, which is the state these
-        # criteria exist to catch. It must trip, not raise.
         criterion("R8", True, "nothing scored, so the distribution is degenerate")
     else:
         top_value, top_count = max(counts.items(), key=lambda kv: kv[1])
@@ -311,8 +292,8 @@ def main() -> int:
             f"most repeated composite {top_value} occurs {top_count}x ({share:.2%})",
         )
 
-    # -- R9 ---------------------------------------------------------------
     def tier_best(tier):
+        """The best-scoring gene within a consequence tier."""
         vals = [r.composite for r in rows if r.evidence_class == tier and r.composite is not None]
         return max(vals) if vals else None
 
@@ -323,7 +304,6 @@ def main() -> int:
         f"best unresolved {best_insuff} vs best protein-confirmed {best_conf}",
     )
 
-    # -- R10 --------------------------------------------------------------
     top100 = top_n(rows, 100)
     top_rows = [r for r in rows if r.accession in set(top100)]
     bridged = sum(1 for r in top_rows if r.bridged)
@@ -332,11 +312,9 @@ def main() -> int:
         f"{bridged} of {len(top100)} reached only after a symbol failed",
     )
 
-    # -- R11 --------------------------------------------------------------
     top25 = set(top_n(rows, 25))
     disagreeing = [r for r in rows if r.accession in top25 and r.sources_disagree]
-    # Tested against the measured systematic offset, not against parity. A
-    # parity test flagged all 25 and told a reader nothing.
+
     criterion(
         "R11", False,
         f"{len(disagreeing)} of 25 depart from the systematic offset "
@@ -344,11 +322,10 @@ def main() -> int:
         f"{stats['tolerance_fold']:.0f}x; all listed, so none unread",
     )
     def _fmt(x):
+        """Format a value for the report, marking the unmeasured."""
         return "n/a" if x is None else f"{x:,.1f}x"
 
     for r in disagreeing:
-        # A fold built on a floored denominator is a lower bound, not a
-        # measurement, and has to read differently from one that was measured.
         floored = r.components[stage3.C3].note == "normal below detection"
         marker = "  [normal below detection]" if floored else ""
         fe = r.field_elevation
@@ -359,7 +336,6 @@ def main() -> int:
             f"field elevation {fe:,.0f}x{marker}"
         )
 
-    # -- R12 --------------------------------------------------------------
     worst_sat = (None, 1.0)
     for key in stage3.SATURATION:
         for factor in (2.0, 0.5):
@@ -374,7 +350,6 @@ def main() -> int:
         f"worst retention {worst_sat[1]:.0%} at {worst_sat[0]}",
     )
 
-    # -- R13 --------------------------------------------------------------
     tier_totals = {}
     for r in rows:
         tier_totals[r.evidence_class] = tier_totals.get(r.evidence_class, 0) + 1
@@ -395,7 +370,6 @@ def main() -> int:
         + " against a limit of 5x",
     )
 
-    # -- report -----------------------------------------------------------
     print("\n" + "=" * 72)
     print("REJECTION CRITERIA")
     print("=" * 72)
@@ -406,9 +380,6 @@ def main() -> int:
     print("=" * 72)
     print(f"  {len(results) - tripped}/{len(results)} criteria clear")
 
-    # Reported on every run, not only when it trips. A composite that drifts
-    # toward one component stops being a multi-criteria score long before it
-    # reaches the rejection threshold, and only the trend shows that.
     print(
         f"\n  WATCH  strongest single-component correlation: {worst[1]:.3f}"
         f" ({worst[0]}), rejection at 0.95"
@@ -422,6 +393,7 @@ def main() -> int:
 
 
 def _report_biology(rows, ceiling) -> None:
+    """Print the biology behind the ranking the stage produced."""
     print("\n" + "=" * 72)
     print("BIOLOGY")
     print("=" * 72)

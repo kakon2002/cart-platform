@@ -1,27 +1,4 @@
-"""Get a fresh clone to a working cache.
-
-`data/` is not in git — it is 680 MB of cached sources and none of it is
-tracked. A clone has an empty cache, and nothing runs against an empty cache.
-This closes that gap two ways.
-
-    python bootstrap.py                 # what is present, what is missing
-    python bootstrap.py --from-release  # download a prepared cache  (minutes)
-    python bootstrap.py --from-archive  # unpack one you already have
-    python bootstrap.py --package       # make the archive to hand on
-
-    .venv/bin/python bootstrap.py --from-sources   # rebuild from origin, ~3 h
-
-**Prefer the release.** Rebuilding is fully automated and every source has a
-public programmatic URL, so it needs no accounts and no manual downloads — but
-one step in it is unavoidably long. Deriving `group_means.npz` streams the whole
-8.3 GB single-cell matrix and took **2 h 19 min** on the machine that first
-built this cache, against about 15 minutes for every download combined. The
-archive skips that by carrying the 5.7 MB result.
-
-Everything here is standard library **except** `--from-sources`, which imports
-the pipeline and therefore needs the project interpreter with its dependencies.
-The other paths run under any Python 3, before anything is installed.
-"""
+"""Get a fresh clone to a working cache."""
 
 from __future__ import annotations
 
@@ -42,35 +19,22 @@ DATA = ROOT / "data"
 ARCHIVE_NAME = "cart-platform-cache.tar.gz"
 CHECKSUM_SUFFIX = ".sha256"
 
-#: Where the packaged cache lives. The repository is private, so the asset is
-#: private with it: anyone who can clone can download, and nobody else can.
+
 RELEASE_TAG = "data-v1"
 RELEASE_REPO = "kakon2002/cart-platform"
 
-#: Excluded from the archive, and the single authority on that. `_members()`
-#: iterates this rather than repeating the patterns, so what is printed as
-#: skipped is what is actually skipped.
+
 HEAVY = ("*.h5ad", "*.h5ad.gz")
 
-#: Cache keys that exist only to build something else. Their payloads are
-#: deliberately absent from a deployed cache — a served run never opens either,
-#: which is measured rather than assumed — so a missing payload here is the
-#: intended state and is reported as such instead of as a gap.
+
 BUILD_ONLY = {"singlecell": {"archive", "matrix"}}
 
-#: Sources that cannot be fetched ahead of a run, with the reason. The trial
-#: cache is fingerprinted by the antigen list it covers, so it has no meaning
-#: until a pool exists; it is built during the first screen. Listing it as
-#: merely missing would report a complete cache as incomplete forever.
+
 POOL_DERIVED = {
     "trials": "keyed by the screened antigen list; built during the first run",
 }
 
-#: Every source, with what it holds and roughly what a cold rebuild costs.
-#: The times are measured from the manifests of the original build rather than
-#: estimated: each manifest records `retrieved_at`, and these are the gaps
-#: between consecutive entries.
-#: Sources that describe the human body. One copy, whatever is being screened.
+
 SHARED_SOURCES = [
     ("uniprot", "the reviewed human proteome, 20,431 entries", "~10 min"),
     ("hpa", "normal tissue, pathology, subcellular, protein atlas", "11 s"),
@@ -82,11 +46,7 @@ SHARED_SOURCES = [
     ("trials", "trial counts per antigen", "during the first run"),
 ]
 
-#: Sources that describe a tumour. One copy PER INDICATION, which is why the
-#: report and the rebuild both iterate the registry rather than a fixed list.
-#: The old flat list named "tcga" and "singlecell" as though each were a single
-#: thing, so a clone provisioned the reference indication and reported itself
-#: complete while a second indication had nothing.
+
 PER_INDICATION = [
     ("tcga", "the tumour cohort, through the GDC API", "~3-21 min"),
     ("singlecell", "derived summaries; the atlas builds them", "minutes to hours"),
@@ -97,11 +57,7 @@ SOURCES = SHARED_SOURCES
 
 
 def _sha256(path: Path) -> str:
-    """One implementation, used by both the writer and the verifier.
-
-    Two copies would let the two sides diverge, and a divergence there produces
-    a mismatch on a perfectly good archive with no way to tell which is wrong.
-    """
+    """One implementation, used by both the writer and the verifier."""
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
         for block in iter(lambda: handle.read(1 << 20), b""):
@@ -110,13 +66,7 @@ def _sha256(path: Path) -> str:
 
 
 def _state(name: str) -> tuple[str, int, list[str]]:
-    """Whether a source is usable, by checking payloads and not just manifests.
-
-    A manifest is the marker that a fetch finished, but its presence alone does
-    not mean the file it describes is still there. Globbing for manifests would
-    report a cache as complete while the payload beside it had been deleted,
-    which is the failure this is most likely to be asked about.
-    """
+    """Whether a source is usable, by checking payloads and not just manifests."""
     directory = DATA / name
     if not directory.exists():
         return "MISSING", 0, []
@@ -134,7 +84,7 @@ def _state(name: str) -> tuple[str, int, list[str]]:
             broken.append(f"{path.name} is unreadable")
             continue
         if meta.get("key") in build_only:
-            continue                      # absent on purpose; see BUILD_ONLY
+            continue
         filename = meta.get("filename")
         if filename and not (directory / filename).exists():
             broken.append(f"{filename} is named by a manifest but absent")
@@ -144,15 +94,11 @@ def _state(name: str) -> tuple[str, int, list[str]]:
 
 
 def _indications():
-    """The registry, or an empty list if the package cannot be imported.
-
-    bootstrap runs before dependencies are installed on a fresh clone, so it
-    must degrade to the shared-source report rather than failing on an import.
-    """
+    """The registry, or an empty list if the package cannot be imported."""
     try:
         from car_pipeline.configs.registry import INDICATIONS
         return sorted(INDICATIONS.values(), key=lambda i: i.key)
-    except Exception:                                  # noqa: BLE001
+    except Exception:
         return []
 
 
@@ -188,9 +134,7 @@ def report() -> int:
             print(f"           {'':12s} {'':8s}     {POOL_DERIVED[name]}")
         elif mark == "MISSING":
             print(f"           {'':12s} {'':8s}     rebuild cost {cost}")
-    # Per indication. A clone that has the shared sources and one indication's
-    # tumour caches is not ready for a registry that declares two, and saying
-    # "10/10 sources usable" would tell it that it is.
+
     indications = _indications()
     incomplete: list[str] = []
     if indications:
@@ -232,6 +176,7 @@ def report() -> int:
 
 
 def _members() -> list[Path]:
+    """Every cache file the archive should carry, heavy artifacts excluded."""
     return [p for p in sorted(DATA.rglob("*"))
             if p.is_file() and not any(p.match(pat) for pat in HEAVY)]
 
@@ -274,9 +219,6 @@ def from_archive(source: Path, require_checksum: bool = False) -> int:
     checksum = Path(str(source) + CHECKSUM_SUFFIX)
     expected = ""
     if checksum.exists():
-        # An unparseable sidecar is treated as a mismatch, not as a crash. A
-        # truncated checksum file is exactly the state this machinery exists to
-        # survive, so it must not be the thing that raises.
         parts = checksum.read_text(encoding="utf-8").split()
         expected = parts[0] if parts else ""
         if not expected:
@@ -292,9 +234,6 @@ def from_archive(source: Path, require_checksum: bool = False) -> int:
     if expected:
         actual = _sha256(source)
         if actual != expected:
-            # Refused rather than unpacked. A truncated transfer produces a
-            # cache that reads as present and answers with the wrong data,
-            # which is worse than having no cache at all.
             print(f"CHECKSUM MISMATCH for {source.name}")
             print(f"  expected {expected}")
             print(f"  got      {actual}")
@@ -304,10 +243,6 @@ def from_archive(source: Path, require_checksum: bool = False) -> int:
 
     started = time.monotonic()
     with tarfile.open(source, "r:gz") as tar:
-        # filter="data" refuses absolute paths and parent traversal in member
-        # names. No fallback: this project runs on 3.13, and an unpacker that
-        # silently drops the guard on older interpreters is worse than one that
-        # refuses to run there.
         tar.extractall(ROOT, filter="data")
     print(f"unpacked in {time.monotonic() - started:.0f}s")
     print()
@@ -315,13 +250,7 @@ def from_archive(source: Path, require_checksum: bool = False) -> int:
 
 
 def from_release() -> int:
-    """Download the packaged cache from the repository release, then unpack.
-
-    Uses the GitHub CLI because the repository is private and the asset
-    inherits that: an unauthenticated fetch gets a 404, which is the right
-    answer but an unhelpful one, so the credential the clone already needed is
-    reused rather than a token being invented.
-    """
+    """Download the packaged cache from the repository release, then unpack."""
     if shutil.which("gh") is None:
         print("The GitHub CLI is not installed, and the release asset is")
         print("private so it cannot be fetched anonymously.")
@@ -341,9 +270,7 @@ def from_release() -> int:
         print("\nDownload failed. If this is an authentication error, run:")
         print("    gh auth login")
         return 1
-    # require_checksum: a download is the one case where the sidecar must be
-    # there. Unpacking 298 MB off the network unverified is the failure mode the
-    # checksum exists for.
+
     return from_archive(ROOT / ARCHIVE_NAME, require_checksum=True)
 
 
@@ -383,14 +310,6 @@ def from_sources() -> int:
               "             (macOS, Linux)")
         return 1
 
-    # `fetch()` is the method that populates a cache; several sources have no
-    # `load()` at all (GTEx exposes only match_surface, which needs the surface
-    # proteome). The two that derive an artifact from a download — TCGA's cohort
-    # and the single-cell group means — are named explicitly, because the
-    # download alone leaves the expensive part undone.
-    #
-    # Ordered cheapest-first so a broken network fails in seconds rather than
-    # after the 2.6 GB download.
     steps = [
         ("hpa", lambda: HPASource().fetch()),
         ("gtex", lambda: GTExSource().fetch()),
@@ -400,10 +319,6 @@ def from_sources() -> int:
         ("uniprot", lambda: UniProtSource().fetch()),
     ]
 
-    # Then the tumour-side caches, once per registered indication. This used to
-    # be three unparameterised calls, so a clone provisioned the reference
-    # indication only and the multi-indication stage failed on a fresh machine
-    # while every other stage passed.
     for ind in _indications():
         label = ind.key
         if ind.tcga_project:
@@ -413,9 +328,6 @@ def from_sources() -> int:
             steps.append((f"depmap/{label}",
                           lambda i=ind: DepMapSource(i.depmap_lineage).build_matrix()))
         if ind.atlas:
-            # For the reference indication this downloads 2.6 GB, expands it to
-            # 8.3 GB and streams the whole thing: the ~2 h 19 min step. A
-            # CELLxGENE export needs no expansion and takes seconds.
             steps.append((f"singlecell/{label}",
                           lambda i=ind: SingleCellSource(i.atlas).build_group_means()))
 
@@ -430,10 +342,7 @@ def from_sources() -> int:
                   "artifact\n  is committed only once complete. Re-run to "
                   "resume.")
             return 130
-        except Exception as exc:                       # noqa: BLE001
-            # The traceback, not just the message. A failure two hours into the
-            # last step with one line of context means re-running two hours to
-            # find out where it was.
+        except Exception as exc:
             print(f"  FAILED after {time.monotonic() - started:.0f}s: "
                   f"{type(exc).__name__}: {exc}")
             print(traceback.format_exc())
@@ -451,6 +360,7 @@ def from_sources() -> int:
 
 
 def main() -> int:
+    """Parse the provisioning mode and run it."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--from-release", action="store_true",

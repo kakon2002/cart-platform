@@ -1,12 +1,4 @@
-"""Runs the pairing stage and tests it against the invariants and criteria.
-
-Both were fixed in the specification before any output existed. An invariant
-failure is a bug and stops the run. A tripped criterion is reported and the run
-stops; it is not adjusted away.
-
-Order is deliberate: invariants, then criteria, then the biology. Nothing about
-which pairs came out on top is printed until the checks have been read.
-"""
+"""Runs the pairing stage and tests it against the invariants and criteria."""
 
 from __future__ import annotations
 
@@ -33,26 +25,15 @@ from car_pipeline.stages.stage1 import build_spec
 WATCH = ["MSLN", "CLDN18", "CEACAM6", "CEACAM5", "MUC1"]
 UBIQUITOUS_IMMUNE = ["HLA-A", "HLA-B", "CD74", "PTPRC"]
 
-#: Known-answer check on the per-cell derivation. The column indices in the
-#: matrix are stored in descending order within a row, so a lookup that assumes
-#: otherwise returns zero for every gene without erroring. Only a gene whose
-#: answer is known catches that.
-#:
-#: CEACAM5 is deliberately absent. It carries two molecules across all 64,538
-#: malignant cells, which is the capture failure the ranking stage already
-#: documented rather than a broken derivation, so a check that stopped on it
-#: would stop a correct implementation on the highest ranked target in the pool.
+
 SANITY = {"KRT19": 0.50, "CLDN18": 0.05, "CEACAM6": 0.05, "MSLN": 0.05}
 
-#: Requested as extra columns rather than drawn from the pool. KRT19 is a
-#: cytokeratin, so it never survives the surface filter and can never be a pool
-#: member — which is exactly what makes it a good control. It is the loudest
-#: malignant signal in the atlas and it is independent of anything the ranking
-#: decided.
+
 CONTROL_GENES = ["KRT19"]
 
 
 def spearman(a: list[float], b: list[float]) -> float:
+    """Rank correlation between two series."""
     if len(a) < 3:
         return float("nan")
     ra = np.argsort(np.argsort(np.asarray(a, dtype=float)))
@@ -64,6 +45,7 @@ def spearman(a: list[float], b: list[float]) -> float:
 
 
 def main() -> int:
+    """Run the target-pairing criteria."""
     print("loading sources", flush=True)
     surface, _ = load_surface()
     surface_by_acc = {r.accession: r for r in surface}
@@ -101,7 +83,6 @@ def main() -> int:
     pool = stage4.build_pool(rows)
     pool_genes = [r.gene for r in pool]
 
-    # Per-organ scores from the ranking stage, not recomputed here.
     per_organ: dict[str, dict[str, float]] = {}
     for r in pool:
         entry = by_acc.get(r.accession) or by_sym.get(r.gene)
@@ -117,7 +98,6 @@ def main() -> int:
     print("building the per cell matrix", flush=True)
     cells = cell_source.load_malignant(sorted(set(pool_genes) | set(CONTROL_GENES)))
 
-    # ---------------- sanity check on the derivation -------------------
     print()
     print("=" * 72)
     print("PER CELL DERIVATION — known answer check")
@@ -149,23 +129,15 @@ def main() -> int:
 
     print("evaluating pairs", flush=True)
     pairs = stage4.evaluate(pool, per_organ, model, ceiling, cells)
-    # Span context before any pair is read. Reporting only — nothing below gates
-    # on it — but a co-expression figure printed without it invites exactly the
-    # reading the measurement cannot support.
-    # Annotation only, so a failure here must not lose the run. It is also not
-    # registered as a connector, which means the preflight cannot have checked
-    # it: a hard failure this late would discard everything computed above for a
-    # source that gates nothing.
+
     try:
         spans = GeneSpanSource().load()
-    except Exception as exc:                          # noqa: BLE001
+    except Exception as exc:
         print(f"  span context unavailable ({type(exc).__name__}); coverage will "
               "be reported without it")
         spans = {}
     annotated = stage4.annotate_span_context(pairs, spans)
-    # Bulk tumour level per pool gene, primary tumours only. This is the axis
-    # partner eligibility is measured on, and it is the one not confounded with
-    # genomic span.
+
     primary = cohort.sample_types == PRIMARY_TUMOUR
     tumour_tpm: dict[str, float] = {}
     non_finite: list[str] = []
@@ -174,9 +146,7 @@ def main() -> int:
         if cj is None:
             continue
         value = float(np.median(cohort.values[primary, cj[0]]))
-        # A non-finite median is not a low one. Stored, it would make the gene
-        # ineligible while still counting as having a measurement, which reads
-        # as "measured and found absent" rather than "not measured".
+
         if not np.isfinite(value):
             non_finite.append(r.gene)
             continue
@@ -194,17 +164,12 @@ def main() -> int:
     measurable = sum(1 for p in pairs if p.coverage.measured and p.coverage.f_ab is not None)
     print(f"  span context attached to {annotated:,} pairs of {measurable:,} measured")
 
-    # ---------------- invariants ---------------------------------------
     print()
     print("=" * 72)
     print("CONSTRUCTION INVARIANTS")
     print("=" * 72)
     failures: list[str] = []
 
-    # Both numbers are carried at four decimals, which is the precision the
-    # ranking stage stores risk at. The tolerance absorbs the rounding boundary
-    # only; the worst excess is printed so a real disagreement cannot hide
-    # underneath it.
     TOL = 1.5e-4
     bad, worst_i1 = [], 0.0
     for r in pool:
@@ -266,19 +231,16 @@ def main() -> int:
               "not a result")
         return 1
 
-    # ---------------- criteria -----------------------------------------
     print()
     print("=" * 72)
     print("REJECTION CRITERIA")
     print("=" * 72)
     tripped: list[str] = []
-    # Every outcome, not only the failures: the persisted artifact records which
-    # criteria were checked as well as which failed, so a criterion silently
-    # dropped from the run is visible in the manifest rather than reading as a
-    # criterion that passed.
+
     outcomes: dict[str, bool] = {}
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         outcomes[cid] = not is_tripped
         if is_tripped:
@@ -310,9 +272,6 @@ def main() -> int:
               f"f_AB vs f_A x f_B over {len(meas):,} measured pairs, "
               f"rho={rho4:.4f} (limit 0.98)")
 
-    # Wiring check: clearance must be decided on the conservative arm. A pair
-    # that clears only on the optimistic arm is RISK_UNRESOLVED by definition
-    # and must not be marked cleared.
     p5 = [p for p in pairs
           if p.cleared
           and p.risk.optimistic is not None
@@ -332,12 +291,6 @@ def main() -> int:
               f"{len(p7)} cleared pairs contain a ubiquitous immune protein "
               f"(in pool: {in_pool or 'none'}) {offenders[:4]}")
 
-    # Substantive check: how many cleared pairs would stop clearing if the
-    # unmeasured antigen turned out to saturate the organ nobody looked at.
-    # Having an unresolved organ is not itself the failure — the conservative
-    # arm already charges the measured member's score there. The failure is
-    # clearance that survives only because the missing antigen was assumed no
-    # more prevalent than the one that was measured.
     cleared_pairs = [p for p in pairs if p.cleared]
     ignorance = [p for p in cleared_pairs
                  if p.risk.pessimistic is not None
@@ -348,12 +301,6 @@ def main() -> int:
               f"({frac8:.1%}) stop clearing if the unmeasured antigen saturates "
               "its organ (limit 10%)")
 
-    # P9 is withdrawn as a criterion and kept as a reported number. It asserted
-    # that no recommendation sits below the patient floor, which was enforceable
-    # only while the patient floor took part in selection. That floor counts
-    # patients whose f_AB clears the coverage floor, so it inherits the span
-    # confound wholesale, and selection no longer uses either. Gating on it here
-    # would reinstate through the criteria the thing removed from the stage.
     p9 = [p for p in recommended
           if p.coverage.patient_fraction < stage4.PATIENT_FRACTION_FLOOR]
     print(f"  report   P9: {len(p9)} of {len(recommended)} recommended pairs sit "
@@ -420,9 +367,6 @@ def main() -> int:
               f"pool halved to {len(half)}: {moved} of {len(shared)} shared dual "
               f"targets change partner ({moved / denom:.1%}, limit 50%)")
 
-    # P16 is withdrawn with P9 and for the same reason: it existed to catch a
-    # coverage floor set so high it admitted nothing, and the floor no longer
-    # admits or rejects anything. The count is still worth seeing.
     reach = [p for p in pairs if p.coverage.measured
              and p.coverage.f_ab >= stage4.COVERAGE_FLOOR]
     print(f"  report   P16: {len(reach):,} of {len(meas):,} measured pairs reach "
@@ -431,12 +375,6 @@ def main() -> int:
     print("=" * 72)
     print(f"  {14 - len(tripped)}/14 criteria clear")
 
-    # Written whether or not a criterion tripped, and carrying which ones did.
-    # A stage that only persisted its output on a clean run would leave nothing
-    # on disk in exactly the state the project is actually in, and the next
-    # stage would have to re-run this one to see anything — re-deriving the very
-    # numbers under question. The manifest says plainly whether the payload may
-    # be read as a result, so the artifact cannot be mistaken for one.
     written = stage4.write_decisions(
         decisions,
         pool_genes,
@@ -446,10 +384,6 @@ def main() -> int:
     print(f"  decisions written to {written}")
     print(f"  usable as a result: {'no' if tripped else 'yes'}")
 
-    # Measurements, printed whether or not a criterion tripped. These describe
-    # what the atlas contains rather than what should be built, so withholding
-    # them behind a passing run would hide the strongest thing this stage has to
-    # say about the architecture.
     _report_measurements(pool, pairs, decisions, duals, tumour_tpm)
 
     if tripped:
@@ -464,6 +398,7 @@ def main() -> int:
 
 
 def _report_measurements(pool, pairs, decisions, duals, tumour_tpm) -> None:
+    """Print what the atlas contains, whether or not a criterion tripped."""
     print()
     print("=" * 72)
     print("WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)")
@@ -472,17 +407,13 @@ def _report_measurements(pool, pairs, decisions, duals, tumour_tpm) -> None:
     print()
     print("  What the weights are doing in this stage")
     print("  " + "-" * 68)
-    # Within the admissible set the ordering key is the combined risk margin, not
-    # the composite the weights produce. Measured rather than asserted: how often
-    # would the recommendation change if partners were ordered by composite?
+
     by_gene: dict[str, list] = {r.gene: [] for r in pool}
     for p in pairs:
         by_gene[p.gene_a].append(p)
         by_gene[p.gene_b].append(p)
     differ = 0
     for gene in duals:
-        # Same eligibility the stage applies, or this describes an ordering over
-        # pairs decide() cannot pick.
         adm = [
             p for p in by_gene[gene]
             if p.admissible
@@ -557,8 +488,6 @@ def _report_measurements(pool, pairs, decisions, duals, tumour_tpm) -> None:
     print("    its biology, so this table ranks detectability alongside truth.")
 
     if watch_pairs:
-        # The most favourable watch-list pair, not the worst. An argument that
-        # holds on the best case does not depend on which pair was picked.
         best_watch = min(watch_pairs, key=lambda p: p.coverage.escape)
         c = best_watch.coverage
         print()
@@ -579,12 +508,14 @@ def _report_measurements(pool, pairs, decisions, duals, tumour_tpm) -> None:
 
 
 def _inv(failures: list[str], cid: str, ok: bool, detail: str) -> None:
+    """Report one invariant."""
     print(f"  {'ok  ' if ok else 'FAIL'} {cid}: {detail}")
     if not ok:
         failures.append(cid)
 
 
 def _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash) -> None:
+    """Print the biology behind the pairs the stage chose."""
     print()
     print("=" * 72)
     print("PAIRING RESULTS")

@@ -1,20 +1,4 @@
-"""Stage 4 — target pairing and the single-versus-dual decision.
-
-Implements `specs/stage4-target-pairing.md`. Pool, thresholds and criteria are
-fixed there and are read from here, not tuned.
-
-Two new measurements, and nothing else is re-derived:
-
-* combined risk, the minimum per organ before the maximum across organs, which
-  is the only thing an AND gate buys over either antigen alone
-* co-expression, the fraction of malignant cells carrying both antigens, which
-  is what the gate actually kills
-
-The per-organ scores come from the ranking stage rather than being recomputed,
-so pairing a target with itself reproduces its single-antigen risk exactly. A
-second implementation of the tissue mapping would be a second place for the
-mapping bugs to live.
-"""
+"""Stage 4 — target pairing and the single-versus-dual decision."""
 
 from __future__ import annotations
 
@@ -27,92 +11,54 @@ import numpy as np
 from car_pipeline.stages import stage3
 from car_pipeline.stages.stage3 import RiskModel, Ranked
 
-#: The pool is the top of the tumour-side ranking with risk ignored entirely.
-#: Risk is the thing pairing exists to fix, so filtering on it first would leave
-#: the stage unable to reach the targets a dual design is for.
+
 from car_pipeline.stages import routing
 
 POOL_SIZE = 200
 
-#: A cell carries an antigen when at least one molecule was captured. Reported
-#: at 2 and 3 as well, because the ordering is not stable across them.
+
 DETECTION_COUNTS = 1
 SENSITIVITY_COUNTS = (1, 2, 3)
 
-#: Set against the measured range rather than chosen and then discovered to
-#: admit nothing: the best pair of known targets in this atlas reaches 0.047 of
-#: malignant cells, so a floor at 0.05 or 0.10 would eliminate every pair this
-#: stage exists to evaluate. Deliberately low, and paired with P16, which trips
-#: if even this admits nothing.
+
 COVERAGE_FLOOR = 0.02
 PATIENT_FRACTION_FLOOR = 0.60
 
-#: A proportion cannot be estimated from three cells. 29 of 43 patients clear
-#: this; the excluded ones are reported rather than dropped quietly.
+
 MIN_MALIGNANT_CELLS = 100
 
-#: Below this a positive fraction is not a measurement. Carrying forward the
-#: rule that a single-cell zero never rejects a target: such a pair is marked
-#: unmeasured, not scored zero.
+
 MIN_DETECTED_CELLS = 10
 
 SINGLE = "SINGLE"
 DUAL = "DUAL"
 NO_DESIGN = "NO_DESIGN"
-#: Routed to an adaptor design: the target does not clear the persistent
-#: ceiling alone and has no admissible pair, but its risk is within the
-#: terminable ceiling declared for the project. The antigen is no safer; the
-#: exposure is stoppable. See specs/stage4a-architecture-routing.md.
+
+
 ADAPTOR = "ADAPTOR"
 UNRESOLVED = "UNRESOLVED"
 
 
-# --------------------------------------------------------------------------
-# combined risk
-# --------------------------------------------------------------------------
-
-
 @dataclass
 class PairRisk:
-    combined: float | None            # the gate: min per organ, unresolved filled
-    optimistic: float | None          # unresolved organs contribute nothing
-    independence: float | None        # score_A x score_B, the lower bound
-    #: Unresolved organs charged at full criticality rather than at the measured
-    #: member's score. Not the gate, and not a candidate for it: it is the
-    #: question "would this pair still clear if the unmeasured antigen turned
-    #: out to saturate the organ", which is what "clearance depends on an
-    #: unresolved organ" means when written as a number.
+    combined: float | None
+    optimistic: float | None
+    independence: float | None
+
     pessimistic: float | None
     organ: str | None
     unresolved_organs: list[str] = field(default_factory=list)
 
     @property
     def risk_unresolved(self) -> bool:
+        """Whether any organ was measured for only one member."""
         return bool(self.unresolved_organs)
 
 
 def pair_risk(
     model: RiskModel, a: dict[str, float], b: dict[str, float]
 ) -> PairRisk:
-    """Minimum per organ, then maximum across organs.
-
-    Minimum because an AND gate only fires where both antigens are present, so
-    the organ's risk is bounded by whichever is scarcer there. Taking the
-    maximum would reduce the pair to its more dangerous member and ignore the
-    architecture entirely.
-
-    The minimum assumes perfect overlap within the organ, which is maximal
-    co-expression rather than minimal. That is pessimistic for safety and
-    optimistic for coverage, and the two coincide, which is what makes it the
-    right thing to gate on. It is a bound: neither source carries a joint
-    distribution over cells, so no measurement of within-organ co-expression
-    exists to be had.
-
-    Organs measured for neither member are outside both mappings and contribute
-    to nothing. The ranking stage already tolerates organs nobody measured, and
-    filling them here would break the identity that pairing a target with itself
-    reproduces its own risk.
-    """
+    """Minimum per organ, then maximum across organs."""
     conservative: dict[str, float] = {}
     optimistic: dict[str, float] = {}
     independence: dict[str, float] = {}
@@ -126,9 +72,7 @@ def pair_risk(
             independence[organ] = sa * sb
             pessimistic[organ] = min(sa, sb)
             continue
-        # One member measured here and the other not. The pair's whole claim is
-        # an absence, so an unobserved absence cannot be credited to it: the
-        # missing member is assumed present wherever nobody looked.
+
         unresolved.append(organ)
         known = sa if sa is not None else sb
         conservative[organ] = known
@@ -139,10 +83,7 @@ def pair_risk(
     opt, _ = stage3.worst_organ(model, optimistic)
     ind, _ = stage3.worst_organ(model, independence)
     pess, _ = stage3.worst_organ(model, pessimistic)
-    # Rounded to the precision the ranking stage stores its own risk at, so the
-    # two are directly comparable. Comparing a full precision pair risk against
-    # a rounded single risk reports a disagreement at the fifth decimal that is
-    # arithmetic rather than substance.
+
     return PairRisk(
         _round(combined),
         _round(opt),
@@ -154,12 +95,8 @@ def pair_risk(
 
 
 def _round(value: float | None) -> float | None:
+    """Round to the precision risk is stored at, passing None through."""
     return None if value is None else round(value, 4)
-
-
-# --------------------------------------------------------------------------
-# co-expression
-# --------------------------------------------------------------------------
 
 
 @dataclass
@@ -177,36 +114,19 @@ class Coverage:
     patients_evaluable: int = 0
     reason: str = ""
 
-    #: Genomic span context. `f_ab` tracks how long the two genes are more
-    #: strongly than how much of them is expressed (§6.5b), so the raw fraction
-    #: cannot be read on its own. `span_percentile` is where this pair's `f_ab`
-    #: falls among measured pairs of similar span: 0.50 means typical for genes
-    #: this long, which is a different statement from the fraction itself.
-    #: Both are reported and neither gates anything.
     span_geomean_kb: float | None = None
     span_percentile: float | None = None
 
     @property
     def patient_fraction(self) -> float:
+        """The share of evaluable patients reaching the coverage floor."""
         if not self.patients_evaluable:
             return 0.0
         return self.patients_at_floor / self.patients_evaluable
 
-    # -- what each architecture would reach --------------------------------
-    #
-    # Named quantities rather than things a reader derives from two columns.
-    # The AND gate's coverage is the intersection; a single target is its own
-    # marginal; an OR gate is the union. The differences between those three are
-    # the price of the safety the AND gate buys, and they belong in the output.
-
     @property
     def escape(self) -> float | None:
-        """Malignant cells the AND gate does not engage.
-
-        A floor, not an estimate. This assay drops transcripts, so the measured
-        intersection understates the true one and this number overstates the
-        true escape population.
-        """
+        """Malignant cells the AND gate does not engage."""
         return None if self.f_ab is None else 1.0 - self.f_ab
 
     @property
@@ -218,6 +138,7 @@ class Coverage:
 
     @property
     def best_single(self) -> float | None:
+        """The better of the two single-antigen coverages."""
         return None if self.f_ab is None else max(self.f_a, self.f_b)
 
     @property
@@ -229,13 +150,7 @@ class Coverage:
 
 
 def intersection_matrix(positive: np.ndarray) -> np.ndarray:
-    """Pairwise double-positive counts for every gene pair at once.
-
-    `positive` is cells x genes. The product of its transpose with itself gives
-    every intersection in one pass; the diagonal is the marginal count. Exact in
-    float32 because the cell count is far below the point where it stops
-    counting integers exactly.
-    """
+    """Pairwise double-positive counts for every gene pair at once."""
     m = positive.astype(np.float32)
     return (m.T @ m).astype(np.int64)
 
@@ -248,10 +163,8 @@ def coverage_from_counts(
     patients_at_floor: int,
     patients_evaluable: int,
 ) -> Coverage:
+    """Build the coverage figures from the per-cell and per-patient counts."""
     if n_a < MIN_DETECTED_CELLS or n_b < MIN_DETECTED_CELLS:
-        # This assay drops transcripts that bulk measurement finds abundantly
-        # present, so silence here is the assay reporting its own capture
-        # failure. Unmeasured, never zero, and never a rejection.
         return Coverage(measured=False, reason="below detection")
 
     f_a, f_b = n_a / n_cells, n_b / n_cells
@@ -262,8 +175,6 @@ def coverage_from_counts(
         f_a=f_a,
         f_b=f_b,
         f_ab=f_ab,
-        # Named for what survives: P(B|A) is the share of A's own positive cells
-        # that also carry B, so it is A's coverage that it describes.
         p_a_given_b=n_ab / n_b,
         p_b_given_a=n_ab / n_a,
         sacrificed_a=1.0 - n_ab / n_a,
@@ -272,11 +183,6 @@ def coverage_from_counts(
         patients_at_floor=patients_at_floor,
         patients_evaluable=patients_evaluable,
     )
-
-
-# --------------------------------------------------------------------------
-# pairs
-# --------------------------------------------------------------------------
 
 
 @dataclass
@@ -303,14 +209,7 @@ class Pair:
 
     @property
     def confidence(self) -> float:
-        """Third number, never combined with the other two.
-
-        Bounded by the weaker member by construction: a pair cannot be better
-        evidenced than the least evidenced antigen in it. The two discounts are
-        the things pairing adds to the question — how much of the organ union
-        was resolved for both members, and whether co-expression was measurable
-        at all.
-        """
+        """Third number, never combined with the other two."""
         base = min(self.confidence_a, self.confidence_b)
         resolved = (
             self.organs_resolved / self.organs_total if self.organs_total else 0.0
@@ -325,24 +224,21 @@ class Pair:
 
     @property
     def delta_a(self) -> float | None:
+        """How much risk the pairing removes from the first member."""
         if self.risk.combined is None:
             return None
         return self.risk_a - self.risk.combined
 
     @property
     def delta_b(self) -> float | None:
+        """How much risk the pairing removes from the second member."""
         if self.risk.combined is None:
             return None
         return self.risk_b - self.risk.combined
 
     @property
     def rescued(self) -> list[str]:
-        """A condition, not a statistic.
-
-        A member is rescued only when its own risk is above the ceiling and the
-        pair's is not. A large movement that does not cross buys nothing and is
-        not a rescue; the delta still reports how far it got.
-        """
+        """A condition, not a statistic."""
         if not self.cleared:
             return []
         out = []
@@ -354,6 +250,7 @@ class Pair:
 
     @property
     def coverage_ok(self) -> bool:
+        """Whether measured coverage clears both the pool and patient floors."""
         c = self.coverage
         return (
             c.measured
@@ -363,33 +260,12 @@ class Pair:
 
     @property
     def admissible(self) -> bool:
-        """Risk-gated and measurable. Coverage does not gate.
-
-        `f_ab` is confounded with genomic span: over the pool its rank
-        correlation with span is +0.68 against +0.20 with bulk expression, the
-        confound reaches the joint quantity (+0.63 for `f_ab` itself against
-        +0.08 for expression), and it survives stratification by expression. A
-        threshold on it therefore admits and rejects partners substantially on
-        how long their genes are.
-
-        `coverage.measured` is still required, and is a different question: it
-        asks whether the co-expression was observable at all, not whether it
-        cleared a number. An unmeasured pair cannot be recommended.
-
-        What this gives up is stated rather than hidden: nothing now stops a pair
-        with negligible overlap being recommended, so `f_ab` and its span
-        percentile are reported per pair and a reader has to look at them.
-        """
+        """Risk-gated and measurable. Coverage does not gate."""
         return self.cleared and self.coverage.measured
 
 
 def build_pool(rows: list[Ranked], size: int = POOL_SIZE) -> list[Ranked]:
-    """Top of the tumour-side ranking, risk ignored entirely.
-
-    One entry per symbol: several symbols carry more than one accession, and two
-    pool members naming the same gene would pair with each other and report a
-    perfect intersection that means nothing.
-    """
+    """Top of the tumour-side ranking, risk ignored entirely."""
     scored = [r for r in rows if r.composite is not None and r.gene]
     scored.sort(key=lambda r: (-r.composite, r.gene, r.accession))
     seen: set[str] = set()
@@ -415,9 +291,6 @@ def evaluate(
     """Every pair in the pool. No pair is excluded from computation."""
     missing_risk = [r.gene for r in pool if r.risk is None]
     if missing_risk:
-        # The pool ignores the *value* of risk, not whether it exists. A member
-        # with no risk at all would make every pair containing it unresolvable,
-        # and silently so.
         raise ValueError(
             "pool members carry no normal tissue risk: " + ", ".join(missing_risk)
         )
@@ -436,10 +309,6 @@ def evaluate(
     n_cells = positive.shape[0]
     inter = intersection_matrix(positive)
 
-    # Per patient, accumulated as a count of patients at or above the floor for
-    # each pair. A pair double-positive in half the patients and absent in the
-    # rest pools identically to one that is uniform, and those are different
-    # products.
     at_floor = np.zeros_like(inter)
     labels, counts = np.unique(cells.patient, return_counts=True)
     evaluable = [l for l, c in zip(labels, counts) if c >= MIN_MALIGNANT_CELLS]
@@ -495,11 +364,6 @@ def evaluate(
     return out
 
 
-# --------------------------------------------------------------------------
-# the decision
-# --------------------------------------------------------------------------
-
-
 @dataclass
 class Decision:
     gene: str
@@ -508,55 +372,23 @@ class Decision:
     pair: Pair | None = None
     failed_on: dict[str, int] = field(default_factory=dict)
 
-    #: Carried so the decision can be read without the pool beside it. A symbol
-    #: is not an identity here — several symbols in this proteome carry more
-    #: than one accession, and `build_pool` keeps exactly one of them. A
-    #: consumer re-deriving the accession from the symbol would sometimes pick
-    #: the other one and would never be told.
     accession: str = ""
     partner_accession: str | None = None
-    #: Position in the pool as Stage 4 ordered it, so the order survives the
-    #: round trip and can be checked rather than trusted.
+
     pool_index: int = -1
 
-    #: What Stage 4a routed this target to, and why. Carried on every decision
-    #: including the ones that route nowhere: a target that would have gone to
-    #: an unbuilt architecture is a different finding from one that goes
-    #: nowhere at all, and the reason is what distinguishes them.
     architecture: str = ""
     route_reason: str = ""
     route_ceiling: float | None = None
     route_exposure: str | None = None
 
 
-#: Span buckets for the percentile. Quintiles: enough to separate a 7 kb gene
-#: from a 1.1 Mb one without slicing the pool so finely that a bucket holds too
-#: few pairs to rank within.
 SPAN_BUCKETS = 5
 
-#: A partner must carry this much of the antigen in the tumour itself. Applied to
-#: the partner only, and the asymmetry is the point: a target earns its place
-#: through the tumour-side composite, which already scores expression and
-#: prevalence, while a partner is chosen purely on risk and would otherwise be
-#: rewarded for being absent. An AND gate fires only where both antigens are
-#: present, so a partner absent from the tumour contributes nothing to killing it
-#: while contributing everything to the pair looking safe.
-#:
-#: Measured on bulk tumour transcript level, which is the axis that is NOT
-#: confounded with genomic span — the per-cell measure is (§6.5b), and using it
-#: here would reintroduce the artefact this exists to work around.
-#:
-#: 5.0 rather than 3.0, and the reason is not margin. The concentration this
-#: addresses came from one protein sitting far below every other candidate:
-#: 0.0277 against 0.2272 for the next lowest. At a 3 TPM threshold the lowest
-#: eligible partner still leads the next by 0.0489. At 5 TPM the leaders cluster
-#: within 0.0036 of each other, so no single gene can win for every target. The
-#: threshold sits at roughly the pool's 8th percentile and retains 182 of 200; it
-#: is not fitted to exclude two named genes.
+
 PARTNER_MIN_TUMOUR_TPM = 5.0
 
-#: Names what admits and orders a partner, so a change to either shows up in the
-#: configuration hash rather than being invisible to it.
+
 SELECTION_RULE = (
     "risk-cleared-and-measured;partner_min_tumour_tpm;"
     "order:combined_risk,partner_name;v3"
@@ -564,15 +396,7 @@ SELECTION_RULE = (
 
 
 def annotate_span_context(pairs: list[Pair], spans: dict[str, int]) -> int:
-    """Attach each measured pair's span and its within-span percentile.
-
-    Reporting only. The percentile answers "is this overlap high for genes this
-    long", which is the question the raw fraction cannot answer while detection
-    tracks span. A pair whose members have no span on record is left with both
-    fields None rather than assigned a middle value.
-
-    Returns the number of pairs annotated.
-    """
+    """Attach each measured pair's span and its within-span percentile."""
     import numpy as np
 
     scored = []
@@ -601,8 +425,7 @@ def annotate_span_context(pairs: list[Pair], spans: dict[str, int]) -> int:
         values = fab[mask]
         order = values.argsort(kind="mergesort")
         ranks = np.empty(len(values), dtype=float)
-        # Average rank across ties, so a block of identical f_AB values does not
-        # get an ordering the data does not support.
+
         i = 0
         srt = values[order]
         while i < len(srt):
@@ -623,16 +446,7 @@ def decide(
     tumour_tpm: dict[str, float] | None = None,
     tolerances: "routing.Tolerances | None" = None,
 ) -> list[Decision]:
-    """Single, dual, unresolved or no design, per pool member.
-
-    `tumour_tpm` supplies bulk tumour transcript level per gene and gates partner
-    eligibility at `PARTNER_MIN_TUMOUR_TPM`. A gene with no measurement is not
-    eligible as a partner: absence of evidence that the partner is on the tumour
-    is exactly the case the threshold exists for, and treating it as a pass would
-    put the missing-is-a-third-state rule the wrong way round. Passing None
-    disables the filter entirely, which is for measuring what it does, not for
-    running without it.
-    """
+    """Single, dual, unresolved or no design, per pool member."""
     by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
     for p in pairs:
         by_gene[p.gene_a].append(p)
@@ -641,14 +455,11 @@ def decide(
     cleared = {r.gene: r.cleared for r in pool}
     accession_of = {r.gene: r.accession for r in pool}
     risk_of = {r.gene: (r.risk, r.risk_organ) for r in pool}
-    # Absent tolerances the stage behaves exactly as it did before routing
-    # existed. Deliberately NOT a fabricated default: `Ranked` carries no
-    # ceiling, so inventing one here would have set it to 0.0 and quietly
-    # routed nothing to CONVENTIONAL. A caller that has not been updated keeps
-    # its old answers and every decision reports NOT_CONFIGURED.
+
     tol = tolerances
 
     def eligible_partner(gene: str) -> bool:
+        """Whether the gene is expressed enough in tumour to serve as a partner."""
         if tumour_tpm is None:
             return True
         value = tumour_tpm.get(gene)
@@ -661,18 +472,9 @@ def decide(
             p for p in mine
             if p.admissible and eligible_partner(_other(p, r.gene))
         ]
-        # Ordered by how far under the ceiling the pair sits, then by partner
-        # name so the choice is deterministic. This used to order by co-expression
-        # — how much of the tumour the gate still kills — which is the better
-        # question and the one `f_ab` cannot currently answer: it is confounded
-        # with genomic span (see `admissible`). Ordering on the risk margin is a
-        # weaker criterion honestly measured, rather than a stronger one measured
-        # on an artefact.
+
         admissible.sort(key=lambda p: (p.risk.combined, _other(p, r.gene)))
 
-        # Stage 4a. The profile picks the architecture; the ceiling follows
-        # from it. `best_pair_risk` is the combined risk of the best admissible
-        # partner, which is what an AND gate would actually carry.
         risk, organ = risk_of.get(r.gene, (None, None))
         best_pair_risk = admissible[0].risk.combined if admissible else None
         if tol is None:
@@ -729,10 +531,6 @@ def decide(
             )
             continue
 
-        # Routed to an adaptor. Reached only when the target cleared neither
-        # alone nor paired, so this is the row that recovers targets the old
-        # blind gate discarded. The risk number is unchanged; only the ceiling
-        # it was compared against is different.
         if decided is not None and decided.architecture == routing.ADAPTOR:
             out.append(
                 Decision(
@@ -746,12 +544,6 @@ def decide(
             )
             continue
 
-        # Which wall each target hit, and the coverage row is now what it says.
-        # It counts pairs that cleared risk and were measured but fell under the
-        # reported floor — which no longer excludes anything, so a non-zero count
-        # here is information about the pair, not a reason it was rejected. Left
-        # separate from `unmeasured` rather than folded into it: a pair nobody
-        # could measure and a pair measured and found thin are different facts.
         failed = {
             "risk": sum(1 for p in mine if not p.cleared),
             "coverage_below_floor": sum(
@@ -759,22 +551,12 @@ def decide(
                 if p.cleared and p.coverage.measured and not p.coverage_ok
             ),
             "unmeasured": sum(1 for p in mine if not p.coverage.measured),
-            # Pairs that cleared everything and were rejected only because the
-            # partner is not expressed enough in the tumour. Without this row a
-            # target excluded entirely on partner eligibility is persisted with
-            # every counter at zero — a rejection with no stated reason.
             "partner_ineligible": sum(
                 1 for p in mine
                 if p.admissible and not eligible_partner(_other(p, r.gene))
             ),
         }
-        # `coverage.measured`, not `coverage_ok`: the coverage floor no longer
-        # selects (§6.5b), and leaving it here would decide NO_DESIGN against
-        # UNRESOLVED on a threshold the stage has stopped applying anywhere else.
-        # Eligibility applies here as well. A target whose only salvageable
-        # pairs run through partners the tumour-expression gate rejects is not
-        # salvageable: resolving the organ would not make that partner usable,
-        # so reporting UNRESOLVED would promise a design that cannot follow.
+
         salvageable = [
             p
             for p in mine
@@ -798,12 +580,8 @@ def decide(
 
 
 def _other(pair: Pair, gene: str) -> str:
+    """The partner on the far side of a pair."""
     return pair.gene_b if pair.gene_a == gene else pair.gene_a
-
-
-# --------------------------------------------------------------------------
-# reproducibility
-# --------------------------------------------------------------------------
 
 
 def configuration_hash(
@@ -811,31 +589,18 @@ def configuration_hash(
     pool_genes: list[str],
     tolerances: "routing.Tolerances | None" = None,
 ) -> str:
-    """Covers the stage 3 hash as well as this stage's own parameters.
-
-    A pairing result is not interpretable without knowing which ranking produced
-    its inputs, so the two travel together.
-    """
+    """Covers the stage 3 hash as well as this stage's own parameters."""
     payload = {
         "stage3": stage3_hash,
-        # The declared ceilings decide which architecture each target routes
-        # to, so a run under different tolerances is a different experiment and
-        # must not hash as the same one.
         "routing": (routing.configuration_payload(tolerances)
                     if tolerances is not None else None),
         "pool_size": POOL_SIZE,
         "pool": pool_genes,
         "detection_counts": DETECTION_COUNTS,
-        # Retained because both still bound the reported coverage numbers, even
-        # though neither selects any more.
         "coverage_floor": COVERAGE_FLOOR,
         "patient_fraction_floor": PATIENT_FRACTION_FLOOR,
         "min_malignant_cells": MIN_MALIGNANT_CELLS,
         "min_detected_cells": MIN_DETECTED_CELLS,
-        # What admits and orders a partner. Without this a run from before
-        # coverage was removed from selection hashes identically to one after,
-        # and `read_decisions(expect_stage4_hash=...)` would accept the old
-        # artifact as current — the one thing carrying the hash is meant to stop.
         "selection_rule": SELECTION_RULE,
         "partner_min_tumour_tpm": PARTNER_MIN_TUMOUR_TPM,
         "span_buckets": SPAN_BUCKETS,
@@ -844,25 +609,14 @@ def configuration_hash(
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
-# --------------------------------------------------------------------------
-# persistence
-# --------------------------------------------------------------------------
-#
-# Until now this stage returned its decisions and printed a summary, so nothing
-# downstream could read what it decided without re-running it — and re-running
-# it re-derives numbers that are themselves under question. The artifact is
-# written under the same discipline as a source cache: payload first, manifest
-# second, both atomic, the manifest acting as the commit marker. A payload with
-# no manifest beside it is a run that died mid-write and must not be read.
-
 DECISIONS_KEY = "decisions"
 
-#: Bumped when the payload's shape changes. Without it an artifact written by an
-#: older layout reads as current and fails somewhere further away.
+
 DECISIONS_MANIFEST_VERSION = 1
 
 
 def _decision_payload(d: Decision) -> dict:
+    """One decision, flattened for storage."""
     return {
         "gene": d.gene,
         "accession": d.accession,
@@ -870,8 +624,6 @@ def _decision_payload(d: Decision) -> dict:
         "partner": d.partner,
         "partner_accession": d.partner_accession,
         "pool_index": d.pool_index,
-        # Present only where the outcome is terminal. An absent mapping and a
-        # mapping of zeros mean different things and are kept apart.
         "failed_on": d.failed_on or None,
         "architecture": d.architecture or None,
         "route_reason": d.route_reason or None,
@@ -892,33 +644,19 @@ def write_decisions(
     criteria: dict[str, bool],
     root=None,
 ):
-    """Persist the decisions, with the hashes and criteria that produced them.
-
-    The criteria mapping is written into the manifest rather than left to the
-    reader's memory. These decisions are currently produced by a run that stops
-    on five tripped criteria, and an artifact that did not say so would be read
-    as a result. A consumer is expected to refuse the payload when anything is
-    tripped, which is why the outcome is stored beside the data and not in a log.
-    """
+    """Persist the decisions, with the hashes and criteria that produced them."""
     from car_pipeline.data.source import CACHE_ROOT, _write_json_atomic
 
     base = (root or CACHE_ROOT) / "stage4"
     payload_path = base / (DECISIONS_KEY + ".json")
     manifest_path = base / (DECISIONS_KEY + ".manifest.json")
 
-    # Validated before anything on disk is touched. Raising after the unlink
-    # would destroy a previously valid artifact to punish a bad call, which
-    # turns a caller's mistake into data loss.
     if not criteria:
         raise ValueError(
             "criteria outcomes are required: an artifact written without them "
             "would assert usable_as_result with nothing behind it"
         )
 
-    # A stale manifest must never bless a new payload. Removed first, so a crash
-    # between the two writes leaves an unblessed payload rather than a blessed
-    # mismatch, and the reader below refuses the first and cannot detect the
-    # second.
     if manifest_path.exists():
         manifest_path.unlink()
 
@@ -955,18 +693,7 @@ def read_decisions(
     expect_stage3_hash: str | None = None,
     expect_stage4_hash: str | None = None,
 ) -> tuple[list[dict], dict]:
-    """Read the decisions, refusing a payload no manifest blesses.
-
-    Returns the rows *and* the manifest, because the rows alone do not say
-    whether they may be read as a result and a caller handed only the rows
-    cannot find out. Today they may not: the writing run stops on five tripped
-    criteria. A caller that genuinely wants the decisions anyway — to inspect
-    why the run stopped, which is a legitimate thing to want — has to say so.
-
-    The digest is re-derived rather than trusted. A truncated or hand-edited
-    payload that still parses as JSON is exactly the failure this guards, and it
-    is silent without the check.
-    """
+    """Read the decisions, refusing a payload no manifest blesses."""
     from car_pipeline.data.source import CACHE_ROOT, CacheError
 
     base = (root or CACHE_ROOT) / "stage4"
@@ -996,10 +723,7 @@ def read_decisions(
             + str(version) + "; this reader expects "
             + str(DECISIONS_MANIFEST_VERSION)
         )
-    # The hashes are recorded so a consumer can tell whether these decisions came
-    # from the configuration it is holding. Recording them and never checking
-    # them would let an artifact from a different ranking be read as current,
-    # which is precisely what carrying the hashes was supposed to prevent.
+
     for label, expected, actual in (
         ("stage3_hash", expect_stage3_hash, manifest.get("stage3_hash")),
         ("stage4_hash", expect_stage4_hash, manifest.get("stage4_hash")),

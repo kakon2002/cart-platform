@@ -1,12 +1,4 @@
-"""Stage 6 — construct assembly.
-
-Implements `specs/stage6-construct-assembly.md`. Mechanical by design: every
-constraint is fixed upstream and nothing here re-derives one.
-
-The DNA is a **map, not an ordering sequence**. It is reverse-translated under one
-fixed codon per amino acid so that domain boundaries are exact and the round trip
-is checkable. It is not codon-optimised and must not be read as though it were.
-"""
+"""Stage 6 — construct assembly."""
 
 from __future__ import annotations
 
@@ -25,13 +17,11 @@ BUILDABLE = "BUILDABLE"
 BUDGET_EXCEEDED = "BUDGET_EXCEEDED"
 NO_CONSTRUCT = "NO_CONSTRUCT"
 
-#: Stage 1's payload budget, in bases. Carried, not recomputed.
+
 BUDGET_BP = 3500
 STOP = "TAA"
 
-#: One codon per amino acid, fixed so the map is deterministic and the round trip
-#: is a real check. Human-frequent choices, but frequency is not the point:
-#: reproducibility is.
+
 CODON = {
     "A": "GCC", "R": "CGG", "N": "AAC", "D": "GAC", "C": "TGC", "Q": "CAG",
     "E": "GAG", "G": "GGC", "H": "CAC", "I": "ATC", "L": "CTG", "K": "AAG",
@@ -41,22 +31,11 @@ CODON = {
 REVERSE_CODON = {v: k for k, v in CODON.items()}
 
 
-#: Outcomes this stage will build for. A construct assembled for a target the
-#: pairing stage rejected would be a design presented for something upstream says
-#: is not designable, and a reader cannot be expected to carry that caveat.
-#: ADAPTOR joins these: it is a real routed architecture that
-#: assembles, even though its binder sequence is not supplied.
 BUILDABLE_OUTCOMES = ("SINGLE", "DUAL", "ADAPTOR")
 
 
 def assemblable(sequence: str) -> set[str]:
-    """Residues in this sequence that the codon table cannot encode.
-
-    Returned rather than silently mapped. One retrieved therapeutic carries
-    lowercase residues, and `CODON.get(residue, "NNN")` turned those into an
-    ambiguous codon that translated back as a mismatch — a construct whose DNA
-    did not encode its own protein, produced without an error.
-    """
+    """Residues in this sequence that the codon table cannot encode."""
     return set(sequence) - set(CODON)
 
 
@@ -80,12 +59,13 @@ class Segment:
     start_residue: int | None
     end_residue: int | None
     aa_start: int
-    aa_end: int          # half-open
+    aa_end: int
     bp_start: int
-    bp_end: int          # half-open
+    bp_end: int
 
     @property
     def residues(self) -> int:
+        """The segment's length in residues."""
         return self.aa_end - self.aa_start
 
 
@@ -104,31 +84,31 @@ class Construct:
     dna: str = ""
     segments: list[Segment] = field(default_factory=list)
     reason: str = ""
-    #: False when a part in this construct declares a size but no sequence --
-    #: the adaptor receptor's anti-tag binder is the only such part. The layout
-    #: and the length are real; the residues are not supplied and are not
-    #: invented, so `amino_acid_sequence` and `dna` are left empty rather than
-    #: filled with something that would read as a design.
+
     binder_supplied: bool = True
-    #: The construct's length when there is no DNA to measure it from.
+
     declared_bp: int | None = None
 
     @property
     def total_bp(self) -> int:
+        """The construct's length, falling back to the declared size."""
         if not self.dna and self.declared_bp is not None:
             return self.declared_bp
         return len(self.dna)
 
     @property
     def headroom_bp(self) -> int:
+        """What is left of the payload budget."""
         return BUDGET_BP - self.total_bp
 
     @property
     def has_switch(self) -> bool:
+        """Whether a safety switch is among the segments."""
         return any("caspase" in s.name.lower() for s in self.segments)
 
 
 def _scfv(vh: str, vl: str, linker: Part) -> list[tuple[str, Part]]:
+    """The variable regions joined by the linker, in order."""
     return [
         ("VH", Part("binder VH", "stage5", vh)),
         ("linker", linker),
@@ -140,9 +120,7 @@ def _assemble(pieces: list[tuple[str, Part]]) -> tuple[str, str, list[Segment]]:
     """Concatenate, reverse-translate, and record every boundary."""
     aa_parts, segments = [], []
     aa_pos = 0
-    # A part may declare a length without residues. Coordinates still advance by
-    # its declared size so the map and the budget are right; the protein is
-    # withheld below rather than padded with filler.
+
     complete = all(part.supplied for _l, part in pieces)
     for _label, part in pieces:
         seq = part.sequence
@@ -163,9 +141,6 @@ def _assemble(pieces: list[tuple[str, Part]]) -> tuple[str, str, list[Segment]]:
         aa_parts.append(seq)
         aa_pos += part.residues
     if not complete:
-        # Length and layout are real; the residues are not supplied. Returning
-        # an empty protein rather than a padded one means nothing downstream can
-        # mistake this for a sequence that was designed.
         return "", "", segments
     protein = "".join(aa_parts)
     unknown = assemblable(protein)
@@ -192,8 +167,7 @@ def build(
     adaptor_binder = SYNTHETIC_PARTS["adaptor_binder"]
 
     def best_binder(gene: str):
-        """The shortest sequence-route binder: the smallest that fits is the
-        most favourable reading of the budget, and it is labelled as a bound."""
+        """The shortest sequence-route binder: the smallest that fits is the"""
         record = binders.get(gene)
         if record is None:
             return None
@@ -220,10 +194,6 @@ def build(
         partner_gene = row.get("partner")
         partner = best_binder(partner_gene) if partner_gene else None
 
-        # An adaptor receptor binds the tag, not the antigen, so it needs no
-        # target binder and is built before the binder guard below. Its
-        # antigen specificity lives in a separately manufactured adaptor that
-        # is not in this vector -- which is the whole reason it fits.
         if row["outcome"] == ADAPTOR:
             pieces = (
                 [("leader", parts["leader"]),
@@ -254,9 +224,6 @@ def build(
                 gene=gene, accession=row["accession"], pool_index=row["pool_index"],
                 outcome=row["outcome"], partner=partner_gene,
                 verdict=NO_CONSTRUCT,
-                # Assembly needs a sequence, so this reads the sequence route
-                # only. A target with a structure-route binder and no sequence
-                # lands here, and saying "no binder" would contradict Stage 5.
                 reason="no binder with a usable variable-region sequence "
                        "(the structure route carries no sequence to assemble)",
             ))
@@ -286,8 +253,6 @@ def build(
             continue
 
         if dual:
-            # Split signal: activation on one receptor, costimulation on the
-            # other, so neither antigen alone gives a complete signal.
             pieces = (
                 [("leader", parts["leader"])]
                 + _scfv(target.heavy_sequence, target.light_sequence, linker)
@@ -318,9 +283,6 @@ def build(
             verdict=BUILDABLE if len(dna) <= BUDGET_BP else BUDGET_EXCEEDED,
             architecture=architecture,
             binder_name=target.name,
-            # Only for a dual. Stage 4 fills `partner` on the SINGLE branch too,
-            # so labelling a single-arm construct from it names a binder the
-            # sequence does not contain.
             partner_binder_name=partner.name if (dual and partner) else "",
             amino_acid_sequence=protein, dna=dna, segments=segments,
         )
@@ -334,12 +296,7 @@ def build(
 
 
 def configuration_hash(stage5_hash: str, genes: list[str]) -> str:
-    """Covers Stage 5's configuration, not Stage 4's.
-
-    Passing the upstream-of-upstream hash here would leave a Stage 5 change
-    invisible to this stage's identity, which is the whole reason the hash is
-    carried.
-    """
+    """Covers Stage 5's configuration, not Stage 4's."""
     payload = {
         "stage5": stage5_hash,
         "genes": genes,

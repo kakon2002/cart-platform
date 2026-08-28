@@ -1,20 +1,8 @@
-"""Surface filter check against the two validation sets.
-
-Twenty-eight proteins with clinical or trial precedent must survive the filter.
-Twelve deliberately chosen negatives must not. The negatives are split across
-three different reasons for rejection, and the split is asserted: if every
-negative failed on the anchor rule alone, the other two gates could be broken and
-nothing here would notice.
-"""
+"""Surface filter check against the two validation sets."""
 
 from car_pipeline.data.uniprot import UniProtSource, summarise
 
-# These figures are now measured against the pinned proteome release rather than
-# reconstructed, so they are reproducible and a difference means the filter or
-# the data moved. The tolerance is kept because the pin is enforced on the
-# response rather than on the request: a release bump is caught by the fetch,
-# but nothing here should fail on the last digit of a count. The validation sets
-# below, which are exact, remain the real test.
+
 COUNT_TOLERANCE_PCT = 3.0
 
 KNOWN_TARGETS = [
@@ -25,33 +13,20 @@ KNOWN_TARGETS = [
 ]
 
 NEGATIVE_CONTROLS = [
-    # nuclear and cytoskeletal
     "TP53", "ACTB", "GAPDH", "TUBB", "LMNA",
-    # membrane, but of internal compartments
     "CANX", "CALR", "GOLGA2", "SEC61A1", "RPN1",
-    # anchored in an organelle membrane, and admitted for a while because the
-    # phrase "cell membrane" or "cell surface" appeared in a free-text note
-    # rather than in a location statement. See NOTE_ONLY_REJECTS.
     "GOLM1", "MTLN",
 ]
 
-# Rejected because the topology gate found no outward face, despite being
-# anchored in a membrane.
+
 TOPOLOGY_REJECTS = ["CANX", "SEC61A1", "RPN1"]
 
-# Rejected because the localisation gate now reads location statements only.
-# Both of these carry an organelle location and a note that happens to contain a
-# plasma-membrane phrase: one describes transient trafficking ("Cycles via the
-# cell surface and endosomes upon lumenal pH disruption"), the other describes
-# lipid binding ("Preferentially binds to cardiolipin relative to other common
-# cell membrane lipids"). Neither is a statement about where the protein rests.
-# Asserted by name, in the same shape as the CALR check below, because a
-# regression here is silent: the count would move by fourteen and nothing else
-# would look wrong.
+
 NOTE_ONLY_REJECTS = ["GOLM1", "MTLN"]
 
 
 def main() -> int:
+    """Run the surface-filter criteria."""
     records = UniProtSource().load()
     by_gene = {}
     for rec in records:
@@ -60,7 +35,6 @@ def main() -> int:
 
     stats = summarise(records)
 
-    # What the two gates decide. These are gated on.
     decisions = {
         "entries": 20431,
         "surface": 3466,
@@ -68,10 +42,7 @@ def main() -> int:
         "multi_pass": 1884,
         "gpi_anchored": 136,
     }
-    # How the withheld set is subdivided for reporting. The boundary between
-    # these two rests on a compartment vocabulary that had to be inferred rather
-    # than read, and no protein's fate depends on which side it lands. Reported,
-    # not gated.
+
     subdivision = {
         "internal_anchored": 1362,
         "compartment_unresolved": 534,
@@ -137,8 +108,7 @@ def main() -> int:
     print(f"  {rejected}/{len(NEGATIVE_CONTROLS)} rejected   expected 12")
 
     print("\nrejection reasons")
-    # `not outward` alone is now satisfied by the note-only state as well, so the
-    # topology check has to exclude it or it stops isolating the gate it names.
+
     on_topology = [
         g
         for g in TOPOLOGY_REJECTS
@@ -162,9 +132,6 @@ def main() -> int:
         f"   expected {sorted(NOTE_ONLY_REJECTS)}"
     )
 
-    # Every entry held out in the third state, by name. Fourteen is small enough
-    # to read, and a silent change in this set is exactly what a count alone
-    # would hide.
     held = sorted(r.gene for r in records if r.outward_note_only)
     print(f"\n  held out, plasma-membrane evidence only in a note ({len(held)}):")
     print(f"    {', '.join(held)}")

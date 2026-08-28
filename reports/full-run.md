@@ -2,7 +2,7 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**118/124 criteria clear across 12 stages**, 34.2 minutes.
+**118/124 criteria clear across 12 stages**, 41.3 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,14 +10,14 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 12/13 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 10/11 | **TRIPPED** | 355s |
-| 5 | Binder discovery | 7/7 | clear | 296s |
+| 4a | Architecture routing | 10/11 | **TRIPPED** | 399s |
+| 5 | Binder discovery | 7/7 | clear | 419s |
 | 6 | Construct assembly | 8/8 | clear | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 9/9 | clear | 301s |
-| MULTI | Multi-indication | 10/10 | clear | 1060s |
+| API | HTTP surface | 9/9 | clear | 452s |
+| MULTI | Multi-indication | 10/10 | clear | 1167s |
 
 ## Every criterion
 
@@ -160,7 +160,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 82b290bf017b rather than blocking
+- clear `A3` — a run returns 202 with job b3d764bff97c rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
 - clear `A5` — 200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons
 - clear `A6` — end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting

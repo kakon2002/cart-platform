@@ -27,7 +27,7 @@ pin.** A set of purely negative assertions passes completely against a dead code
 path. That is not hypothetical here - it is how a stage returned nothing for all
 200 targets while every check on it passed.
 
-478 decisions across 46 modules.
+485 decisions across 47 modules.
 
 ## Contents
 
@@ -36,7 +36,7 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 - **Sources and the cache** (134) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
 - **Stages** (167) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`
 - **The service** (36) - `pipeline.py`, `server.py`
-- **Running it** (49) - `run_all.py`, `bootstrap.py`, `make_artifact.py`
+- **Running it** (56) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
 - **The criteria** (61) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
 
 
@@ -1832,6 +1832,37 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **6. make_artifact.py:499** - The report path is an argument, not a constant, because the runner accepts --report.
 
 > *Without it:* A fixed path renders a previous run's page while printing a confident success line about the current one.
+
+
+## `strip_comments.py`
+
+**1. strip_comments.py:41** - The strip works from a token stream, not a regular expression over lines.
+
+> *Without it:* A pattern matching the comment character corrupts every string that contains one, and this repository has several: URL fragments, format strings, and the attribute-doc markers. Only the tokeniser knows which occurrence starts a comment and which sits inside a literal.
+
+**2. strip_comments.py:52** - An f-string's middle token is re-escaped before being written back, doubling every brace.
+
+> *Without it:* The tokeniser hands back the *unescaped* text, so a source doubled brace arrives single. Written out verbatim it stops being a literal brace and becomes a format field - which silently rewrote a regex fragment matching a twelve-character identifier into one matching a repetition count. Nothing about the file would have looked wrong.
+
+**3. strip_comments.py:58** - The column for that token is advanced by the re-escaped text rather than by the reported end column.
+
+> *Without it:* The tokeniser ends the token at the first brace of an escape pair, so the reported column understates what was consumed and every following token on the line looks displaced by one - inserting a space inside the literal.
+
+**4. strip_comments.py:64** - A line-break token's own text is dropped, because the row-gap arithmetic already emits one.
+
+> *Without it:* Appending both double-spaces the entire file. The tree comparison cannot catch it: blank lines never reach the parser, so the guard passes while every file silently doubles in length.
+
+**5. strip_comments.py:84** - Docstrings are shortened through the parse tree, not by matching triple quotes.
+
+> *Without it:* A docstring can contain triple quotes, and a triple-quoted string that is not the first statement is not a docstring. Only the tree tells the two apart.
+
+**6. strip_comments.py:120** - Two blank lines survive before a top-level definition and one anywhere else, and none directly under a colon or inside an open bracket.
+
+> *Without it:* Deleting a comment paragraph otherwise leaves a hole the exact size of the comment - a blank line as the first line of a block, or a gap in the middle of a literal, in places no one would write one.
+
+**7. strip_comments.py:137** - No file is written whose parsed tree changes, with docstrings normalised out of both sides first.
+
+> *Without it:* This is the only failure the tool can have, and it is silent: an edit that removes a statement rather than a comment produces a file that still parses and still imports. The guard has already refused a write twice - once for the brace escaping above, and once more before that.
 
 
 ---

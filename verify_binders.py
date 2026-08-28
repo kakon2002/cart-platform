@@ -1,10 +1,4 @@
-"""Runs the binder stage and tests it against the criteria fixed in the spec.
-
-Order is deliberate: the known-answer checks first, then the criteria, then the
-biology. A retrieval that silently returns nothing looks exactly like a target
-with no binders, and only a target whose answer is known separates the two — so
-nothing else is worth reading until those have passed.
-"""
+"""Runs the binder stage and tests it against the criteria fixed in the spec."""
 
 from __future__ import annotations
 
@@ -13,14 +7,10 @@ import sys
 from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.stages import stage4, stage5
 
-#: The five known targets for this indication, taken from the ranking stage's own
-#: list rather than restated, so the two cannot drift apart.
+
 from verify_ranking import KNOWN_TARGETS
 
-#: Pinned before the run. Every entry verified present by accession-anchored
-#: search while the specification was written; every negative verified absent.
-#: Without the negatives the check is one-sided and a stage that returned
-#: everything would pass it.
+
 EXPECTED_SEQUENCE = {
     "MSLN": {"Amatuximab", "Anetumab"},
     "CLDN18": {"Zolbetuximab"},
@@ -28,30 +18,22 @@ EXPECTED_SEQUENCE = {
     "CEACAM6": {"Tinurilimab"},
     "MUC1": {"Cantuzumab"},
 }
-#: Entries that MUST appear on the structure route. Every one verified present by
-#: accession-anchored search and confirmed antibody-containing in the curated
-#: summary. This half of the check is not optional: the first run of this stage
-#: returned zero structure candidates for all 200 targets because the two sources
-#: identify entries differently, and every structure-route check in place at the
-#: time was a negative, so all of them passed while the route was dead.
+
+
 EXPECTED_STRUCTURE = {
     "MSLN": {"4f3f", "7ued", "8cxc", "8cz8"},
     "CLDN18": {"9v32"},
 }
 
-#: Targets that must return no structure-route candidate. CEACAM6 has entries but
-#: none containing an antibody; NRG3 has no entries at all. A stage that emitted
-#: a candidate for either is not filtering.
+
 EXPECTED_NO_STRUCTURE = ["CEACAM6", "NRG3"]
 
-#: CEACAM5 has six accession-anchored entries and exactly one containing an
-#: antibody. It is the sharpest single check in the file: a stage that echoed its
-#: entry count would return six, and one that had lost the join would return
-#: none, so only the correct answer sits at one.
+
 CEACAM5_STRUCTURE_ENTRIES = 1
 
 
 def main() -> int:
+    """Run the binder-discovery criteria."""
     print("loading stage 4 decisions", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
     print(f"  {len(decisions)} decisions, stage4 hash {manifest['stage4_hash']}, "
@@ -65,7 +47,6 @@ def main() -> int:
     records = stage5.retrieve(decisions, source)
     by_gene = {r.gene: r for r in records}
 
-    # ---------------- known answers ------------------------------------
     print()
     print("=" * 72)
     print("KNOWN-ANSWER CHECKS")
@@ -122,7 +103,6 @@ def main() -> int:
               "Nothing below this line is worth reading.")
         return 1
 
-    # ---------------- criteria -----------------------------------------
     print()
     print("=" * 72)
     print("REJECTION CRITERIA")
@@ -130,18 +110,15 @@ def main() -> int:
     tripped: list[str] = []
 
     def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+        """Report one criterion and record it if it tripped."""
         print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
         if is_tripped:
             tripped.append(cid)
 
-    # B1' — the filters must subtract. A stage that echoed the entry count would
-    # return a candidate for every entry and never for none.
     partial = [r for r in records if r.entries and not r.structure]
     echoed = [r for r in records
               if r.entries and len(r.structure) == len(r.entries)]
-    # Both halves gate. A stage that returned a candidate per entry would show
-    # zero partials and every target echoing; one that had lost the join would
-    # show every target partial and none echoing. The correct answer is a mix.
+
     with_entries = [r for r in records if r.entries]
     criterion("B1",
               not partial
@@ -151,9 +128,6 @@ def main() -> int:
               f"(an inert stage would have none); {len(echoed)} of "
               f"{len([r for r in records if r.entries])} with entries echo their count")
 
-    # Recomputed rather than reading `failures`, which the early return above
-    # guarantees is empty by the time this runs — a criterion that cannot fail is
-    # the thing this project keeps deleting.
     ceacam5 = by_gene.get("CEACAM5")
     ceacam5_entries = len(ceacam5.entries) if ceacam5 else 0
     ceacam5_candidates = len({c.identifier.split(":")[0].lower()
@@ -215,7 +189,6 @@ def main() -> int:
     print("=" * 72)
     print(f"  {7 - len(tripped)}/7 criteria clear")
 
-    # ---------------- the biology ---------------------------------------
     print()
     print("=" * 72)
     print("WHAT THE LITERATURE HOLDS FOR THIS POOL")
@@ -242,10 +215,6 @@ def main() -> int:
         print(f"    {gene} ({r.accession}) — {r.verdict}, Stage 4 outcome {r.outcome}")
         print(f"      {len(r.entries)} entries, {len(r.structure)} antibody complexes")
         for c in r.sequence:
-            # Built as one string rather than a conditional expression over a
-            # concatenation: written the latter way the condition binds to the
-            # whole thing, so a therapeutic with only one variable region printed
-            # a blank line and lost its name, stage and status with it.
             size = f"  scFv {c.car_bp} bp" if c.car_bp else "  size NOT_COMPUTABLE"
             print(f"      {c.name:16s} {c.clinical_stage:12s} {c.status:14s} "
                   f"VH {len(c.heavy_sequence):3d} VL {len(c.light_sequence):3d} aa"

@@ -1,9 +1,4 @@
-"""Pancreatic ductal adenocarcinoma project definition.
-
-``target_antigen`` is deliberately absent. That null is what selects discovery
-mode, and filling it in would turn the screen into a validation of something
-already assumed.
-"""
+"""Pancreatic ductal adenocarcinoma project definition."""
 
 from car_pipeline.configs.indication import AtlasSchema, Indication, geo_url
 from car_pipeline.schemas.project import (
@@ -16,9 +11,7 @@ from car_pipeline.schemas.project import (
     TissueCriticalityOverride,
 )
 
-#: The reference atlas, described rather than assumed. Every value here was a
-#: module-level constant inside the loader until a second indication needed a
-#: different one; the loader now reads them from this object.
+
 PDAC_ATLAS = AtlasSchema(
     series="GSE202051",
     archive="GSE202051_totaldata-final-toshare.h5ad.gz",
@@ -53,15 +46,6 @@ PDAC_PROJECT = ProjectInput(
     product_type=ProductType.AUTOLOGOUS,
     car_format=CARFormat.AUTO,
     safety_tolerance=SafetyTolerance.CONSERVATIVE,
-    # A policy input, fixed before the run and pinned in
-    # specs/stage4a-architecture-routing.md §3. It is the risk this project
-    # accepts from an exposure that can be stopped — an adaptor design, where
-    # activation needs a separately dosed protein — as distinct from the 0.15 it
-    # accepts from a T cell that cannot be withdrawn.
-    #
-    # This pipeline cannot measure it. Criterion A9 therefore reports the
-    # admitted count across the whole sweep so the choice is visible, and A10
-    # trips if this value ever stops matching the one recorded in the spec.
     terminable_risk_ceiling=0.35,
     manufacturing=ManufacturingConstraints(
         vector_payload_limit_kb=4.7,
@@ -76,16 +60,11 @@ PDAC_PROJECT = ProjectInput(
 )
 
 
-#: The reference indication, as an Indication object. Everything that was a
-#: module constant inside a loader now lives here.
 PDAC = Indication(
     key="pdac",
     cancer_type="Pancreatic Ductal Adenocarcinoma",
     tcga_project="TCGA-PAAD",
     depmap_lineage="Pancreas",
-    # Four GTEx pancreas columns exist; three are cell-sorted fractions. The
-    # bulk one is the denominator, which was a judgement call recorded in
-    # stage 3 rather than an obvious choice.
     gtex_bulk_label="Pancreas",
     atlas=PDAC_ATLAS,
     tissue_overrides={"pancreas": (2, PANCREAS_RATIONALE)},

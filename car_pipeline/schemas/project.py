@@ -1,10 +1,4 @@
-"""Project definition input schema.
-
-Every model forbids unknown fields. A mistyped field name has to fail loudly:
-silently accepting ``target_antigens`` would leave a run in discovery mode while
-appearing to carry a supplied target, and nothing downstream could tell the
-difference.
-"""
+"""Project definition input schema."""
 
 from __future__ import annotations
 
@@ -67,11 +61,7 @@ class ManufacturingConstraints(BaseModel):
 
 
 class TissueCriticalityOverride(BaseModel):
-    """Relaxes or tightens the platform default criticality tier for one tissue.
-
-    The rationale is required and travels into the output header, so a reader can
-    see which safety defaults were moved and why.
-    """
+    """Relaxes or tightens the platform default criticality tier for one tissue."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -92,8 +82,7 @@ class ProjectInput(BaseModel):
     product_type: ProductType = ProductType.AUTOLOGOUS
     car_format: CARFormat = CARFormat.AUTO
     safety_tolerance: SafetyTolerance = SafetyTolerance.CONSERVATIVE
-    #: Declared per project, never derived. See DesignConstraints for why this
-    #: has no default: the platform cannot invent a clinical risk tolerance.
+
     terminable_risk_ceiling: float | None = Field(default=None, ge=0.0, le=1.0)
 
     manufacturing: ManufacturingConstraints = Field(
@@ -107,6 +96,7 @@ class ProjectInput(BaseModel):
     @field_validator("cancer_type")
     @classmethod
     def _require_cancer_type(cls, value: str) -> str:
+        """Refuse a blank cancer type and trim the rest."""
         trimmed = value.strip()
         if not trimmed:
             raise ValueError("cancer_type must not be blank")
@@ -115,10 +105,7 @@ class ProjectInput(BaseModel):
     @field_validator("target_antigen")
     @classmethod
     def _blank_antigen_is_absent(cls, value: str | None) -> str | None:
-        """An empty string from a form is an absent target, not a supplied one.
-
-        Left as-is it would count as a target and skip the entire screen.
-        """
+        """An empty string from a form is an absent target, not a supplied one."""
         if value is None:
             return None
         trimmed = value.strip()
