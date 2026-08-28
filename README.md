@@ -82,8 +82,13 @@ Python, which lacks this project's dependencies and fails on the first import.
 .venv\Scripts\python.exe run_all.py --fresh
 ```
 
-Twelve stages end to end. Every stage reports its criteria; a criterion that
-trips without a recorded decision behind it is a regression and exits non-zero.
+Twelve stages end to end, **118 of 124 criteria clear**, about 35 minutes.
+The six that trip are recorded limitations, each carrying the decision that
+accepted it; a criterion tripping *without* one is reported as a regression
+and exits non-zero.
+
+`make_artifact.py` renders the whole run as a single page from the run's own
+JSON.
 
 ### Serve it
 
