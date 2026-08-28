@@ -182,8 +182,44 @@ def _result(project_id: str) -> dict:
     return result
 
 
+def _evidence(r: dict) -> dict:
+    """The run-level evidence judgement, attached to every view.
+
+    `usability` and `unavailable` were computed and returned by the pipeline and
+    then served by nothing, so an HTTP caller received a fully-formed ranking
+    with no indication that a component was unmeasured. That is the "served with
+    a caveat" outcome the pipeline refuses -- except the caveat was not served
+    either.
+
+    Put on every collection view rather than behind its own endpoint: a caller
+    reading /targets should not have to know to ask elsewhere whether the
+    ranking beneath it is supported.
+    """
+    unavailable = r.get("unavailable") or []
+    out = {
+        "usability": r.get("usability", pipeline.USABLE),
+        "unavailable": unavailable,
+        "indication": (r.get("indication").cancer_type
+                       if r.get("indication") else None),
+    }
+    if unavailable:
+        out["degraded_note"] = (
+            f"{len(unavailable)} component(s) could not be measured for this "
+            "indication; each names the source it needed. The ranking is still "
+            "supported, but it rests on less evidence than a complete run."
+        )
+    return out
+
+
 def targets_view(project_id: str, limit: int = 50) -> dict:
     r = _result(project_id)
+    if r.get("usability") == pipeline.NOT_USABLE:
+        return {
+            "status": pipeline.NOT_USABLE,
+            **_evidence(r),
+            "targets": [],
+            "reasons": r.get("reasons", []),
+        }
     # Sorted here. stage3.rank() emits in universe order, not ranked order, and
     # an endpoint called /targets returning that would be unranked rows under a
     # ranked name. Same key the pool uses, so the two orders agree.
@@ -212,6 +248,7 @@ def targets_view(project_id: str, limit: int = 50) -> dict:
         })
     return {
         "status": "RANKED",
+        **_evidence(r),
         "universe": len(r["ranked"]),
         "scored": len(scored),
         "ceiling": r["ceiling"],
@@ -247,6 +284,7 @@ def pairs_view(project_id: str, limit: int = 50) -> dict:
         })
     return {
         "status": "PAIRED",
+        **_evidence(r),
         "evaluated": len(r["pairs"]),
         "measured": len(measured),
         "returned": len(rows),
@@ -366,6 +404,7 @@ def constructs_view(project_id: str) -> dict:
         )
     return {
         "status": status,
+        **_evidence(r),
         "counts": counts,
         "buildable": len(buildable),
         "complete": len(complete),
@@ -445,6 +484,7 @@ def result_view(project_id: str) -> dict:
             )
     return {
         "status": r["status"],
+        **_evidence(r),
         "pool_size": len(r["final"]),
         "reached_the_end": len(survivors),
         "complete": len(complete),
