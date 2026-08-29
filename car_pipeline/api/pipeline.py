@@ -168,7 +168,7 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         persistent=ceiling,
         terminable=spec.design_constraints.terminable_risk_ceiling,
     )
-    decisions_obj = stage4.decide(pool, pairs, tumour_tpm, tolerances)
+    decisions_obj = stage4.decide(pool, pairs, tumour_tpm, tolerances, per_organ=per_organ)
     decisions = stage4.decision_rows(decisions_obj)
     s4_hash = stage4.configuration_hash(
         s3_hash, [r.gene for r in pool], tolerances)

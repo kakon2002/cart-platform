@@ -382,6 +382,20 @@ class Decision:
     route_ceiling: float | None = None
     route_exposure: str | None = None
 
+    evidence_class: str = ""
+    measured_weight: float | None = None
+    components_measured: int | None = None
+    components_total: int | None = None
+    target_confidence: float | None = None
+    risk_organs_measured: int | None = None
+
+    partner_evidence_class: str | None = None
+    partner_measured_weight: float | None = None
+    pair_confidence: float | None = None
+    pair_organs_total: int | None = None
+    pair_organs_resolved: int | None = None
+    pair_coverage_measured: bool | None = None
+
 
 SPAN_BUCKETS = 5
 
@@ -445,6 +459,7 @@ def decide(
     pairs: list[Pair],
     tumour_tpm: dict[str, float] | None = None,
     tolerances: "routing.Tolerances | None" = None,
+    per_organ: dict[str, dict[str, float]] | None = None,
 ) -> list[Decision]:
     """Single, dual, unresolved or no design, per pool member."""
     by_gene: dict[str, list[Pair]] = {r.gene: [] for r in pool}
@@ -454,6 +469,7 @@ def decide(
 
     cleared = {r.gene: r.cleared for r in pool}
     accession_of = {r.gene: r.accession for r in pool}
+    ranked_of = {r.gene: r for r in pool}
     risk_of = {r.gene: (r.risk, r.risk_organ) for r in pool}
 
     tol = tolerances
@@ -474,6 +490,40 @@ def decide(
         ]
 
         admissible.sort(key=lambda p: (p.risk.combined, _other(p, r.gene)))
+
+        evidence = dict(
+            evidence_class=r.evidence_class,
+            measured_weight=r.measured_weight,
+            components_measured=sum(
+                1 for c in r.components.values() if c.measured),
+            components_total=len(r.components),
+            target_confidence=r.confidence,
+            risk_organs_measured=(
+                len(per_organ.get(r.accession, {}))
+                if per_organ is not None else None
+            ),
+        )
+
+        def pair_evidence(chosen):
+            """The same fields for the pair, empty where no pair was chosen."""
+            if chosen is None:
+                return dict(
+                    partner_evidence_class=None,
+                    partner_measured_weight=None,
+                    pair_confidence=None,
+                    pair_organs_total=None,
+                    pair_organs_resolved=None,
+                    pair_coverage_measured=None,
+                )
+            other = ranked_of.get(_other(chosen, r.gene))
+            return dict(
+                partner_evidence_class=other.evidence_class if other else None,
+                partner_measured_weight=other.measured_weight if other else None,
+                pair_confidence=chosen.confidence,
+                pair_organs_total=chosen.organs_total,
+                pair_organs_resolved=chosen.organs_resolved,
+                pair_coverage_measured=chosen.coverage.measured,
+            )
 
         risk, organ = risk_of.get(r.gene, (None, None))
         best_pair_risk = admissible[0].risk.combined if admissible else None
@@ -504,6 +554,8 @@ def decide(
                     gene=r.gene,
                     outcome=SINGLE,
                     **route_fields,
+                    **evidence,
+                    **pair_evidence(best),
                     partner=_other(best, r.gene) if best else None,
                     pair=best,
                     accession=r.accession,
@@ -522,6 +574,8 @@ def decide(
                     gene=r.gene,
                     outcome=DUAL,
                     **route_fields,
+                    **evidence,
+                    **pair_evidence(best),
                     partner=_other(best, r.gene),
                     pair=best,
                     accession=r.accession,
@@ -536,6 +590,8 @@ def decide(
                 Decision(
                     gene=r.gene,
                     outcome=ADAPTOR,
+                    **evidence,
+                    **pair_evidence(None),
                     partner=None,
                     accession=r.accession,
                     pool_index=index,
@@ -572,6 +628,8 @@ def decide(
                 outcome=UNRESOLVED if salvageable else NO_DESIGN,
                 failed_on=failed,
                 **route_fields,
+                **evidence,
+                **pair_evidence(salvageable[0] if salvageable else None),
                 accession=r.accession,
                 pool_index=index,
             )
@@ -629,6 +687,18 @@ def _decision_payload(d: Decision) -> dict:
         "route_reason": d.route_reason or None,
         "route_ceiling": d.route_ceiling,
         "route_exposure": d.route_exposure,
+        "evidence_class": d.evidence_class or None,
+        "measured_weight": d.measured_weight,
+        "components_measured": d.components_measured,
+        "components_total": d.components_total,
+        "target_confidence": d.target_confidence,
+        "risk_organs_measured": d.risk_organs_measured,
+        "partner_evidence_class": d.partner_evidence_class,
+        "partner_measured_weight": d.partner_measured_weight,
+        "pair_confidence": d.pair_confidence,
+        "pair_organs_total": d.pair_organs_total,
+        "pair_organs_resolved": d.pair_organs_resolved,
+        "pair_coverage_measured": d.pair_coverage_measured,
     }
 
 

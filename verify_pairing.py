@@ -160,7 +160,7 @@ def main() -> int:
           f"{eligible} of {len(pool)} pool members eligible "
           f"({len(pool) - len(tumour_tpm)} without a tumour column)")
 
-    decisions = stage4.decide(pool, pairs, tumour_tpm)
+    decisions = stage4.decide(pool, pairs, tumour_tpm, per_organ=per_organ)
     measurable = sum(1 for p in pairs if p.coverage.measured and p.coverage.f_ab is not None)
     print(f"  span context attached to {annotated:,} pairs of {measurable:,} measured")
 
