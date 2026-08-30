@@ -2,22 +2,22 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**119/125 criteria clear across 12 stages**, 34.9 minutes.
+**119/125 criteria clear across 12 stages**, 34.3 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Design spec | 31/31 | clear | 1s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
-| 3 | Target discovery | 12/13 | **TRIPPED** | 23s |
-| 4 | Target pairing | 10/14 | **TRIPPED** | 11s |
-| 4a | Architecture routing | 10/11 | **TRIPPED** | 366s |
-| 5 | Binder discovery | 7/7 | clear | 298s |
+| 3 | Target discovery | 12/13 | **TRIPPED** | 20s |
+| 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
+| 4a | Architecture routing | 10/11 | **TRIPPED** | 304s |
+| 5 | Binder discovery | 7/7 | clear | 293s |
 | 6 | Construct assembly | 8/8 | clear | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 10/10 | clear | 306s |
-| MULTI | Multi-indication | 10/10 | clear | 1080s |
+| API | HTTP surface | 10/10 | clear | 312s |
+| MULTI | Multi-indication | 10/10 | clear | 1113s |
 
 ## Every criterion
 
@@ -160,10 +160,10 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 21a6b0af5c61 rather than blocking
+- clear `A3` — a run returns 202 with job 7984183a912c rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
-- clear `A5` — 200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons
-- clear `A6` — end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting
+- clear `A5` — 200 BUILDABLE: 8 buildable = 8 complete + 0 awaiting a binder; 2 over budget, 1 reasons
+- clear `A6` — end state RANKED, attrition accounts for 192 + 8 of 200; 8 reached = 8 complete + 0 awaiting
 - clear `A7` — top target CEACAM5 with a 6-component breakdown
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.0785)
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
@@ -185,9 +185,9 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 ## What the platform returns for this indication
 
 ```
-    GET /constructs -> BUILDABLE_AWAITING_BINDER
-      - 8 design(s) fit the 3500 bp budget but carry no binder sequence: the adaptor receptor binds a tag, and no anti-tag binder exists in the connected sources, so its size is declared and its sequence is not invented.
-    GET /result     -> RANKED_AWAITING_BINDER
+    GET /constructs -> BUILDABLE
+      - Every surviving design routes to an adaptor architecture. That is two manufactured biologics, not one: the receptor and, separately, the tagged adaptor antibody that gives it its specificity. The second carries its own CMC package and its own regulatory path, and the payload budget the adaptor route saves is paid there instead.
+    GET /result     -> RANKED
       blocked on normal tissue risk      - 191     9 remain
       no design recommended              -   0     9 remain
       no binder retrieved                -   1     8 remain

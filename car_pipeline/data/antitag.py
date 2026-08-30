@@ -25,6 +25,33 @@ BINDER_ENTITIES = ("1", "2")
 ANTIGEN_ENTITY = "3"
 
 TAG_SYSTEM = "peptide neo-epitope, GCN4(7P-14P)"
+SPECIES = "murine"
+
+DEPOSITION_ARTIFACTS = (
+    ("MADYADA", "expression leader carried on the light-chain entity"),
+    ("ASGADHHHHHH", "purification tag carried on the heavy-chain entity"),
+)
+
+IDENTIFICATION = (
+    "The anti-tag binder is a murine anti-GCN4 single-chain Fv retrieved from "
+    "PDB 1P4B entities 1+2 at revision 1.4. PDB does not record the identifier "
+    "52SR4 anywhere in that entry. The identification rests on an exact match "
+    "between the deposited CDRs and those quoted for 52SR4 in the "
+    "Calibr/Scripps patent family, together with the shared Zahnd 2004 primary "
+    "citation. That is an inference drawn by this pipeline, not a fact taken "
+    "from the source, and a reader is entitled to disagree with it."
+)
+
+SPECIES_NOTICE = (
+    "The retrieved binder is murine. The clinical construct in this tag system "
+    "is humanized and its sequence is not established, so what is built here is "
+    "the crystallised murine scFv, not the clinical one. Non-human sequence "
+    "content is an explicit Stage 9 immunogenicity question and that arm is "
+    "empty: epitope-level immunogenicity reports NOT_CONNECTED on every row "
+    "because no epitope source is connected, and the origin check reads INN "
+    "name stems, which a structure-derived binder does not carry. Nothing in "
+    "this pipeline has assessed the immunogenicity of this binder."
+)
 
 
 class AntiTagError(RuntimeError):

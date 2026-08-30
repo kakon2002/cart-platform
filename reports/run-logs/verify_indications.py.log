@@ -59,7 +59,7 @@ WHAT EACH INDICATION PRODUCED
     outcomes {'UNRESOLVED': 104, 'DUAL': 81, 'SINGLE': 3, 'NO_DESIGN': 7, 'ADAPTOR': 5}
 
   Pancreatic Ductal Adenocarcinoma
-    usability USABLE  status RANKED_AWAITING_BINDER
+    usability USABLE  status RANKED
     scored 3,400  pool 200  top ['CEACAM5', 'TMC5', 'MUCL3', 'NECTIN4', 'HLA-H']
     outcomes {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
 
