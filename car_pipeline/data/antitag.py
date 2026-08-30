@@ -25,7 +25,7 @@ BINDER_ENTITIES = ("1", "2")
 ANTIGEN_ENTITY = "3"
 
 TAG_SYSTEM = "peptide neo-epitope, GCN4(7P-14P)"
-SPECIES = "murine"
+HUMANISED_ESTABLISHED = False
 
 DEPOSITION_ARTIFACTS = (
     ("MADYADA", "expression leader carried on the light-chain entity"),
@@ -142,14 +142,25 @@ class AntiTagSource(DataSource):
                     )
                 described = (body.get("rcsb_polymer_entity") or {}).get(
                     "pdbx_description", "")
+                organisms = body.get("rcsb_entity_source_organism") or []
+                if not organisms:
+                    raise AntiTagError(
+                        f"{ENTRY_ID} entity {entity_id} declares no source "
+                        "organism; species cannot be assumed"
+                    )
                 chains.append({
                     "entity": entity_id,
                     "description": described,
                     "sequence": sequence,
                     "residues": len(sequence),
+                    "source_organism": organisms[0].get("scientific_name"),
+                    "source_taxid": organisms[0].get("ncbi_taxonomy_id"),
                 })
 
+            species = sorted({c["source_organism"] for c in chains})
             payload = {
+                "source_organism": species[0] if len(species) == 1 else species,
+                "humanised_sequence_established": HUMANISED_ESTABLISHED,
                 "entry": ENTRY_ID,
                 "revision": revision,
                 "status": status,
@@ -190,3 +201,15 @@ class AntiTagSource(DataSource):
         """The binder as deposited: its entities concatenated, nothing edited."""
         payload = self.load()
         return "".join(c["sequence"] for c in payload["chains"])
+
+
+def origin() -> tuple[str, str]:
+    """The binder's species as deposited, and whether it is human."""
+    payload = AntiTagSource().load()
+    organism = payload.get("source_organism")
+    if isinstance(organism, list):
+        organism = ", ".join(organism)
+    human = bool(organism) and "homo sapiens" in str(organism).lower()
+    if human and payload.get("humanised_sequence_established"):
+        return str(organism), "human"
+    return str(organism), "non-human"
