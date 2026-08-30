@@ -751,3 +751,89 @@ it would hide the defect rather than correct it.
 Implementation order once approved: `stages/stage3.py`, then
 `verify_ranking.py` checking all eleven criteria, and only then any reading of
 the biology.
+
+
+---
+
+# Amendment: R13 retired as ill-posed, and what replaces it
+
+R13 is withdrawn as a criterion, not merely as a comparison. It asks two
+populations to clear at comparable rates, and those populations differ in how
+much evidence exists about them. Measured on the reference state, it confounds
+three effects at once:
+
+| effect | measured |
+| --- | --- |
+| the missing-arm asymmetry, where an unmeasured organ scores as no risk | staining alone: RNA-supported clearance 0.00%, ratio infinite |
+| `max()` acting precautionarily, as designed | `max` 75.14x against baseline alone 9.96x |
+| a genuine population difference, on one shared axis | baseline alone: 4.31% against 42.93%, **9.96x** |
+
+No single change reaches the 5x limit because the criterion is measuring at
+least three things. The residual 9.96x survives with `max()` removed and both
+classes on the identical axis, and it is the population difference the earlier
+withdrawal documented: median breadth 51 tissues against 7.
+
+**Provenance of the 5x limit.** `git log -S` over the full history places the
+limit and R13 itself in the same commit, `c21794c`. That commit rewrote 1,931
+lines of `stage3.py`, 1,029 of this spec and 934 of the verifier, so it cannot
+be read as a bound written ahead of an experiment. No independent derivation of
+5x exists anywhere in the history. This is recorded rather than corrected: the
+limit is not weakened here, the criterion is retired.
+
+## R14 — the staining arm must be separable at the ceiling
+
+**Statement.** Let `S = {score(k)}` be the calibrated score of each positive
+staining level and `W = {1.0, 0.6, 0.3}` the tier weights. R14 trips unless
+there exists a tier weight `w` and two positive levels `k < m` such that
+
+    score(k) * w  <=  ceiling  <  score(m) * w
+
+That is: in at least one criticality tier, the arm must place two of its levels
+on opposite sides of the gate.
+
+**Derivation of the bound, without reference to any measured value.** The bound
+is not a number chosen against an observation; it is the condition under which
+an ordinal axis carries any information at a threshold. If every level of the
+arm falls on the same side of `ceiling * w` for every `w`, then within each tier
+the arm's levels are interchangeable and the arm contributes to clearance only
+through presence or absence. Its magnitudes are then decorative with respect to
+the gate, whatever they are. Nothing about the observed data enters this: it is
+a statement about the scoring function and the ceiling alone, and it could have
+been written before the first run.
+
+**What failure means for `max(staining, baseline)`.** It means `max()` is not
+combining two graded estimates. It is applying a binary veto wherever the
+staining arm exists at all, in any tier heavy enough to reach the ceiling. That
+is a different operation from the one this spec describes, and it makes the
+calibration irrelevant to clearance: any assignment of TPM values to levels
+produces the same cleared set, provided the levels stay on the same side of each
+tier threshold. A criterion defending the calibration therefore defends
+something that does not gate.
+
+**Sensitivity, also a priori.** Level 1 stops vetoing in tier-2 organs when
+`score(1) * 0.6 <= 0.15`, i.e. when `score(1) <= 0.25`, i.e. when the calibrated
+level-1 value falls to about 4.62 TPM. Above that the arm is all-or-nothing in
+tiers 1 and 2 and silent in tier 3.
+
+## Reported, not gated: the arm-switch rate
+
+The well-posed version of R13's question is a paired one: same protein, one
+variable, no population confound. Of protein-confirmed targets that clear on the
+transcript arm alone, how many are blocked once the staining arm is added?
+
+This is **reported and not gated**, because no defensible a priori bound exists
+for it. The measurement below shows why: the switched set is predicted exactly,
+with zero discrepancies in either direction, by presence alone — does the target
+carry any positive staining call in a tier-1 or tier-2 organ. The statistic does
+not depend on staining magnitude, so it cannot separate an arm carrying
+information from an arm carrying noise. Reporting it without a threshold is the
+honest form. **The staining arm's contribution is uncharacterised**, and the
+external check in the accompanying note is descriptive for the same reason.
+
+## The staining axis is coarse, and this constrains any future test
+
+The axis takes four values: level 0, plus three calibrated points. Any test of
+this axis is testing a three-point ordinal mapped onto a continuous scale, which
+is part of why the staining-versus-transcript interdecile disagreement is 0.549
+against a centre pinned at zero. A future test should not demand agreement finer
+than the axis can express.
