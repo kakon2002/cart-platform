@@ -16,27 +16,16 @@ REJECTION CRITERIA
 ========================================================================
 WHAT THE GATE SAYS
 ========================================================================
-    PASSES_STATED_CHECKS      0  (0%)
+    PASSES_STATED_CHECKS      1  (0%)
     FLAGGED                   0  (0%)
-    BLOCKED                 199  (100%)
+    BLOCKED                 198  (99%)
     NO_GATE                   1  (0%)
 
   WHICH QUESTIONS THIS RUN ACTUALLY EXERCISED
   --------------------------------------------------------------------
-    reached the immunogenicity and trials questions   0 of 200
-    stopped at carried Stage 3 risk                   199
+    reached the immunogenicity and trials questions   1 of 200
+    stopped at carried Stage 3 risk                   198
     stopped for want of a binder                      1
-
-    So this gate's own two questions decided nothing here. Every
-    target was settled by the risk Stage 3 already measured, which
-    is the correct precedence and leaves the new logic untested on
-    live data. S7 passes vacuously and should be read that way.
-    S2 does not: it pins the origin rule against known names rather
-    than against this run's output, which is why it still has force.
-
-    The origin table below is computed for every target carrying a
-    binder, including blocked ones, so it is measured rather than
-    vacuous — it simply did not change any verdict.
 
     PASSES_STATED_CHECKS is not a safety claim. It means three named
     questions failed to show a problem, and one of them — epitope-level
@@ -61,13 +50,13 @@ WHAT THE GATE SAYS
       - Stage 3 risk 0.9215 exceeds the persistent ceiling 0.15 (peak organ liver)
 
   Binder origin across targets that have one, read from the name stem
-    ORIGIN_UNKNOWN           17
+    ORIGIN_UNKNOWN           18
     chimeric                  5
-    murine                    4
-    humanised                 2
+    humanised                 4
+    murine                    3
     human                     2
     A naming convention, not a sequence measurement. Stage 5 records
     humanisation_state NOT_CONNECTED from the deposited taxonomy; this
     is a second, equally indirect reading reported beside it.
 
-  configuration hash df43da01c696a611
+  configuration hash 2731d8be3e318aef

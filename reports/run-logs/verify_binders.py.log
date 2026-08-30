@@ -1,6 +1,6 @@
 loading stage 4 decisions
-  200 decisions, stage4 hash d1c12f892f3f9b17, usable as a result: no
-  upstream tripped P15, P4, P7, P8 — this stage annotates them and does not treat them as settled
+  200 decisions, stage4 hash 7ff5dbf965e142ab, usable as a result: no
+  upstream tripped P12, P13, P15, P4, P7, P8 — this stage annotates them and does not treat them as settled
 retrieving binders
     retrieved 25/200
     retrieved 50/200
@@ -29,7 +29,7 @@ KNOWN-ANSWER CHECKS
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    B1: 73 targets have entries but no antibody among them (an inert stage would have none); 6 of 127 with entries echo their count
+  clear    B1: 77 targets have entries but no antibody among them (an inert stage would have none); 4 of 130 with entries echo their count
   clear    B3: known answers hold: 5 sequence targets, 2 pinned structure targets, 2 documented negatives, and CEACAM5 at 1 structure entries of 6 (expected 1)
   clear    B8: 5 of 5 known targets return a binder on some route
   clear    B5: 0 candidates carry an affinity value (the source does not have one)
@@ -43,18 +43,18 @@ REJECTION CRITERIA
 WHAT THE LITERATURE HOLDS FOR THIS POOL
 ========================================================================
     STRUCTURE_AND_SEQUENCE     18  (9%)
-    BINDER_STRUCTURE_ONLY      36  (18%)
-    BINDER_SEQUENCE_ONLY       12  (6%)
-    NO_BINDER                 134  (67%)
+    BINDER_STRUCTURE_ONLY      35  (18%)
+    BINDER_SEQUENCE_ONLY       14  (7%)
+    NO_BINDER                 133  (66%)
 
-    targets with entries but no antibody in any of them: 73
+    targets with entries but no antibody in any of them: 77
     That gap is the point: a protein having been crystallised is not
     the same as a binder existing against it, and only the curated
     chain annotation separates the two.
 
   The two validation targets in full
   --------------------------------------------------------------------
-    MSLN (Q13421) — STRUCTURE_AND_SEQUENCE, Stage 4 outcome NO_DESIGN
+    MSLN (Q13421) — STRUCTURE_AND_SEQUENCE, Stage 4 outcome DUAL
       12 entries, 15 antibody complexes
       Amatuximab       Phase-II     Discontinued   VH 119 VL 106 aa  scFv 720 bp
       Anetumab         Phase-II     Discontinued   VH 120 VL 111 aa  scFv 738 bp
@@ -84,5 +84,5 @@ WHAT THE LITERATURE HOLDS FOR THIS POOL
     MUC1      STRUCTURE_AND_SEQUENCE   entries  23  structure  29  sequence   3
 
   binders written to C:\cart-platform\data\stage5\binders.json
-  configuration hash a7c70c36e4bfb243
+  configuration hash 6204becc92b22280
   affinity: NOT_CONNECTED for every candidate, and that is measured

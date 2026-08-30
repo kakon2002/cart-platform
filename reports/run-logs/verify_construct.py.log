@@ -1,16 +1,16 @@
 loading upstream
-  200 decisions, 2 assembled
+  200 decisions, 12 assembled
 
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    K1: 2 constructs translate back to their own sequence
-  clear    K2: 2 constructs carry their binders verbatim, including the pinned MUC16, MUC17
+  clear    K1: 12 constructs translate back to their own sequence
+  clear    K2: 12 constructs carry their binders verbatim, including the pinned MUC16, MUC17
   clear    K3: domain boundaries partition every construct exactly
   clear    K4: every part of every construct names its source (19 parts in the first construct)
   clear    K5: part costs sum to the printed total for every construct
   clear    K6: every buildable construct carries the mandatory safety switch
-  clear    K7: every owed construct was built and none was built without a binder; 26 targets have a binder but no recommendation (§5.1)
+  clear    K7: every owed construct was built and none was built without a binder; 16 targets have a binder but no recommendation (§5.1)
   clear    K8: 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 ========================================================================
   8/8 criteria clear
@@ -18,40 +18,33 @@ REJECTION CRITERIA
 ========================================================================
 WHAT CAN BE BUILT
 ========================================================================
-    BUILDABLE             0  (0%)
-    BUDGET_EXCEEDED       2  (1%)
-    NO_CONSTRUCT        198  (99%)
+    BUILDABLE             1  (0%)
+    BUDGET_EXCEEDED      11  (6%)
+    NO_CONSTRUCT        188  (94%)
 
-    single-antigen assembled 0, 0 within budget
-    dual assembled           2, 0 within budget
+    single-antigen assembled 1, 1 within budget
+    dual assembled           11, 0 within budget
 
   The budget, itemised
   --------------------------------------------------------------------
-    MUC16 — dual, split signal, two receptors, binder Sofituzumab
+    LRRC15 — single, second generation, binder Samrotamab
       CD8A leader                21 aa     63 bp   P01732 1-21
-      binder VH                 116 aa    348 bp   stage5
-      (G4S)x3 linker             15 aa     45 bp   synthetic
-      binder VL                 107 aa    321 bp   stage5
-      CD8A hinge                 45 aa    135 bp   P01732 138-182
-      CD8A transmembrane         21 aa     63 bp   P01732 183-203
-      CD3zeta cytoplasmic       113 aa    339 bp   P20963 52-164
-      T2A skip peptide           18 aa     54 bp   synthetic
-      CD8A leader                21 aa     63 bp   P01732 1-21
-      binder VH                 116 aa    348 bp   stage5
+      binder VH                 120 aa    360 bp   stage5
       (G4S)x3 linker             15 aa     45 bp   synthetic
       binder VL                 107 aa    321 bp   stage5
       CD8A hinge                 45 aa    135 bp   P01732 138-182
       CD8A transmembrane         21 aa     63 bp   P01732 183-203
       4-1BB cytoplasmic          42 aa    126 bp   Q07011 214-255
+      CD3zeta cytoplasmic       113 aa    339 bp   P20963 52-164
       T2A skip peptide           18 aa     54 bp   synthetic
       FKBP12                    107 aa    321 bp   P62942 2-108
       SGGGS linker                5 aa     15 bp   synthetic
       caspase-9 without CARD    324 aa    972 bp   P55211 93-416
       stop                                  3 bp
-      TOTAL                              3834 bp   headroom -334 of 3500
+      TOTAL                              2817 bp   headroom 683 of 3500
 
-  And one dual: MUC16 + CDH17 — 3834 bp, BUDGET_EXCEEDED
-      3834 bp against a 3500 bp budget, over by 334
+  And one dual: CLDN18 + LRRC15 — 3840 bp, BUDGET_EXCEEDED
+      3840 bp against a 3500 bp budget, over by 340
       This is the expected result. Two single-chain binders plus
       the mandatory switch do not fit, and Stage 5 retrieved one
       single-domain binder in 720 candidates, so the smaller
@@ -63,8 +56,8 @@ WHY NOTHING FITS — THE CHAIN, STATED AS A FINDING
     1. Stage 1's conservative tolerance requires a safety switch.
     2. The switch costs 1308 bp, 1416 bp with the
        skip peptide that carries it.
-    3. Two single-chain binders (1338 bp) plus that switch
-       reach 3834 bp against a 3500 bp budget, over by 334.
+    3. Two single-chain binders (1344 bp) plus that switch
+       reach 3840 bp against a 3500 bp budget, over by 340.
     4. Single-domain binders would fit: they replace the two
        variable regions and their linker with one domain each.
     5. Stage 5 retrieved ONE single-domain candidate in 720.
@@ -76,18 +69,16 @@ WHY NOTHING FITS — THE CHAIN, STATED AS A FINDING
 ========================================================================
 WHAT EACH EXIT WOULD COST, AS NUMBERS
 ========================================================================
-    a smaller safety switch would have to free      334 bp
-       leaving it at most                            974 bp (324 residues), 74% of its current size
-    a vector large enough for the current design    5.03 kb
+    a smaller safety switch would have to free      340 bp
+       leaving it at most                            968 bp (322 residues), 74% of its current size
+    a vector large enough for the current design    5.04 kb
        against the 4.7 kb assumed in Stage 1, a 7% increase
-    pool targets with ANY single-domain binder      1 of 200
-       CD40LG     structure 0, sequence 1   Stage 4 outcome NO_DESIGN   Letolizumab
-         and it is not assemblable: the light-chain field holds 'na', a placeholder rather than a
-         sequence, so the residues ['a', 'n'] are not residues at all
+    pool targets with ANY single-domain binder      0 of 200
+       none
 
     So the nanobody route is empty rather than thin. The single
     candidate sits on a target the pairing stage did not recommend, and
     its light-chain field is a placeholder. There is no exit here to
     take, and reporting one would be inventing inventory.
 
-  configuration hash b77ddc3ed5a269b2
+  configuration hash 2f58635a9c30460d

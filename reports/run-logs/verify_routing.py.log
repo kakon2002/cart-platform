@@ -1,6 +1,15 @@
   persistent ceiling 0.15   terminable ceiling 0.35
 
 loading the ranked pool
+  querying the trial registry for 200 antigens
+    25/200
+    50/200
+    75/200
+    100/200
+    125/200
+    150/200
+    175/200
+    200/200
   200 pool members
 
 ========================================================================
@@ -14,24 +23,21 @@ REJECTION CRITERIA
   TRIPPED  A6: MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
   clear    A7: 0 targets resolve to NO_ARCHITECTURE with no reason
   clear    A8: with no declared terminable ceiling, 0 targets still route ADAPTOR
-  clear    A9: adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->1, 0.3->5, 0.35->9, 0.4->26, 0.5->65, 0.6->109, 0.7->150
+  clear    A9: adaptor admissions across the ceiling sweep: 0.15->0, 0.2->1, 0.25->1, 0.3->4, 0.35->7, 0.4->22, 0.5->61, 0.6->103, 0.7->145
   clear    A10: declared ceiling 0.35 matches the spec value 0.35
-  clear    A11: 8 adaptor constructs; 0 emit a sequence despite an unsupplied binder
+  clear    A11: 1 adaptor constructs; 0 emit a sequence despite an unsupplied binder
+  clear    A12: 1 of 1 adaptor constructs carry a structure-derived binder the origin check can see; epitope immunogenicity stays NOT_CONNECTED on all of them, so the species gap and the immunogenicity gap remain separate
 ========================================================================
-  10/11 criteria clear
+  11/12 criteria clear
 
 ========================================================================
 WHAT ROUTING CHANGED
 ========================================================================
-    NO_ARCHITECTURE     190
-    ADAPTOR               9
-    CONVENTIONAL          1
+    NO_ARCHITECTURE     191
+    ADAPTOR               7
+    CONVENTIONAL          2
 
-    stage 4 outcomes: {'NO_DESIGN': 177, 'DUAL': 13, 'ADAPTOR': 8, 'UNRESOLVED': 1, 'SINGLE': 1}
-    CD207       2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
-    DUOXA2      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
-    CD1A        2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
-    FER1L6      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
-    GPR35       2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
+    stage 4 outcomes: {'DUAL': 100, 'UNRESOLVED': 95, 'SINGLE': 2, 'ADAPTOR': 1, 'NO_DESIGN': 2}
+    TMEM92      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
 
   STOPPING: A6 tripped.
