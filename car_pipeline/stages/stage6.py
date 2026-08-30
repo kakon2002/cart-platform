@@ -10,6 +10,7 @@ from car_pipeline.stages.stage4 import ADAPTOR
 from car_pipeline.data.domains import (
     SYNTHETIC_PARTS,
     Part,
+    anti_tag_binder,
     build_parts,
 )
 
@@ -164,7 +165,7 @@ def build(
     linker = SYNTHETIC_PARTS["linker"]
     skip = SYNTHETIC_PARTS["skip"]
     switch_linker = SYNTHETIC_PARTS["switch_linker"]
-    adaptor_binder = SYNTHETIC_PARTS["adaptor_binder"]
+    adaptor_binder = anti_tag_binder()
 
     def best_binder(gene: str):
         """The shortest sequence-route binder: the smallest that fits is the"""
@@ -212,10 +213,15 @@ def build(
                 architecture="adaptor, anti-tag receptor, antigen on the adaptor",
                 binder_name=adaptor_binder.name,
                 amino_acid_sequence=protein, dna=dna, segments=segments,
-                binder_supplied=False, declared_bp=total,
-                reason="the anti-tag binder declares a size but no sequence; "
-                       "no anti-tag antibody exists in the cached structural "
-                       "set and none was invented",
+                binder_supplied=adaptor_binder.supplied, declared_bp=total,
+                reason=(
+                    f"the anti-tag binder is retrieved from {adaptor_binder.accession}, "
+                    f"{adaptor_binder.feature}, as deposited and unedited"
+                    if adaptor_binder.supplied else
+                    "the anti-tag binder declares a size but no sequence; "
+                    "no anti-tag antibody exists in the cached structural "
+                    "set and none was invented"
+                ),
             ))
             continue
 

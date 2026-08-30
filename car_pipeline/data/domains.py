@@ -33,6 +33,7 @@ USER_AGENT = "car-platform/stage6"
 
 PROTEOME = "proteome"
 SYNTHETIC = "synthetic"
+STRUCTURE = "structure"
 
 #: Accessions this stage draws from, and what each supplies.
 PARTS = {
@@ -85,6 +86,8 @@ class Part:
         """A part must say where it came from. See criterion K4."""
         if self.provenance == SYNTHETIC:
             return bool(self.name)
+        if self.provenance == STRUCTURE:
+            return bool(self.accession)
         return bool(self.accession and self.start and self.end)
 
 
@@ -272,3 +275,27 @@ if __name__ == "__main__":
     for key, part in SYNTHETIC_PARTS.items():
         print(f"  {part.name:24s} {part.provenance:10s} {'':10s} {'-':>12s} "
               f"{part.residues:5d}")
+
+
+def anti_tag_binder() -> Part:
+    """The adaptor binder: retrieved if the structure is cached, declared if not."""
+    from car_pipeline.data.antitag import (
+        ANTIGEN_ENTITY, AntiTagError, AntiTagSource, BINDER_ENTITIES, ENTRY_ID)
+
+    try:
+        source = AntiTagSource()
+        payload = source.load()
+        sequence = source.sequence()
+    except (AntiTagError, OSError, ValueError, KeyError):
+        return SYNTHETIC_PARTS["adaptor_binder"]
+    if not sequence:
+        return SYNTHETIC_PARTS["adaptor_binder"]
+    return Part(
+        name=(f"anti-tag binder, {payload['tag_system']} "
+              f"(PDB {ENTRY_ID} entities {'+'.join(BINDER_ENTITIES)}, "
+              f"antigen entity {ANTIGEN_ENTITY} excluded)"),
+        provenance=STRUCTURE,
+        sequence=sequence,
+        accession=f"{ENTRY_ID}_{'+'.join(BINDER_ENTITIES)}",
+        feature=f"deposited revision {payload['revision']}",
+    )

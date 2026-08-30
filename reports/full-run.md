@@ -2,22 +2,22 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**119/125 criteria clear across 12 stages**, 33.3 minutes.
+**119/125 criteria clear across 12 stages**, 34.9 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
-| 1 | Design spec | 31/31 | clear | 0s |
+| 1 | Design spec | 31/31 | clear | 1s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
-| 3 | Target discovery | 12/13 | **TRIPPED** | 19s |
-| 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 10/11 | **TRIPPED** | 303s |
-| 5 | Binder discovery | 7/7 | clear | 296s |
+| 3 | Target discovery | 12/13 | **TRIPPED** | 23s |
+| 4 | Target pairing | 10/14 | **TRIPPED** | 11s |
+| 4a | Architecture routing | 10/11 | **TRIPPED** | 366s |
+| 5 | Binder discovery | 7/7 | clear | 298s |
 | 6 | Construct assembly | 8/8 | clear | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 10/10 | clear | 307s |
-| MULTI | Multi-indication | 10/10 | clear | 1055s |
+| API | HTTP surface | 10/10 | clear | 306s |
+| MULTI | Multi-indication | 10/10 | clear | 1080s |
 
 ## Every criterion
 
@@ -74,7 +74,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `R10` — 0 of 100 reached only after a symbol failed
 - clear `R11` — 22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread
 - clear `R12` — worst retention 82% at c3_fold x0.5
-- **TRIPPED** `R13` — clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x
+- **TRIPPED** `R14` — no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
 
 ### Stage 4 — Target pairing (10/14)
 
@@ -160,7 +160,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job cea617bee887 rather than blocking
+- clear `A3` — a run returns 202 with job 21a6b0af5c61 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
 - clear `A5` — 200 BUILDABLE_AWAITING_BINDER: 8 buildable = 0 complete + 8 awaiting a binder; 2 over budget, 1 reasons
 - clear `A6` — end state RANKED_AWAITING_BINDER, attrition accounts for 192 + 8 of 200; 8 reached = 0 complete + 8 awaiting
@@ -171,7 +171,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 ### Stage MULTI — Multi-indication (10/10)
 
-- clear `M1` — 36 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+- clear `M1` — 38 indication-tagged artifacts; 0 changed, 0 disappeared after running both
 - clear `M2` — shared sources carry no per-indication copy (0 found)
 - clear `M3` — indication-specific module constants remaining: none
 - clear `M4` — an atlas-less indication returns NOT_USABLE with no ranking
@@ -197,8 +197,9 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 ## Tripped
 
-- Stage 3 `R13` — clearance rate PROTEIN_CONFIRMED 0.6% vs RNA_SUPPORTED 42.9%, ratio 75.14x against a limit of 5x
-  - Accepted: Withdrawn. The two populations differ by construction (breadth 51 vs 7) and the max-over-sources gate rewards being unmeasured, so no combination rule reaches the 5x limit. Replaced by R13-prime, which clears.
+- Stage 3 `R14` — no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
+  - **Not on the accepted list.** Open decision, not a regression.
+  - The staining arm vetoes on presence rather than amount: every grade blocks in tiers 1 and 2, none reaches the ceiling in tier 3. Under a conservative tolerance that may be the right design. It is a decision about tolerance, priced in reports/staining-veto-decision.md, and it is not on the accepted list because nobody has taken it yet. The non-zero exit is this decision being open, not a broken build.
 - Stage 4 `P4` — f_AB vs f_A x f_B over 14,535 measured pairs, rho=0.9934 (limit 0.98)
   - Accepted: Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.
 - Stage 4 `P7` — 1 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['NPSR1+HLA-A']
