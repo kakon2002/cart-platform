@@ -34,6 +34,18 @@ STAGES = [
 DERIVED = ["stage4", "stage5"]
 
 
+OPEN_DECISIONS = {
+    ("3", "R14"): "The staining arm vetoes on presence rather than amount: "
+                  "every grade blocks in tiers 1 and 2, none reaches the "
+                  "ceiling in tier 3. Under a conservative tolerance that may "
+                  "be the right design. It is a decision about tolerance, "
+                  "priced in reports/staining-veto-decision.md, and it is not "
+                  "on the accepted list because nobody has taken it yet. The "
+                  "non-zero exit is this decision being open, not a broken "
+                  "build.",
+}
+
+
 ACCEPTED = {
     ("4", "P4"): "Coverage is span-confounded: f_AB tracks genomic span "
                  "(+0.68) more than expression (+0.20). Reported beside a "
@@ -203,6 +215,10 @@ def render(stages: list[Stage], elapsed: float, fresh: bool) -> str:
             lines.append(f"- Stage {s.number} `{cid}` — {detail}")
             if note:
                 lines.append(f"  - Accepted: {note}")
+            elif (s.number, cid) in OPEN_DECISIONS:
+                lines.append("  - **Not on the accepted list.** Open decision, "
+                             "not a regression.")
+                lines.append(f"  - {OPEN_DECISIONS[(s.number, cid)]}")
             else:
                 lines.append("  - **Not on the accepted list. This is new.**")
     else:
@@ -369,7 +385,9 @@ def main() -> int:
         print(f"  UNEXPLAINED  Stage {s.number} exited {s.code} with "
               f"{s.clear}/{s.total} clear and nothing tripped")
     for number, cid, detail in new:
-        print(f"  REGRESSION  Stage {number} {cid}: {detail}")
+        label = ("OPEN        " if (number, cid) in OPEN_DECISIONS
+                 else "REGRESSION  ")
+        print(f"  {label}Stage {number} {cid}: {detail}")
     for number, cid in stale:
         print(f"  STALE       Stage {number} {cid} is on the accepted list "
               "but did not trip")
