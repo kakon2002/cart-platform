@@ -27,7 +27,7 @@ running both indications
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    M1: 36 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+  clear    M1: 38 indication-tagged artifacts; 0 changed, 0 disappeared after running both
   clear    M2: shared sources carry no per-indication copy (0 found)
   clear    M3: indication-specific module constants remaining: none
   clear    M4: an atlas-less indication returns NOT_USABLE with no ranking

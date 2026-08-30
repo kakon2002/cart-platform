@@ -96,6 +96,7 @@ def main() -> int:
         (c.gene, s.name) for c in built for s in c.segments
         if not (s.provenance == SYNTHETIC
                 or (s.provenance == PROTEOME and s.accession and s.start_residue)
+                or (s.provenance == "structure" and s.accession)
                 or s.provenance == "stage5")
     ]
     criterion("K4", bool(undescribed),

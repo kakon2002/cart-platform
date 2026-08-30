@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from car_pipeline.api import pipeline
 from car_pipeline.data.source import CacheError
-from car_pipeline.stages import stage6, stage10, stage11
+from car_pipeline.stages import stage4, stage6, stage10, stage11
 
 _LOCK = threading.Lock()
 PROJECTS: dict[str, dict] = {}
@@ -336,6 +336,11 @@ def constructs_view(project_id: str) -> dict:
             "and no anti-tag binder exists in the connected sources, so its "
             "size is declared and its sequence is not invented."
         )
+    adaptors = [c for c in r["constructs"]
+                if c.verdict == stage6.BUILDABLE
+                and c.outcome == stage4.ADAPTOR]
+    if adaptors and len(adaptors) == len(buildable):
+        reasons.append(TWO_PRODUCTS)
     return {
         "status": status,
         **_evidence(r),
@@ -376,6 +381,11 @@ def validation_view(project_id: str) -> dict:
         "architecture": v.get("architecture"),
         "reasons": v["reasons"],
     }
+
+
+TWO_PRODUCTS = (
+    "Every surviving design routes to an adaptor architecture. That is two manufactured biologics, not one: the receptor and, separately, the tagged adaptor antibody that gives it its specificity. The second carries its own CMC package and its own regulatory path, and the payload budget the adaptor route saves is paid there instead."
+)
 
 
 def result_view(project_id: str) -> dict:
@@ -420,7 +430,11 @@ def result_view(project_id: str) -> dict:
         "complete": len(complete),
         "awaiting_binder": len(awaiting),
         "attrition": chain,
-        "reasons": reasons,
+        "reasons": reasons + (
+            [TWO_PRODUCTS]
+            if any(c.verdict == stage6.BUILDABLE and c.outcome == stage4.ADAPTOR
+                   for c in r["constructs"]) else []
+        ),
         "developability_status": r["developability_status"],
     }
 
