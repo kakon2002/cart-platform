@@ -265,9 +265,9 @@ class Pair:
 
 
 def build_pool(rows: list[Ranked], size: int = POOL_SIZE) -> list[Ranked]:
-    """Top of the tumour-side ranking, risk ignored entirely."""
-    scored = [r for r in rows if r.composite is not None and r.gene]
-    scored.sort(key=lambda r: (-r.composite, r.gene, r.accession))
+    """Top of the tumour-side ranking by supported score, risk ignored entirely."""
+    scored = [r for r in rows if r.composite_supported is not None and r.gene]
+    scored.sort(key=lambda r: (-r.composite_supported, r.gene, r.accession))
     seen: set[str] = set()
     pool: list[Ranked] = []
     for r in scored:
@@ -383,6 +383,14 @@ class Decision:
     route_exposure: str | None = None
 
     evidence_class: str = ""
+    normal_tissue_risk: float | None = None
+    normal_tissue_risk_organ: str | None = None
+    evidence_confidence: float | None = None
+    protein_arm_measured: bool | None = None
+    risk_basis: str = ""
+    risk_is_lower_bound: bool | None = None
+    composite: float | None = None
+    composite_supported: float | None = None
     measured_weight: float | None = None
     components_measured: int | None = None
     components_total: int | None = None
@@ -493,6 +501,14 @@ def decide(
 
         evidence = dict(
             evidence_class=r.evidence_class,
+            normal_tissue_risk=r.risk,
+            normal_tissue_risk_organ=r.risk_organ,
+            evidence_confidence=r.confidence,
+            protein_arm_measured=r.protein_arm_measured,
+            risk_basis=r.risk_basis,
+            risk_is_lower_bound=r.risk_is_lower_bound,
+            composite=r.composite,
+            composite_supported=r.composite_supported,
             measured_weight=r.measured_weight,
             components_measured=sum(
                 1 for c in r.components.values() if c.measured),
@@ -688,6 +704,14 @@ def _decision_payload(d: Decision) -> dict:
         "route_ceiling": d.route_ceiling,
         "route_exposure": d.route_exposure,
         "evidence_class": d.evidence_class or None,
+        "normal_tissue_risk": d.normal_tissue_risk,
+        "normal_tissue_risk_organ": d.normal_tissue_risk_organ,
+        "evidence_confidence": d.evidence_confidence,
+        "protein_arm_measured": d.protein_arm_measured,
+        "risk_basis": d.risk_basis or None,
+        "risk_is_lower_bound": d.risk_is_lower_bound,
+        "composite": d.composite,
+        "composite_supported": d.composite_supported,
         "measured_weight": d.measured_weight,
         "components_measured": d.components_measured,
         "components_total": d.components_total,

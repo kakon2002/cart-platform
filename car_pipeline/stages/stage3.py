@@ -386,6 +386,11 @@ class Ranked:
     bridged: bool = False
     tier_rank: int = 0
 
+    protein_arm_measured: bool = True
+    risk_basis: str = "staining and transcript"
+    risk_is_lower_bound: bool = False
+    composite_supported: float | None = None
+
     def component_value(self, key: str) -> float | None:
         """One component's score, or None where it was not measured."""
         c = self.components.get(key)
@@ -546,6 +551,16 @@ def per_organ_scores(
                 per_organ[organ] = score
 
     return per_organ
+
+
+def protein_arm_measured(model, atlas_gene) -> bool:
+    """Whether any mapped normal tissue was stained for this entry."""
+    if atlas_gene is None:
+        return False
+    for tissue, _cell_type, _level in atlas_gene.staining:
+        if model.organ_for_atlas(tissue) is not None:
+            return True
+    return False
 
 
 def worst_organ(
@@ -713,6 +728,7 @@ def rank(
             calibration,
         )
 
+        has_protein = protein_arm_measured(model, atlas_gene)
         cleared = risk is not None and risk <= ceiling
 
         out.append(
@@ -727,6 +743,13 @@ def rank(
                 risk=None if risk is None else round(risk, 4),
                 risk_organ=organ,
                 cleared=cleared,
+                protein_arm_measured=has_protein,
+                risk_basis=("staining and transcript" if has_protein
+                            else "transcript only"),
+                risk_is_lower_bound=not has_protein,
+                composite_supported=(
+                    None if composite is None
+                    else round(composite * measured_weight, 4)),
                 confidence=_confidence(components, row, wts),
                 sources_disagree=False,
                 fold_baseline=fold_b,
@@ -763,7 +786,8 @@ def rank(
     for tier in (PROTEIN_CONFIRMED, RNA_SUPPORTED, DATA_INSUFFICIENT):
         members = [r for r in out if r.evidence_class == tier]
         members.sort(
-            key=lambda r: (r.composite is None, -(r.composite or 0.0), r.gene or "")
+            key=lambda r: (r.composite_supported is None,
+                           -(r.composite_supported or 0.0), r.gene or "")
         )
         for i, r in enumerate(members, start=1):
             r.tier_rank = i
