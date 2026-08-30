@@ -185,7 +185,8 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     progress("safety", "gating")
     risks = {r.gene: (r.risk, r.risk_organ) for r in ranked if r.gene}
     trials = TrialSource(antigens=[d["gene"] for d in decisions]).load()
-    gated = stage9.gate(decisions, binders, risks, trials, ceiling)
+    gated = stage9.gate(decisions, binders, risks, trials, ceiling,
+                        constructs=constructs)
     by_gate = {g.gene: g for g in gated}
 
     progress("developability", "scoring sequences")

@@ -54,6 +54,8 @@ class SafetyRecord:
     ceiling: float = 0.15
     binder_name: str = ""
     binder_origin: str = ORIGIN_UNKNOWN
+    binder_structure_accession: str = ""
+    binder_source_organism: str = ""
 
     binder_origins: list[str] = field(default_factory=list)
 
@@ -66,15 +68,37 @@ class SafetyRecord:
     reasons: list[str] = field(default_factory=list)
 
 
+def structure_binders(constructs) -> dict[str, tuple[str, str, str]]:
+    """Per gene, the structure-derived binder a construct carries, if any."""
+    from car_pipeline.data.domains import STRUCTURE
+
+    out: dict[str, tuple[str, str, str]] = {}
+    for construct in constructs or []:
+        for segment in getattr(construct, "segments", []):
+            if segment.provenance != STRUCTURE:
+                continue
+            try:
+                from car_pipeline.data.antitag import origin
+                organism, verdict = origin()
+            except Exception:
+                organism, verdict = "not established", "non-human"
+            out[construct.gene] = (segment.name, segment.accession or "",
+                                   f"{organism}|{verdict}")
+            break
+    return out
+
+
 def gate(
     decisions: list[dict],
     binders: dict,
     risks: dict[str, tuple[float | None, str | None]],
     trials: dict,
     ceiling: float = 0.15,
+    constructs=None,
 ) -> list[SafetyRecord]:
     """One record per pool member, in the order Stage 4 emitted them."""
     out: list[SafetyRecord] = []
+    from_structure = structure_binders(constructs)
     for row in decisions:
         gene = row["gene"]
         risk, organ = risks.get(gene, (None, None))
@@ -102,6 +126,16 @@ def gate(
         origins = sorted({binder_origin(c.name) for c in named})
         entry.binder_origins = origins
         foreign = [o for o in origins if o in FOREIGN_ORIGINS]
+
+        structural = from_structure.get(gene)
+        if structural:
+            part_name, accession, detail = structural
+            organism, verdict = detail.split("|", 1)
+            entry.binder_name = part_name
+            entry.binder_structure_accession = accession
+            entry.binder_source_organism = organism
+            entry.binder_origin = verdict
+            entry.binder_origins = sorted(set(origins) | {verdict})
         if named:
             entry.binder_name = ", ".join(sorted(c.name for c in named)[:3])
 
@@ -135,11 +169,27 @@ def gate(
                 "adaptor, so the exposure is stoppable"
             )
 
-        if not usable:
+        if not usable and not structural:
             entry.verdict = NO_GATE
             entry.reasons.append("no binder, so there is nothing to gate")
             out.append(entry)
             continue
+
+        if structural:
+            entry.reasons.append(
+                f"the receptor carries a structure-derived binder, "
+                f"{entry.binder_source_organism} as deposited in "
+                f"{entry.binder_structure_accession}, treated as "
+                f"{entry.binder_origin} because no humanised sequence is "
+                "established for it. This is read from the deposition, not "
+                "from a name stem, which a structure-derived binder does not "
+                "carry"
+            )
+            entry.reasons.append(
+                "epitope-level immunogenicity remains NOT_CONNECTED for it: "
+                "no epitope source is connected, so the species is known and "
+                "the immunogenicity is not"
+            )
 
         if foreign:
             entry.reasons.append(

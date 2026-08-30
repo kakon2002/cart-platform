@@ -8,7 +8,7 @@ import sys
 os.environ.setdefault("CART_NO_MATRIX_FETCH", "1")
 
 from car_pipeline.configs.pdac import PDAC_PROJECT
-from car_pipeline.stages import routing, stage4
+from car_pipeline.stages import routing, stage4, stage9
 from car_pipeline.stages.stage1 import build_spec
 
 
@@ -117,6 +117,33 @@ def main() -> int:
     criterion("A11", bool(lying),
               f"{len(adaptors)} adaptor constructs; {len(lying)} emit a "
               "sequence despite an unsupplied binder")
+
+    gated = {g.gene: g for g in run["gated"]}
+    blind = []
+    connected = []
+    for c in adaptors:
+        record = gated.get(c.gene)
+        if record is None:
+            blind.append(f"{c.gene}=no safety record")
+            continue
+        if (record.binder_origin == "human"
+                or not record.binder_source_organism
+                or not record.binder_structure_accession):
+            blind.append(
+                f"{c.gene}={record.binder_origin or 'unset'}/"
+                f"{record.binder_source_organism or 'no organism'}")
+        if record.epitope_immunogenicity != stage9.NOT_CONNECTED:
+            connected.append(c.gene)
+    criterion(
+        "A12", bool(blind) or bool(connected),
+        (f"{len(adaptors) - len(blind)} of {len(adaptors)} adaptor constructs "
+         f"carry a structure-derived binder the origin check can see"
+         + (f"; blind on {blind[:3]}" if blind else "")
+         + (f"; epitope immunogenicity unexpectedly connected on {connected[:3]}"
+            if connected else
+            "; epitope immunogenicity stays NOT_CONNECTED on all of them, so "
+            "the species gap and the immunogenicity gap remain separate"))
+    )
 
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
