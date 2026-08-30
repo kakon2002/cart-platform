@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from car_pipeline.api import pipeline
 from car_pipeline.data.source import CacheError
-from car_pipeline.stages import stage4, stage6, stage10, stage11
+from car_pipeline.stages import stage4, stage6, stage10, stage11, validation
 
 _LOCK = threading.Lock()
 PROJECTS: dict[str, dict] = {}
@@ -267,6 +267,7 @@ def constructs_view(project_id: str) -> dict:
         rows.append({
             "gene": c.gene, "partner": c.partner, "verdict": c.verdict,
             "state": state(c),
+            "design_class": validation.design_class(c),
             "architecture": c.architecture,
             "binder_supplied": c.binder_supplied,
             "binder": c.binder_name, "partner_binder": c.partner_binder_name,
@@ -337,9 +338,13 @@ def constructs_view(project_id: str) -> dict:
             "size is declared and its sequence is not invented."
         )
     reasons.extend(adaptor_notices(r["constructs"]))
+    classes = validation.design_class_summary(constructs)
+    reasons.extend(classes["reasons"])
     return {
         "status": status,
         **_evidence(r),
+        "design_classes": {k: classes[k]
+                           for k in ("conservative_backup", "advanced")},
         "counts": counts,
         "buildable": len(buildable),
         "complete": len(complete),
@@ -413,6 +418,29 @@ def adaptor_notices(constructs) -> list[str]:
 TWO_PRODUCTS = (
     "Every surviving design routes to an adaptor architecture. That is two manufactured biologics, not one: the receptor and, separately, the tagged adaptor antibody that gives it its specificity. The second carries its own CMC package and its own regulatory path, and the payload budget the adaptor route saves is paid there instead."
 )
+
+
+def plan_view(project_id: str, gene: str) -> dict:
+    """The validation plan for one candidate construct."""
+    r = _result(project_id)
+    symbol = gene.strip().upper()
+    construct = next(
+        (c for c in r["constructs"]
+         if c.gene == symbol and c.verdict == stage6.BUILDABLE), None)
+    if construct is None:
+        assembled = sorted(c.gene for c in r["constructs"]
+                           if c.verdict == stage6.BUILDABLE)
+        raise NotFound(
+            symbol if any(c.gene == symbol for c in r["constructs"])
+            else symbol)
+    ranked = next((x for x in r["ranked"] if x.gene == symbol), None)
+    safety = next((s for s in r["gated"] if s.gene == symbol), None)
+    target = {
+        "risk": getattr(ranked, "risk", None),
+        "risk_organ": getattr(ranked, "risk_organ", None),
+        "evidence_class": getattr(ranked, "evidence_class", None),
+    }
+    return {**_evidence(r), **validation.plan(construct, target, safety)}
 
 
 def result_view(project_id: str) -> dict:
@@ -628,6 +656,10 @@ class Handler(BaseHTTPRequestHandler):
                     if paged:
                         return self._send(200, view(m.group(1), self._limit()))
                     return self._send(200, view(m.group(1)))
+
+            m = re.match(r"^/projects/([0-9a-f]{12})/plan/([A-Za-z0-9_.-]+)$", path)
+            if m:
+                return self._send(200, plan_view(m.group(1), m.group(2)))
 
             m = re.match(r"^/projects/([0-9a-f]{12})/evidence/([A-Za-z0-9_.-]+)$", path)
             if m:

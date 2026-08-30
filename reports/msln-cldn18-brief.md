@@ -39,7 +39,7 @@ between it and a recommendation.
 | **Evidence class** | PROTEIN_CONFIRMED | PROTEIN_CONFIRMED | both members protein-confirmed |
 | *measured weight* | 1.0 (6 of 6 components) | 1.0 (6 of 6) | — |
 | *organs measured for risk* | 20 of 21 | 20 of 21 | 20 of 20 resolved for the pair |
-| *confidence, now persisted* | target 1.0 | target 1.0 | pair **1.0** |
+| *confidence, now persisted* | target 1.0 | target 1.0 | **1.0** for MSLN + CLDN18.2 |
 | **Isoform status — expression/risk** | **isoform-robust.** Single promoter; one transcription start site | **resolvable, and resolved above.** Transcript medians exist on the pinned release | **resolvable, and resolved above** |
 | **Isoform status — co-expression** | isoform-robust | ⚠️ **isoform-summed, uncorrectable** | ⚠️ **isoform-summed, uncorrectable** |
 
@@ -61,6 +61,15 @@ is a probability and neither should be read as one.
 
 They surface in `data/stage4/decisions.json` and over the API at
 `GET /projects/{id}/evidence/{gene}`, under `stage4_pairing`.
+
+**Two different pairs, and they must not be read across.** The pair figure
+in the table above is for **MSLN + CLDN18.2**, computed directly, because
+Stage 4 pairs neither member that way — MSLN is `NO_DESIGN` and CLDN18 is
+paired with LAMP5. The `pair_confidence` the API returns on a decision row
+is for the pair the stage actually chose, so on the CLDN18 row it describes
+**CLDN18 + LAMP5**, a different pair with a different value. The API now
+names which pair each figure belongs to in a `pair_confidence_for` field,
+so the two cannot be confused by reading across them.
 
 ⚠️ **Every co-expression figure involving CLDN18 is a sum over both isoforms and
 cannot be corrected.** The single-cell atlas is 3′-capture single-nucleus

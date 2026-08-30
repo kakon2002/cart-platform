@@ -78,7 +78,7 @@ def load():
     pairs = stage4.evaluate(pool, per_organ, model, ceiling, cells)
     try:
         spans = GeneSpanSource().load()
-    except Exception:                                          # noqa: BLE001
+    except Exception:
         spans = {}
     annotated = stage4.annotate_span_context(pairs, spans)
     print(f"  {len(pairs):,} pairs, span context on {annotated:,}")

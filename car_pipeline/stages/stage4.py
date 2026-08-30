@@ -696,6 +696,9 @@ def _decision_payload(d: Decision) -> dict:
         "partner_evidence_class": d.partner_evidence_class,
         "partner_measured_weight": d.partner_measured_weight,
         "pair_confidence": d.pair_confidence,
+        "pair_confidence_for": (
+            f"{d.gene}+{d.partner}" if d.partner and d.pair_confidence is not None
+            else None),
         "pair_organs_total": d.pair_organs_total,
         "pair_organs_resolved": d.pair_organs_resolved,
         "pair_coverage_measured": d.pair_coverage_measured,

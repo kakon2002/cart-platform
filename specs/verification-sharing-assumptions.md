@@ -1,7 +1,8 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found five times in this
-repository, and the fifth was found by suspecting the fourth.
+Read this before writing a criterion. It has been found six times in this
+repository. The fifth was found by suspecting the fourth, and the sixth was
+introduced by a change made after the first five were written down.
 
 ## The pattern
 
@@ -16,7 +17,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The five
+## The six
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -74,6 +75,35 @@ function does rather than from the observed value".
 
 *Broken-thing question:* a bound chosen after seeing the value it bounds will
 always be satisfied by that value.
+
+**6. The origin check blind to the class it most needs to see.** Stage 9 flags
+non-human sequence content in a binder, and it determines species from the INN
+name stem: `-xi-` chimeric, `-o-` murine, `-u-` human. When the adaptor
+receptor gained a binder retrieved from a deposited structure, that binder had
+no INN name, because it is not a named therapeutic. The check therefore could
+not fire on it. Worse, the usable-binder test looked only at stage 5 records,
+which an adaptor design has none of, so seven of the eight surviving designs
+returned `NO_GATE` with the reason "no binder, so there is nothing to gate" —
+on designs whose receptor carried a murine scFv.
+
+*Broken-thing question:* if a construct carried a wholly non-human binder from
+a source with no naming convention, the check would report `ORIGIN_UNKNOWN` and
+the gate would report that there was nothing to gate.
+
+This is the same family as instance 3. There, the check shared a skip list with
+the code it checked. Here, the check shares a naming assumption with the only
+kind of binder it had ever been given. Both are blind spots aligned exactly
+with the case that matters, and in both the output looks clean: `NO_GATE` reads
+as "not applicable", not as "I cannot see this".
+
+The fix reads the species from the deposition rather than from a name, and
+refuses an entity that declares no source organism, so the value cannot be
+quietly defaulted. The criterion that verifies it, A12, had to be moved above
+the summary line before it counted — as first written it ran after the tally,
+so the verifier would have printed 10/11 while reporting twelve criteria. That
+is instance 1 reappearing as a placement rather than a constant, in the same
+change that closed instance 6, and it was caught by reading the output rather
+than by the suite.
 
 ## What to do instead
 
