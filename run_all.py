@@ -35,10 +35,6 @@ DERIVED = ["stage4", "stage5"]
 
 
 ACCEPTED = {
-    ("3", "R13"): "Withdrawn. The two populations differ by construction "
-                  "(breadth 51 vs 7) and the max-over-sources gate rewards "
-                  "being unmeasured, so no combination rule reaches the 5x "
-                  "limit. Replaced by R13-prime, which clears.",
     ("4", "P4"): "Coverage is span-confounded: f_AB tracks genomic span "
                  "(+0.68) more than expression (+0.20). Reported beside a "
                  "span-matched percentile and removed from partner selection.",

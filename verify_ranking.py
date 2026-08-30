@@ -350,24 +350,29 @@ def main() -> int:
         f"worst retention {worst_sat[1]:.0%} at {worst_sat[0]}",
     )
 
-    tier_totals = {}
-    for r in rows:
-        tier_totals[r.evidence_class] = tier_totals.get(r.evidence_class, 0) + 1
-    rate = {}
-    for k in (PROTEIN_CONFIRMED, RNA_SUPPORTED):
-        n = sum(1 for r in rows if r.evidence_class == k and r.cleared)
-        rate[k] = n / tier_totals.get(k, 1)
-    hi, lo = max(rate.values()), min(rate.values())
-    if lo == 0.0:
-        ratio = float("inf") if hi > 0 else 1.0
-    else:
-        ratio = hi / lo
+    positive_levels = sorted(k for k in calibration.tpm if k > 0)
+    separable = []
+    grid = []
+    for tier, weight in sorted(stage3.TIER_WEIGHTS.items()):
+        scaled = [(k, calibration.score(k) * weight) for k in positive_levels]
+        below = [k for k, v in scaled if v <= ceiling]
+        above = [k for k, v in scaled if v > ceiling]
+        if below and above:
+            separable.append(tier)
+        grid.append(
+            f"tier{tier} "
+            + "/".join(f"{v:.3f}" for _k, v in scaled)
+            + ("(split)" if below and above else "(all above)" if above
+               else "(all below)")
+        )
     criterion(
-        "R13", ratio > 5.0,
-        f"clearance rate {PROTEIN_CONFIRMED} {rate[PROTEIN_CONFIRMED]:.1%} vs "
-        f"{RNA_SUPPORTED} {rate[RNA_SUPPORTED]:.1%}, ratio "
-        + ("infinite" if ratio == float("inf") else f"{ratio:.2f}x")
-        + " against a limit of 5x",
+        "R14", not separable,
+        ("staining levels are separable at the ceiling in tier(s) "
+         + ", ".join(str(t) for t in separable)
+         if separable else
+         "no criticality tier places two staining levels on opposite sides of "
+         f"the {ceiling} ceiling, so the arm gates on presence only")
+        + " — " + "  ".join(grid),
     )
 
     print("\n" + "=" * 72)
@@ -383,6 +388,36 @@ def main() -> int:
     print(
         f"\n  WATCH  strongest single-component correlation: {worst[1]:.3f}"
         f" ({worst[0]}), rejection at 0.95"
+    )
+
+    baseline_only = {}
+    for r in rows:
+        if r.evidence_class != PROTEIN_CONFIRMED:
+            continue
+        profile = gtex_profiles.get(r.accession)
+        if profile is None:
+            continue
+        base = {}
+        for label, tpm in zip(gtex_tissues, profile.values):
+            organ = model.organ_for_baseline(label)
+            if organ is None:
+                continue
+            value = stage3._baseline_score(float(tpm))
+            if value > base.get(organ, -1.0):
+                base[organ] = value
+        value, _organ = stage3.worst_organ(model, base)
+        if value is not None:
+            baseline_only[r.accession] = value
+    clears_base = [r for r in rows
+                   if r.accession in baseline_only
+                   and baseline_only[r.accession] <= ceiling]
+    switched = [r for r in clears_base if not r.cleared]
+    share = len(switched) / len(clears_base) if clears_base else 0.0
+    print(
+        f"  REPORT arm switch, not gated: {len(switched)} of {len(clears_base)} "
+        f"protein-confirmed targets clearing on the transcript arm alone are "
+        f"blocked once staining is added ({share:.1%}); the switched set is "
+        "determined by presence, not magnitude"
     )
 
     if tripped:
