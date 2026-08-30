@@ -336,11 +336,7 @@ def constructs_view(project_id: str) -> dict:
             "and no anti-tag binder exists in the connected sources, so its "
             "size is declared and its sequence is not invented."
         )
-    adaptors = [c for c in r["constructs"]
-                if c.verdict == stage6.BUILDABLE
-                and c.outcome == stage4.ADAPTOR]
-    if adaptors and len(adaptors) == len(buildable):
-        reasons.append(TWO_PRODUCTS)
+    reasons.extend(adaptor_notices(r["constructs"]))
     return {
         "status": status,
         **_evidence(r),
@@ -381,6 +377,37 @@ def validation_view(project_id: str) -> dict:
         "architecture": v.get("architecture"),
         "reasons": v["reasons"],
     }
+
+
+def adaptor_notices(constructs) -> list[str]:
+    """What a reader must be told about a surviving adaptor design."""
+    from car_pipeline.data.antitag import (
+        DEPOSITION_ARTIFACTS, IDENTIFICATION, SPECIES_NOTICE)
+
+    built = [c for c in constructs
+             if c.verdict == stage6.BUILDABLE and c.outcome == stage4.ADAPTOR]
+    if not built:
+        return []
+    notices = [TWO_PRODUCTS, IDENTIFICATION, SPECIES_NOTICE]
+
+    sample = built[0]
+    found = []
+    for motif, what in DEPOSITION_ARTIFACTS:
+        at = (sample.amino_acid_sequence or "").find(motif)
+        if at >= 0:
+            found.append(f"{motif} at residues {at + 1}-{at + len(motif)}, {what}")
+    if found:
+        notices.append(
+            "The binder is emitted as deposited, including its crystallisation "
+            "artifacts, because trimming them is a design decision this "
+            "pipeline does not take silently. Each construct therefore carries "
+            + "; and ".join(found)
+            + ". As emitted these are not manufacturable: the first is a second "
+            "leader sitting inside the mature protein, the second a His tag "
+            "between the binder and the hinge. Removing them is a wet-lab step "
+            "that has not been taken here."
+        )
+    return notices
 
 
 TWO_PRODUCTS = (
@@ -430,11 +457,7 @@ def result_view(project_id: str) -> dict:
         "complete": len(complete),
         "awaiting_binder": len(awaiting),
         "attrition": chain,
-        "reasons": reasons + (
-            [TWO_PRODUCTS]
-            if any(c.verdict == stage6.BUILDABLE and c.outcome == stage4.ADAPTOR
-                   for c in r["constructs"]) else []
-        ),
+        "reasons": reasons + adaptor_notices(r["constructs"]),
         "developability_status": r["developability_status"],
     }
 
