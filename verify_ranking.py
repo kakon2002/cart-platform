@@ -350,6 +350,96 @@ def main() -> int:
         f"worst retention {worst_sat[1]:.0%} at {worst_sat[0]}",
     )
 
+    from car_pipeline.stages import stage4 as _stage4
+
+    def _c2(r):
+        return r.components[stage3.C2]
+
+    rejected = [r for r in rows if r.tumour_side_verdict == stage3.STROMA_DOMINANT]
+    unresolved = [r for r in rows
+                  if r.tumour_side_verdict == stage3.STROMA_UNRESOLVED]
+    measured_fail = [r for r in rows
+                     if _c2(r).measured
+                     and (_c2(r).raw or 0.0) <= stage3.STROMA_RATIO_FLOOR]
+    gate_pool = _stage4.build_pool(rows)
+
+    blind = [r.gene for r in rejected if not _c2(r).measured]
+    criterion(
+        "G1", bool(blind),
+        f"{len(unresolved)} targets carry an unmeasured malignant-to-stromal "
+        f"ratio and {len(blind)} of them were rejected"
+        + (f": {blind[:5]}" if blind else "; the gate fired on no absent measurement"))
+
+    pinned = ["CEACAM6", "MUC1", "CLDN18", "MSLN", "CEACAM5"]
+    by_gene_all = {}
+    for r in rows:
+        if r.gene and (r.gene not in by_gene_all
+                       or (r.composite or 0) > (by_gene_all[r.gene].composite or 0)):
+            by_gene_all[r.gene] = r
+    lost = [g for g in pinned
+            if by_gene_all.get(g)
+            and by_gene_all[g].tumour_side_verdict == stage3.STROMA_DOMINANT]
+    criterion(
+        "G2", bool(lost),
+        f"known targets surviving the gate: "
+        + ", ".join(
+            f"{g}="
+            + ("exempt" if by_gene_all[g].tumour_side_verdict
+               == stage3.STROMA_UNRESOLVED
+               else f"{_c2(by_gene_all[g]).raw:.1f}")
+            for g in pinned if by_gene_all.get(g))
+        + (f"; REJECTED {lost}" if lost else ""))
+
+    rejected_genes = {r.gene for r in rejected}
+    mhc2 = sorted(g for g in rejected_genes if g and g.startswith("HLA-D"))
+    immunoglobulin = sorted(g for g in rejected_genes
+                            if g and (g.startswith("IGH") or g.startswith("IGK")
+                                      or g.startswith("IGL")))
+    criterion(
+        "G3",
+        "LRRC15" not in rejected_genes or not mhc2 or not immunoglobulin,
+        f"the gate rejects {len(rejected)} targets including LRRC15="
+        f"{'yes' if 'LRRC15' in rejected_genes else 'NO'}, "
+        f"{len(mhc2)} MHC class II ({mhc2[:3]}), "
+        f"{len(immunoglobulin)} immunoglobulin ({immunoglobulin[:3]})")
+
+    measurable = [r for r in rows if _c2(r).measured]
+    criterion(
+        "G4", not rejected or len(rejected) >= len(measurable),
+        f"{len(rejected)} rejected of {len(measurable)} with a measured ratio; "
+        "the gate neither passes everything nor empties the population")
+
+    bad_note = [r.gene for r in rejected
+                if _c2(r).note in ("no row", "below capture threshold")]
+    criterion(
+        "G5",
+        len(rejected) != len(measured_fail) or bool(bad_note),
+        f"{len(rejected)} rejected against {len(measured_fail)} with a measured "
+        f"ratio at or below {stage3.STROMA_RATIO_FLOOR}"
+        + (f"; {len(bad_note)} carry an absence note: {bad_note[:3]}"
+           if bad_note else "; none carries an absence note"))
+
+    drifted = []
+    for r in rejected[:200]:
+        entry = by_acc.get(r.accession) or (by_sym.get(r.gene) if r.gene else None)
+        profile = gtex_profiles.get(r.accession)
+        again, _organ = stage3.compute_risk(
+            model, entry, profile.values if profile is not None else None,
+            gtex_tissues, calibration)
+        if (again is None) != (r.risk is None):
+            drifted.append(r.gene)
+        elif again is not None and abs(round(again, 4) - r.risk) > 1e-9:
+            drifted.append(r.gene)
+    criterion(
+        "G6", bool(drifted),
+        f"risk recomputed independently for all {len(rejected)} rejected "
+        f"targets matches the stored value on {len(rejected) - len(drifted)}"
+        + (f"; drifted on {drifted[:3]}" if drifted
+           else "; the gate changed no risk"))
+
+    print(f"\n  POOL   {len(gate_pool)} members after the gate; "
+          f"{len(rejected)} rejected, {len(unresolved)} exempt as unmeasured")
+
     positive_levels = sorted(k for k in calibration.tpm if k > 0)
     separable = []
     grid = []

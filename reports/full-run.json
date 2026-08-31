@@ -1,12 +1,11 @@
 {
-  "clear": 118,
-  "total": 126,
-  "minutes": 32.4,
+  "clear": 126,
+  "total": 133,
+  "minutes": 24.5,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
     "4/P4": "Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.",
-    "4/P7": "One cleared pair contains HLA-A. Recorded rather than filtered, because the pool is not curated by hand.",
     "4/P8": "48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.",
     "4/P15": "Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.",
     "4a/A6": "A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row's condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible."
@@ -19,13 +18,13 @@
     },
     {
       "stage": "4",
-      "id": "P12",
-      "detail": "73 of 100 dual recommendations change at 2 counts (73.0%, limit 50%)"
+      "id": "P13",
+      "detail": "most common partner takes 70.0% of dual recommendations (PRSS21)"
     },
     {
-      "stage": "4",
-      "id": "P13",
-      "detail": "most common partner takes 72.0% of dual recommendations (LRRC15)"
+      "stage": "6",
+      "id": "K2",
+      "detail": "MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all"
     }
   ],
   "stale": [],
@@ -35,13 +34,14 @@
     "      - The anti-tag binder is a murine anti-GCN4 single-chain Fv retrieved from PDB 1P4B entities 1+2 at revision 1.4. PDB does not record the identifier 52SR4 anywhere in that entry. The identification rests on an exact match between the deposited CDRs and those quoted for 52SR4 in the Calibr/Scripps patent family, together with the shared Zahnd 2004 primary citation. That is an inference drawn by this pipeline, not a fact taken from the source, and a reader is entitled to disagree with it.",
     "      - The retrieved binder is murine. The clinical construct in this tag system is humanized and its sequence is not established, so what is built here is the crystallised murine scFv, not the clinical one. Non-human sequence content is an explicit Stage 9 immunogenicity question and that arm is empty: epitope-level immunogenicity reports NOT_CONNECTED on every row because no epitope source is connected, and the origin check reads INN name stems, which a structure-derived binder does not carry. Nothing in this pipeline has assessed the immunogenicity of this binder.",
     "      - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.",
-    "      - 1 advanced design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.",
+    "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: the only single-antigen target, NPSR1, retrieves no binder, so no construct is assembled for it. The two dual designs that assemble are both over the payload budget. This is reported rather than filled by labelling something that does not qualify.",
+    "      - 5 advanced design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.",
     "    GET /result     -> RANKED",
-    "      blocked on normal tissue risk      - 197     3 remain",
-    "      no design recommended              -   0     3 remain",
-    "      no binder retrieved                -   1     2 remain",
-    "      no construct assembled             -   0     2 remain",
-    "      construct over budget              -   0     2 remain"
+    "      blocked on normal tissue risk      - 192     8 remain",
+    "      no design recommended              -   0     8 remain",
+    "      no binder retrieved                -   3     5 remain",
+    "      no construct assembled             -   0     5 remain",
+    "      construct over budget              -   0     5 remain"
   ],
   "stages": [
     {
@@ -50,7 +50,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.7,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -234,8 +234,8 @@
     {
       "number": "3",
       "name": "Target discovery",
-      "clear": 12,
-      "total": 13,
+      "clear": 18,
+      "total": 19,
       "ok": false,
       "seconds": 20.0,
       "exit": 1,
@@ -301,6 +301,36 @@
           "detail": "worst retention 82% at c3_fold x0.5"
         },
         {
+          "id": "G1",
+          "tripped": false,
+          "detail": "901 targets carry an unmeasured malignant-to-stromal ratio and 0 of them were rejected; the gate fired on no absent measurement"
+        },
+        {
+          "id": "G2",
+          "tripped": false,
+          "detail": "known targets surviving the gate: CEACAM6=193.4, MUC1=34.8, CLDN18=43.3, MSLN=19.7, CEACAM5=exempt"
+        },
+        {
+          "id": "G3",
+          "tripped": false,
+          "detail": "the gate rejects 1665 targets including LRRC15=yes, 11 MHC class II (['HLA-DOA', 'HLA-DOB', 'HLA-DPA1']), 8 immunoglobulin (['IGHA1', 'IGHA2', 'IGHD'])"
+        },
+        {
+          "id": "G4",
+          "tripped": false,
+          "detail": "1665 rejected of 2565 with a measured ratio; the gate neither passes everything nor empties the population"
+        },
+        {
+          "id": "G5",
+          "tripped": false,
+          "detail": "1665 rejected against 1665 with a measured ratio at or below 1.0; none carries an absence note"
+        },
+        {
+          "id": "G6",
+          "tripped": false,
+          "detail": "risk recomputed independently for all 1665 rejected targets matches the stored value on 1665; the gate changed no risk"
+        },
+        {
           "id": "R14",
           "tripped": true,
           "detail": "no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only \u2014 tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)"
@@ -310,31 +340,31 @@
     {
       "number": "4",
       "name": "Target pairing",
-      "clear": 8,
+      "clear": 10,
       "total": 14,
       "ok": false,
-      "seconds": 9.0,
+      "seconds": 8.9,
       "exit": 2,
       "criteria": [
         {
           "id": "P1",
           "tripped": false,
-          "detail": "combined risk vs min of members, rho=0.7929 (limit 0.95)"
+          "detail": "combined risk vs min of members, rho=0.7910 (limit 0.95)"
         },
         {
           "id": "P2",
           "tripped": false,
-          "detail": "6,337 of 19,900 (31.84%) beat the better member by more than 0.05 (limit 1%)"
+          "detail": "6,426 of 19,900 (32.29%) beat the better member by more than 0.05 (limit 1%)"
         },
         {
           "id": "P3",
           "tripped": false,
-          "detail": "102 blocked targets rescued by some pair: ABCC3, ACSL5, ADAM12, ADAM19, ADAM9, ADGRF1, AMIGO2, AMN"
+          "detail": "75 blocked targets rescued by some pair: ACHE, ACSL5, ADAM9, ADGRF4, ADGRG6, AMIGO2, AMN, BTNL8"
         },
         {
           "id": "P4",
           "tripped": true,
-          "detail": "f_AB vs f_A x f_B over 19,503 measured pairs, rho=0.9924 (limit 0.98)"
+          "detail": "f_AB vs f_A x f_B over 19,110 measured pairs, rho=0.9916 (limit 0.98)"
         },
         {
           "id": "P5",
@@ -348,13 +378,13 @@
         },
         {
           "id": "P7",
-          "tripped": true,
-          "detail": "2 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['HLA-A+LRRC15', 'NPSR1+HLA-A']"
+          "tripped": false,
+          "detail": "0 cleared pairs contain a ubiquitous immune protein (in pool: none) []"
         },
         {
           "id": "P8",
           "tripped": true,
-          "detail": "142 of 272 cleared pairs (52.2%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)"
+          "detail": "172 of 294 cleared pairs (58.5%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)"
         },
         {
           "id": "P10",
@@ -364,17 +394,17 @@
         {
           "id": "P11",
           "tripped": false,
-          "detail": "outcome spread {'DUAL': 100, 'UNRESOLVED': 96, 'SINGLE': 2, 'NO_DESIGN': 2}, largest 50.0% (limit 95%)"
+          "detail": "outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)"
         },
         {
           "id": "P12",
-          "tripped": true,
-          "detail": "73 of 100 dual recommendations change at 2 counts (73.0%, limit 50%)"
+          "tripped": false,
+          "detail": "0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)"
         },
         {
           "id": "P13",
           "tripped": true,
-          "detail": "most common partner takes 72.0% of dual recommendations (LRRC15)"
+          "detail": "most common partner takes 70.0% of dual recommendations (PRSS21)"
         },
         {
           "id": "P14",
@@ -384,7 +414,7 @@
         {
           "id": "P15",
           "tripped": true,
-          "detail": "pool halved to 100: 51 of 53 shared dual targets change partner (96.2%, limit 50%)"
+          "detail": "pool halved to 100: 17 of 18 shared dual targets change partner (94.4%, limit 50%)"
         }
       ]
     },
@@ -394,7 +424,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 343.7,
+      "seconds": 214.5,
       "exit": 2,
       "criteria": [
         {
@@ -440,7 +470,7 @@
         {
           "id": "A9",
           "tripped": false,
-          "detail": "adaptor admissions across the ceiling sweep: 0.15->0, 0.2->1, 0.25->1, 0.3->4, 0.35->7, 0.4->22, 0.5->61, 0.6->103, 0.7->145"
+          "detail": "adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->0, 0.3->5, 0.35->9, 0.4->26, 0.5->70, 0.6->113, 0.7->155"
         },
         {
           "id": "A10",
@@ -450,12 +480,12 @@
         {
           "id": "A11",
           "tripped": false,
-          "detail": "1 adaptor constructs; 0 emit a sequence despite an unsupplied binder"
+          "detail": "5 adaptor constructs; 0 emit a sequence despite an unsupplied binder"
         },
         {
           "id": "A12",
           "tripped": false,
-          "detail": "1 of 1 adaptor constructs carry a structure-derived binder the origin check can see; epitope immunogenicity stays NOT_CONNECTED on all of them, so the species gap and the immunogenicity gap remain separate"
+          "detail": "5 of 5 adaptor constructs carry a structure-derived binder the origin check can see; epitope immunogenicity stays NOT_CONNECTED on all of them, so the species gap and the immunogenicity gap remain separate"
         }
       ]
     },
@@ -465,13 +495,13 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 269.1,
+      "seconds": 205.6,
       "exit": 0,
       "criteria": [
         {
           "id": "B1",
           "tripped": false,
-          "detail": "77 targets have entries but no antibody among them (an inert stage would have none); 4 of 130 with entries echo their count"
+          "detail": "77 targets have entries but no antibody among them (an inert stage would have none); 6 of 121 with entries echo their count"
         },
         {
           "id": "B3",
@@ -508,21 +538,21 @@
     {
       "number": "6",
       "name": "Construct assembly",
-      "clear": 8,
+      "clear": 7,
       "total": 8,
-      "ok": true,
-      "seconds": 0.5,
-      "exit": 0,
+      "ok": false,
+      "seconds": 0.4,
+      "exit": 2,
       "criteria": [
         {
           "id": "K1",
           "tripped": false,
-          "detail": "12 constructs translate back to their own sequence"
+          "detail": "0 constructs translate back to their own sequence"
         },
         {
           "id": "K2",
-          "tripped": false,
-          "detail": "12 constructs carry their binders verbatim, including the pinned MUC16, MUC17"
+          "tripped": true,
+          "detail": "MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all"
         },
         {
           "id": "K3",
@@ -532,7 +562,7 @@
         {
           "id": "K4",
           "tripped": false,
-          "detail": "every part of every construct names its source (19 parts in the first construct)"
+          "detail": "every part of every construct names its source (0 parts in the first construct)"
         },
         {
           "id": "K5",
@@ -547,7 +577,7 @@
         {
           "id": "K7",
           "tripped": false,
-          "detail": "every owed construct was built and none was built without a binder; 16 targets have a binder but no recommendation (\u00a75.1)"
+          "detail": "every owed construct was built and none was built without a binder; 24 targets have a binder but no recommendation (\u00a75.1)"
         },
         {
           "id": "K8",
@@ -634,7 +664,7 @@
         {
           "id": "D5",
           "tripped": false,
-          "detail": "112 rows against 112 binders carrying a sequence"
+          "detail": "107 rows against 107 binders carrying a sequence"
         },
         {
           "id": "D6",
@@ -675,7 +705,7 @@
         {
           "id": "N5",
           "tripped": false,
-          "detail": "status RANKED matches the survivor count 1"
+          "detail": "status NO_DESIGN_REACHES_THE_END matches the survivor count 0"
         },
         {
           "id": "N6",
@@ -690,7 +720,7 @@
       "clear": 10,
       "total": 10,
       "ok": true,
-      "seconds": 276.8,
+      "seconds": 216.6,
       "exit": 0,
       "criteria": [
         {
@@ -706,7 +736,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job c4a33892d699 rather than blocking"
+          "detail": "a run returns 202 with job 9bdb88c3b68c rather than blocking"
         },
         {
           "id": "A4",
@@ -716,12 +746,12 @@
         {
           "id": "A5",
           "tripped": false,
-          "detail": "200 BUILDABLE: 2 buildable = 2 complete + 0 awaiting a binder; 11 over budget, 5 reasons"
+          "detail": "200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons"
         },
         {
           "id": "A6",
           "tripped": false,
-          "detail": "end state RANKED, attrition accounts for 198 + 2 of 200; 2 reached = 2 complete + 0 awaiting"
+          "detail": "end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting"
         },
         {
           "id": "A7",
@@ -731,7 +761,7 @@
         {
           "id": "A8",
           "tripped": false,
-          "detail": "pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.1291)"
+          "detail": "pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.037)"
         },
         {
           "id": "A10",
@@ -748,16 +778,16 @@
     {
       "number": "MULTI",
       "name": "Multi-indication",
-      "clear": 10,
-      "total": 10,
+      "clear": 11,
+      "total": 11,
       "ok": true,
-      "seconds": 1013.5,
+      "seconds": 794.7,
       "exit": 0,
       "criteria": [
         {
           "id": "M1",
           "tripped": false,
-          "detail": "44 indication-tagged artifacts; 0 changed, 0 disappeared after running both"
+          "detail": "52 indication-tagged artifacts; 0 changed, 0 disappeared after running both"
         },
         {
           "id": "M2",
@@ -797,12 +827,17 @@
         {
           "id": "M9",
           "tripped": false,
-          "detail": "reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'DUAL': 100, 'UNRESOLVED': 95, 'SINGLE': 2, 'ADAPTOR': 1, 'NO_DESIGN': 2}"
+          "detail": "reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}"
         },
         {
           "id": "M10",
           "tripped": false,
           "detail": "a degraded indication names its missing source: [\"dependency lineage 'NoSuchLineage': ValueError: need at least one array to concatenate\"]"
+        },
+        {
+          "id": "M11",
+          "tripped": false,
+          "detail": "breast: 1548 rejected by the stromal gate, 0 of them on an absent measurement; known targets CEACAM6=138.7, MUC1=49.3, ERBB2=10.8, TACSTD2=12.5, MSLN=26.5, CEACAM5=exempt"
         }
       ]
     }

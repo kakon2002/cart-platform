@@ -3,7 +3,7 @@ loading sources
 ========================================================================
 TARGET DISCOVERY - STAGE 3
 ========================================================================
-  project              pancreatic-ductal-adenocarcinoma-20260830T174946-77f44ed3
+  project              pancreatic-ductal-adenocarcinoma-20260831T170200-c240b83a
   indication           Pancreatic Ductal Adenocarcinoma
   discovery mode       B
   target supplied      None
@@ -15,7 +15,7 @@ TARGET DISCOVERY - STAGE 3
   fold disagreement    2.0x
   risk ceiling         0.15
   universe             3466
-  revision             2e69c2e-dirty
+  revision             6c4d204-dirty
   configuration hash   a91c696f2e1318f7
   margin denominator   Pancreas (bulk only)
   field offset         the cohort fold runs 3.6x below the baseline fold at the median, over 2,832 proteins with both
@@ -81,6 +81,8 @@ TARGET DISCOVERY - STAGE 3
       departs  TMC5       baseline        80.3x   cohort       1.7x   field elevation 49x
       departs  FNDC10     baseline        25.1x   cohort       0.8x   field elevation 31x
 
+  POOL   200 members after the gate; 1665 rejected, 901 exempt as unmeasured
+
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
@@ -96,9 +98,15 @@ REJECTION CRITERIA
   clear    R10: 0 of 100 reached only after a symbol failed
   clear    R11: 22 of 25 depart from the systematic offset (3.6x) by more than 2x; all listed, so none unread
   clear    R12: worst retention 82% at c3_fold x0.5
+  clear    G1: 901 targets carry an unmeasured malignant-to-stromal ratio and 0 of them were rejected; the gate fired on no absent measurement
+  clear    G2: known targets surviving the gate: CEACAM6=193.4, MUC1=34.8, CLDN18=43.3, MSLN=19.7, CEACAM5=exempt
+  clear    G3: the gate rejects 1665 targets including LRRC15=yes, 11 MHC class II (['HLA-DOA', 'HLA-DOB', 'HLA-DPA1']), 8 immunoglobulin (['IGHA1', 'IGHA2', 'IGHD'])
+  clear    G4: 1665 rejected of 2565 with a measured ratio; the gate neither passes everything nor empties the population
+  clear    G5: 1665 rejected against 1665 with a measured ratio at or below 1.0; none carries an absence note
+  clear    G6: risk recomputed independently for all 1665 rejected targets matches the stored value on 1665; the gate changed no risk
   TRIPPED  R14: no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
 ========================================================================
-  12/13 criteria clear
+  18/19 criteria clear
 
   WATCH  strongest single-component correlation: 0.815 (tumour_vs_normal), rejection at 0.95
   REPORT arm switch, not gated: 72 of 83 protein-confirmed targets clearing on the transcript arm alone are blocked once staining is added (86.7%); the switched set is determined by presence, not magnitude

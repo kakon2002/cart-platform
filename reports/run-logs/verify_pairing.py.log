@@ -10,10 +10,10 @@ PER CELL DERIVATION — known answer check
   MSLN       detected in  0.1197 of malignant cells (floor 0.05) ok
   CEACAM5    detected in  0.0000 — excluded from the check; this assay is documented as dropping it
 
-  cells 64,538  genes 200  patients 43  evaluable 29
+  cells 64,538  genes 198  patients 43  evaluable 29
 evaluating pairs
-  partner eligibility at 5.0 TPM: 189 of 200 pool members eligible (0 without a tumour column)
-  span context attached to 19,503 pairs of 19,503 measured
+  partner eligibility at 5.0 TPM: 185 of 200 pool members eligible (0 without a tumour column)
+  span context attached to 19,110 pairs of 19,110 measured
 
 ========================================================================
 CONSTRUCTION INVARIANTS
@@ -29,24 +29,24 @@ CONSTRUCTION INVARIANTS
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    P1: combined risk vs min of members, rho=0.7929 (limit 0.95)
-  clear    P2: 6,337 of 19,900 (31.84%) beat the better member by more than 0.05 (limit 1%)
-  clear    P3: 102 blocked targets rescued by some pair: ABCC3, ACSL5, ADAM12, ADAM19, ADAM9, ADGRF1, AMIGO2, AMN
-  TRIPPED  P4: f_AB vs f_A x f_B over 19,503 measured pairs, rho=0.9924 (limit 0.98)
+  clear    P1: combined risk vs min of members, rho=0.7910 (limit 0.95)
+  clear    P2: 6,426 of 19,900 (32.29%) beat the better member by more than 0.05 (limit 1%)
+  clear    P3: 75 blocked targets rescued by some pair: ACHE, ACSL5, ADAM9, ADGRF4, ADGRG6, AMIGO2, AMN, BTNL8
+  TRIPPED  P4: f_AB vs f_A x f_B over 19,110 measured pairs, rho=0.9916 (limit 0.98)
   clear    P5: 0 pairs marked cleared on the optimistic arm
   clear    P6: 0 recommended pairs are unmeasured
-  TRIPPED  P7: 2 cleared pairs contain a ubiquitous immune protein (in pool: ['HLA-A']) ['HLA-A+LRRC15', 'NPSR1+HLA-A']
-  TRIPPED  P8: 142 of 272 cleared pairs (52.2%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
-  report   P9: 100 of 100 recommended pairs sit below the patient floor of 0.6 (reported, not gated — see 6.5b)
+  clear    P7: 0 cleared pairs contain a ubiquitous immune protein (in pool: none) []
+  TRIPPED  P8: 172 of 294 cleared pairs (58.5%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
+  report   P9: 30 of 30 recommended pairs sit below the patient floor of 0.6 (reported, not gated — see 6.5b)
   clear    P10: 0 targets recommended dual despite clearing alone
-  clear    P11: outcome spread {'DUAL': 100, 'UNRESOLVED': 96, 'SINGLE': 2, 'NO_DESIGN': 2}, largest 50.0% (limit 95%)
-  TRIPPED  P12: 73 of 100 dual recommendations change at 2 counts (73.0%, limit 50%)
-  TRIPPED  P13: most common partner takes 72.0% of dual recommendations (LRRC15)
+  clear    P11: outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)
+  clear    P12: 0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)
+  TRIPPED  P13: most common partner takes 70.0% of dual recommendations (PRSS21)
   clear    P14: top pair is NPSR1+PTPRN2, top two singles are TMC5+ITGB6
-  TRIPPED  P15: pool halved to 100: 51 of 53 shared dual targets change partner (96.2%, limit 50%)
-  report   P16: 9,199 of 19,503 measured pairs reach f_AB >= 0.02 (reported, not gated)
+  TRIPPED  P15: pool halved to 100: 17 of 18 shared dual targets change partner (94.4%, limit 50%)
+  report   P16: 10,644 of 19,110 measured pairs reach f_AB >= 0.02 (reported, not gated)
 ========================================================================
-  8/14 criteria clear
+  10/14 criteria clear
   decisions written to C:\cart-platform\data\stage4\decisions.json
   usable as a result: no
 
@@ -56,7 +56,7 @@ WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)
 
   What the weights are doing in this stage
   --------------------------------------------------------------------
-    swapping the ordering key from combined risk to composite changes 29 of 100 recommendations (29%)
+    swapping the ordering key from combined risk to composite changes 7 of 30 recommendations (23%)
 
     The weights never order anything in this stage. They enter only
     through pool membership, and P15 above measures how much that
@@ -87,17 +87,17 @@ WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)
     gates anything: coverage was removed from partner selection.
 
     A         B           A alone  B alone      OR     AND   escape   cost  span kb span %ile
-    CEACAM6   MSLN         0.1439   0.1197  0.2348  0.0288   0.9712   5.0x       13       92%
-    CEACAM6   CLDN18       0.1439   0.1848  0.2836  0.0451   0.9549   4.1x       27       73%
-    CEACAM6   MUC1         0.1439   0.0520  0.1867  0.0093   0.9907  15.5x       12       71%
-    MSLN      CLDN18       0.1197   0.1848  0.2808  0.0237   0.9763   7.8x       17       72%
-    MSLN      MUC1         0.1197   0.0520  0.1631  0.0087   0.9913  13.8x        8       70%
-    CLDN18    MUC1         0.1848   0.0520  0.2224  0.0145   0.9855  12.7x       16       61%
-    PTPRK     VMP1         0.7507   0.8025  0.9033  0.6500   0.3500   1.2x      273      100%
-    ABCC3     VMP1         0.6877   0.8025  0.8995  0.5908   0.4092   1.4x       88      100%
-    EFNA5     VMP1         0.6382   0.8025  0.8747  0.5660   0.4340   1.4x      199      100%
+    CEACAM6   MSLN         0.1439   0.1197  0.2348  0.0288   0.9712   5.0x       13       85%
+    CEACAM6   CLDN18       0.1439   0.1848  0.2836  0.0451   0.9549   4.1x       27       70%
+    CEACAM6   MUC1         0.1439   0.0520  0.1867  0.0093   0.9907  15.5x       12       55%
+    MSLN      CLDN18       0.1197   0.1848  0.2808  0.0237   0.9763   7.8x       17       65%
+    MSLN      MUC1         0.1197   0.0520  0.1631  0.0087   0.9913  13.8x        8       53%
+    CLDN18    MUC1         0.1848   0.0520  0.2224  0.0145   0.9855  12.7x       16       67%
     ABCC3     PTPRK        0.6877   0.7507  0.8858  0.5526   0.4474   1.4x      178      100%
     EFNA5     PTPRK        0.6382   0.7507  0.8435  0.5454   0.4546   1.4x      403      100%
+    ITGB6     PTPRK        0.6071   0.7507  0.8397  0.5181   0.4819   1.4x      308      100%
+    GPRC5A    PTPRK        0.6026   0.7507  0.8524  0.5009   0.4991   1.5x      122      100%
+    PTPRK     ITGA6        0.7507   0.5961  0.8475  0.4993   0.5007   1.5x      388      100%
 
     The best-covering pairs above are all high-abundance genes. That
     is the dropout bias of section 6.5 visible in the output: a scarce
@@ -115,4 +115,4 @@ WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)
     better than this — but not better than the single-target one,
     which is deflated by the same assay in the same direction.
 
-  STOPPING: P4, P7, P8, P12, P13, P15 tripped. The specification changes and the run repeats; the result does not get an explanation.
+  STOPPING: P4, P8, P13, P15 tripped. The specification changes and the run repeats; the result does not get an explanation.

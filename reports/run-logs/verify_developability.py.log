@@ -1,5 +1,5 @@
 loading upstream
-  112 binder sequences scored, status SCORED
+  107 binder sequences scored, status SCORED
 
 ========================================================================
 REJECTION CRITERIA
@@ -8,7 +8,7 @@ REJECTION CRITERIA
   clear    D2: NST yields 1 sequon, NPT yields 0 — the proline exclusion holds
   clear    D3: a 3-cysteine control reports parity 'odd', and never 'unpaired: 0'
   clear    D4: every scored binder has a pI in 1..14 and 0..5 flags
-  clear    D5: 112 rows against 112 binders carrying a sequence
+  clear    D5: 107 rows against 107 binders carrying a sequence
   clear    D6: no liability is summed into a single score; flags are counted and listed
 ========================================================================
   6/6 criteria clear
@@ -16,19 +16,19 @@ REJECTION CRITERIA
 ========================================================================
 WHAT THE SEQUENCES CARRY
 ========================================================================
-    binder sequences scored          112
-    carrying at least one flag       112
+    binder sequences scored          107
+    carrying at least one flag       107
     clean on all five               0
 
     liability by kind:
-      aggregation-prone region                      112
-      pI near formulation pH                         43
-      low net charge                                 23
-      N-glycosylation sequon                          8
+      aggregation-prone region                      107
+      pI near formulation pH                         40
+      low net charge                                 22
+      N-glycosylation sequon                          9
       odd cysteine count                              1
 
     A FLAG THAT FIRES ON EVERY INPUT CARRIES NO INFORMATION.
-      'aggregation-prone region' fired on all 112 sequences.
+      'aggregation-prone region' fired on all 107 sequences.
       The threshold was fixed before the run and is NOT adjusted
       now that its output is visible — that is the tuning this
       project forbids. It is recorded as uninformative at its
@@ -76,4 +76,4 @@ WHAT THE SEQUENCES CARRY
     CLDN18   Zolbetuximab      231 aa  pI  8.608  charge  +2.664  Cys 4 (even)  sequons 0  APR 4
         - aggregation-prone region: 4 region(s) starting [115, 128, 169, 195]
 
-  configuration hash 8cb68bd39a578cbf
+  configuration hash 810fc0dc29303ee4

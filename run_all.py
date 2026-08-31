@@ -50,8 +50,6 @@ ACCEPTED = {
     ("4", "P4"): "Coverage is span-confounded: f_AB tracks genomic span "
                  "(+0.68) more than expression (+0.20). Reported beside a "
                  "span-matched percentile and removed from partner selection.",
-    ("4", "P7"): "One cleared pair contains HLA-A. Recorded rather than "
-                 "filtered, because the pool is not curated by hand.",
     ("4", "P8"): "48.6% of cleared pairs stop clearing if an unmeasured "
                  "antigen saturates its organ. This is the cost of treating "
                  "missing as a third state instead of imputing it.",

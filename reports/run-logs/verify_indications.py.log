@@ -27,7 +27,7 @@ running both indications
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    M1: 44 indication-tagged artifacts; 0 changed, 0 disappeared after running both
+  clear    M1: 52 indication-tagged artifacts; 0 changed, 0 disappeared after running both
   clear    M2: shared sources carry no per-indication copy (0 found)
   clear    M3: indication-specific module constants remaining: none
   clear    M4: an atlas-less indication returns NOT_USABLE with no ranking
@@ -35,7 +35,7 @@ REJECTION CRITERIA
   clear    M6: Mode A on CD19 returns NOT_ASSESSED with 3 reasons
   clear    M7: CD19 ranks 1303 of 3400 -- outside the top 20, so the verdict is not self-agreement
   clear    M8: Mode A and Mode B report the same evidence for CD19 (risk 0.5353, composite 0.227)
-  clear    M9: reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'DUAL': 100, 'UNRESOLVED': 95, 'SINGLE': 2, 'ADAPTOR': 1, 'NO_DESIGN': 2}
+  clear    M9: reference unchanged: top3 ['CEACAM5', 'TMC5', 'MUCL3'], pool 200, hash a91c696f2e1318f7, outcomes {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}
   0 models in the lineage
   querying the trial registry for 200 antigens
     25/200
@@ -48,18 +48,19 @@ REJECTION CRITERIA
     200/200
   clear    M10: a degraded indication names its missing source: ["dependency lineage 'NoSuchLineage': ValueError: need at least one array to concatenate"]
 ========================================================================
-  10/10 criteria clear
+  clear    M11: breast: 1548 rejected by the stromal gate, 0 of them on an absent measurement; known targets CEACAM6=138.7, MUC1=49.3, ERBB2=10.8, TACSTD2=12.5, MSLN=26.5, CEACAM5=exempt
+  11/11 criteria clear
 
 ========================================================================
 WHAT EACH INDICATION PRODUCED
 ========================================================================
   Invasive Breast Carcinoma
-    usability USABLE  status RANKED
+    usability USABLE  status NO_DESIGN_REACHES_THE_END
     scored 3,401  pool 200  top ['CD24', 'EPCAM', 'MAL2', 'CEACAM6', 'SLC39A6']
-    outcomes {'UNRESOLVED': 114, 'DUAL': 83, 'SINGLE': 2, 'NO_DESIGN': 1}
+    outcomes {'UNRESOLVED': 121, 'DUAL': 73, 'SINGLE': 4, 'NO_DESIGN': 2}
 
   Pancreatic Ductal Adenocarcinoma
     usability USABLE  status RANKED
     scored 3,400  pool 200  top ['CEACAM5', 'TMC5', 'MUCL3', 'NECTIN4', 'HLA-H']
-    outcomes {'DUAL': 100, 'UNRESOLVED': 95, 'SINGLE': 2, 'ADAPTOR': 1, 'NO_DESIGN': 2}
+    outcomes {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}
 
