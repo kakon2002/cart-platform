@@ -186,6 +186,38 @@ def main() -> int:
               f"{deg_unavailable}")
 
     print("=" * 72)
+    from car_pipeline.stages import stage3 as _s3
+
+    breast = results.get("brca")
+    if breast is None or not breast.get("ranked"):
+        criterion("M11", True, "no breast ranking to check the stromal gate on")
+    else:
+        rows = breast["ranked"]
+        best = {}
+        for r in rows:
+            if r.gene and (r.gene not in best
+                           or (r.composite or 0) > (best[r.gene].composite or 0)):
+                best[r.gene] = r
+        pins = ["CEACAM6", "MUC1", "ERBB2", "TACSTD2", "MSLN", "CEACAM5"]
+        present = [g for g in pins if g in best]
+        lost = [g for g in present
+                if best[g].tumour_side_verdict == _s3.STROMA_DOMINANT]
+        blind = [r.gene for r in rows
+                 if r.tumour_side_verdict == _s3.STROMA_DOMINANT
+                 and not r.components[_s3.C2].measured]
+        rejected = sum(1 for r in rows
+                       if r.tumour_side_verdict == _s3.STROMA_DOMINANT)
+        criterion(
+            "M11", bool(lost) or bool(blind),
+            f"breast: {rejected} rejected by the stromal gate, {len(blind)} of "
+            f"them on an absent measurement; known targets "
+            + ", ".join(
+                f"{g}=" + ("exempt"
+                           if best[g].tumour_side_verdict == _s3.STROMA_UNRESOLVED
+                           else f"{best[g].components[_s3.C2].raw:.1f}")
+                for g in present)
+            + (f"; REJECTED {lost}" if lost else ""))
+
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
 
     print()

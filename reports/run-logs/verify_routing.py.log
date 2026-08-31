@@ -1,15 +1,6 @@
   persistent ceiling 0.15   terminable ceiling 0.35
 
 loading the ranked pool
-  querying the trial registry for 200 antigens
-    25/200
-    50/200
-    75/200
-    100/200
-    125/200
-    150/200
-    175/200
-    200/200
   200 pool members
 
 ========================================================================
@@ -23,21 +14,25 @@ REJECTION CRITERIA
   TRIPPED  A6: MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
   clear    A7: 0 targets resolve to NO_ARCHITECTURE with no reason
   clear    A8: with no declared terminable ceiling, 0 targets still route ADAPTOR
-  clear    A9: adaptor admissions across the ceiling sweep: 0.15->0, 0.2->1, 0.25->1, 0.3->4, 0.35->7, 0.4->22, 0.5->61, 0.6->103, 0.7->145
+  clear    A9: adaptor admissions across the ceiling sweep: 0.15->0, 0.2->0, 0.25->0, 0.3->5, 0.35->9, 0.4->26, 0.5->70, 0.6->113, 0.7->155
   clear    A10: declared ceiling 0.35 matches the spec value 0.35
-  clear    A11: 1 adaptor constructs; 0 emit a sequence despite an unsupplied binder
-  clear    A12: 1 of 1 adaptor constructs carry a structure-derived binder the origin check can see; epitope immunogenicity stays NOT_CONNECTED on all of them, so the species gap and the immunogenicity gap remain separate
+  clear    A11: 5 adaptor constructs; 0 emit a sequence despite an unsupplied binder
+  clear    A12: 5 of 5 adaptor constructs carry a structure-derived binder the origin check can see; epitope immunogenicity stays NOT_CONNECTED on all of them, so the species gap and the immunogenicity gap remain separate
 ========================================================================
   11/12 criteria clear
 
 ========================================================================
 WHAT ROUTING CHANGED
 ========================================================================
-    NO_ARCHITECTURE     191
-    ADAPTOR               7
-    CONVENTIONAL          2
+    NO_ARCHITECTURE     188
+    ADAPTOR               9
+    CONVENTIONAL          3
 
-    stage 4 outcomes: {'DUAL': 100, 'UNRESOLVED': 95, 'SINGLE': 2, 'ADAPTOR': 1, 'NO_DESIGN': 2}
+    stage 4 outcomes: {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}
+    FER1L6      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
+    GPR35       2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
     TMEM92      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
+    TNFSF9      2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
+    BTNL8       2868 bp  headroom   632  BUILDABLE  sequence_supplied=True
 
   STOPPING: A6 tripped.

@@ -266,7 +266,9 @@ class Pair:
 
 def build_pool(rows: list[Ranked], size: int = POOL_SIZE) -> list[Ranked]:
     """Top of the tumour-side ranking by supported score, risk ignored entirely."""
-    scored = [r for r in rows if r.composite_supported is not None and r.gene]
+    scored = [r for r in rows
+              if r.composite_supported is not None and r.gene
+              and r.tumour_side_verdict != stage3.STROMA_DOMINANT]
     scored.sort(key=lambda r: (-r.composite_supported, r.gene, r.accession))
     seen: set[str] = set()
     pool: list[Ranked] = []
@@ -383,6 +385,7 @@ class Decision:
     route_exposure: str | None = None
 
     evidence_class: str = ""
+    tumour_side_verdict: str = ""
     normal_tissue_risk: float | None = None
     normal_tissue_risk_organ: str | None = None
     evidence_confidence: float | None = None
@@ -501,6 +504,7 @@ def decide(
 
         evidence = dict(
             evidence_class=r.evidence_class,
+            tumour_side_verdict=r.tumour_side_verdict,
             normal_tissue_risk=r.risk,
             normal_tissue_risk_organ=r.risk_organ,
             evidence_confidence=r.confidence,
@@ -704,6 +708,7 @@ def _decision_payload(d: Decision) -> dict:
         "route_ceiling": d.route_ceiling,
         "route_exposure": d.route_exposure,
         "evidence_class": d.evidence_class or None,
+        "tumour_side_verdict": d.tumour_side_verdict or None,
         "normal_tissue_risk": d.normal_tissue_risk,
         "normal_tissue_risk_organ": d.normal_tissue_risk_organ,
         "evidence_confidence": d.evidence_confidence,

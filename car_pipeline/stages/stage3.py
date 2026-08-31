@@ -47,6 +47,12 @@ WEIGHTS: dict[str, float] = {
 
 MINIMUM_MEASURED_WEIGHT = 0.40
 
+TUMOUR_DOMINANT = "TUMOUR_DOMINANT"
+STROMA_DOMINANT = "STROMA_DOMINANT"
+STROMA_UNRESOLVED = "STROMA_UNRESOLVED"
+
+STROMA_RATIO_FLOOR = 1.0
+
 
 SATURATION: dict[str, float] = {
     "c1_expression": 100.0,
@@ -386,6 +392,7 @@ class Ranked:
     bridged: bool = False
     tier_rank: int = 0
 
+    tumour_side_verdict: str = STROMA_UNRESOLVED
     protein_arm_measured: bool = True
     risk_basis: str = "staining and transcript"
     risk_is_lower_bound: bool = False
@@ -728,6 +735,14 @@ def rank(
             calibration,
         )
 
+        stroma = components[C2]
+        if not stroma.measured:
+            tumour_side = STROMA_UNRESOLVED
+        elif (stroma.raw or 0.0) <= STROMA_RATIO_FLOOR:
+            tumour_side = STROMA_DOMINANT
+        else:
+            tumour_side = TUMOUR_DOMINANT
+
         has_protein = protein_arm_measured(model, atlas_gene)
         cleared = risk is not None and risk <= ceiling
 
@@ -743,6 +758,7 @@ def rank(
                 risk=None if risk is None else round(risk, 4),
                 risk_organ=organ,
                 cleared=cleared,
+                tumour_side_verdict=tumour_side,
                 protein_arm_measured=has_protein,
                 risk_basis=("staining and transcript" if has_protein
                             else "transcript only"),
