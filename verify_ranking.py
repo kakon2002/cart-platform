@@ -353,6 +353,7 @@ def main() -> int:
     from car_pipeline.stages import stage4 as _stage4
 
     def _c2(r):
+        """One row's malignant-versus-stroma component."""
         return r.components[stage3.C2]
 
     rejected = [r for r in rows if r.tumour_side_verdict == stage3.STROMA_DOMINANT]

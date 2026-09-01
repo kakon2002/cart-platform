@@ -1,18 +1,4 @@
-"""Shared cache and retrieval layer.
-
-Three properties the rest of the pipeline relies on:
-
-* **The manifest is the commit marker.** The payload is written and moved into
-  place first; the manifest is written last. A run interrupted at any point
-  therefore reads as missing rather than as complete, which is the safe
-  direction — a truncated file that looks finished is undetectable later.
-* **The fingerprint covers the request, not just the file.** Query terms, field
-  lists and release pins all feed it, so changing any of them invalidates the
-  entry instead of silently serving data fetched under different terms.
-* **Declared counts are checked against observed counts.** A dropped page in a
-  paginated download is byte-for-byte indistinguishable from a complete one once
-  it is on disk, so the check has to happen at fetch time.
-"""
+"""Shared cache and retrieval layer."""
 
 from __future__ import annotations
 
@@ -53,6 +39,7 @@ class CacheEntry:
     fingerprint: dict = field(default_factory=dict)
 
     def fingerprint_hash(self) -> str:
+        """A stable hash of the terms that define this entry."""
         canonical = json.dumps(self.fingerprint, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
@@ -60,9 +47,7 @@ class CacheEntry:
 def _atomic_replace(tmp: Path, dest: Path) -> None:
     """Move a fully written temporary file into place in one step."""
     dest.parent.mkdir(parents=True, exist_ok=True)
-    # Flush through to the device before the rename, so the payload is durable
-    # by the time the manifest that blesses it can be written. The handle has to
-    # be writable for this to be permitted.
+
     fd = os.open(tmp, os.O_RDWR | getattr(os, "O_BINARY", 0))
     try:
         os.fsync(fd)
@@ -72,6 +57,7 @@ def _atomic_replace(tmp: Path, dest: Path) -> None:
 
 
 def _write_json_atomic(dest: Path, payload: dict) -> None:
+    """Write JSON to a temporary file and move it into place in one step."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".partial")
     with open(tmp, "w", encoding="utf-8") as fh:
@@ -85,17 +71,21 @@ class SourceCache:
     """Namespaced cache directory with manifest-gated reads."""
 
     def __init__(self, namespace: str, root: Path | None = None) -> None:
+        """Bind this cache to a namespace under the cache root."""
         self.namespace = namespace
         self.root = (root or CACHE_ROOT) / namespace
         self.root.mkdir(parents=True, exist_ok=True)
 
     def path(self, entry: CacheEntry) -> Path:
+        """Where this entry's payload lives."""
         return self.root / entry.filename
 
     def manifest_path(self, entry: CacheEntry) -> Path:
+        """Where this entry's manifest lives."""
         return self.root / f"{entry.key}.manifest.json"
 
     def read_manifest(self, entry: CacheEntry) -> dict | None:
+        """The manifest that blesses this entry, or nothing."""
         mp = self.manifest_path(entry)
         if not mp.exists():
             return None
@@ -138,8 +128,6 @@ class SourceCache:
                 f"received {observed_rows}"
             )
         if not count_verified:
-            # Recorded rather than passed over in silence. An entry nobody could
-            # check reads exactly like one that passed its check.
             print(
                 f"    note: {entry.key} arrived without a declared row count; "
                 "completeness is unverified",
@@ -168,6 +156,7 @@ class SourceCache:
         return dest
 
     def tmp_path(self, entry: CacheEntry) -> Path:
+        """A temporary path alongside the destination."""
         return self.root / f"{entry.filename}.partial"
 
     def ensure(
@@ -177,11 +166,7 @@ class SourceCache:
         *,
         force: bool = False,
     ) -> Path:
-        """Return the cached payload, fetching it first if the entry is not valid.
-
-        ``fetcher`` writes into the temporary path it is handed and returns
-        manifest metadata; it is never asked to move anything into place.
-        """
+        """Return the cached payload, fetching it first if the entry is not valid."""
         if not force and self.is_valid(entry):
             return self.path(entry)
 
@@ -189,11 +174,6 @@ class SourceCache:
         tmp.unlink(missing_ok=True)
         meta = fetcher(tmp) or {}
         return self.commit(entry, tmp, **meta)
-
-
-# --------------------------------------------------------------------------
-# retrieval
-# --------------------------------------------------------------------------
 
 
 def _open(
@@ -205,6 +185,7 @@ def _open(
     timeout: int = 300,
     retries: int = 4,
 ):
+    """Open a cached file for reading."""
     hdrs = {"User-Agent": USER_AGENT}
     if headers:
         hdrs.update(headers)
@@ -239,11 +220,7 @@ def stream_to_file(
     progress_label: str | None = None,
     expected_md5: str | None = None,
 ) -> dict:
-    """Stream a response to disk without holding it in memory.
-
-    Returns manifest metadata: byte count and digest. When the source publishes
-    a checksum it is verified here, before anything is moved into place.
-    """
+    """Stream a response to disk without holding it in memory."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
     weak = hashlib.md5()
@@ -301,16 +278,7 @@ def stream_paginated_to_file(
     progress_label: str | None = None,
     capture_headers: tuple[str, ...] = (),
 ) -> dict:
-    """Follow ``next`` links, appending rows to one file, counting as it goes.
-
-    The declared total is read from the first response and compared against the
-    rows actually written. A dropped page is otherwise invisible.
-
-    ``capture_headers`` names response headers to record from the first page.
-    A source that states which release it served can then be checked against the
-    release the caller asked for, instead of the label being an assertion the
-    payload never has to honour.
-    """
+    """Follow ``next`` links, appending rows to one file, counting as it goes."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
     rows = 0
@@ -348,8 +316,6 @@ def stream_paginated_to_file(
             if progress_label and page % 10 == 0:
                 print(f"    {progress_label}: {rows:,} rows", flush=True)
 
-            # The bracketed target can itself contain commas, so the header
-            # cannot be split on them.
             match = _LINK_NEXT.search(link)
             next_url = match.group(1) if match else None
 
@@ -368,11 +334,7 @@ def stream_paginated_to_file(
 
 
 def decompress_gzip(src: Path, dest: Path, *, progress_label: str | None = None) -> dict:
-    """Expand a gzip payload in fixed-size blocks.
-
-    Used for archives far larger than memory, so neither side is ever fully
-    resident.
-    """
+    """Expand a gzip payload in fixed-size blocks."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256()
     total = 0
@@ -440,11 +402,6 @@ def read_lines(path: Path, encoding: str = "utf-8") -> Iterator[str]:
             yield line.rstrip("\r\n")
 
 
-# --------------------------------------------------------------------------
-# source contract
-# --------------------------------------------------------------------------
-
-
 class DataSource:
     """Base class. A source is usable only when every entry it declares is valid."""
 
@@ -452,9 +409,11 @@ class DataSource:
     namespace: str = "unnamed"
 
     def __init__(self, root: Path | None = None) -> None:
+        """Bind this cache to a namespace under the cache root."""
         self.cache = SourceCache(self.namespace, root=root)
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The artifacts this source declares."""
         raise NotImplementedError
 
     def is_cached(self) -> bool:
@@ -463,7 +422,9 @@ class DataSource:
         return bool(entries) and all(self.cache.is_valid(e) for e in entries)
 
     def missing_entries(self) -> list[CacheEntry]:
+        """The declared entries that are absent or invalid."""
         return [e for e in self.cache_entries() if not self.cache.is_valid(e)]
 
     def fetch(self) -> None:
+        """Retrieve whatever this source is missing."""
         raise NotImplementedError

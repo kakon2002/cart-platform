@@ -1,21 +1,4 @@
-"""Construct parts, fetched by accession and located by feature annotation.
-
-No coordinate in this module is transcribed from memory. Each part names the
-annotated feature it is taken from — a signal peptide, a transmembrane segment, a
-cytoplasmic topological domain — and the range is read from the entry. A part
-whose feature is absent raises rather than falling back to a remembered number,
-because a remembered number that is close enough to look right is the failure
-this project keeps finding.
-
-Two provenance classes, kept apart and never blurred:
-
-* **proteome** — an accession, a residue range and the release pin. Re-derivable.
-* **synthetic** — a designed sequence with no database entry: the flexible linker
-  and the ribosomal skip peptide. Recorded as a literal with its name.
-
-Fetched per accession rather than by widening the proteome query, which would
-invalidate that cache and re-fetch twenty thousand entries for eight sequences.
-"""
+"""Construct parts, fetched by accession and located by feature annotation."""
 
 from __future__ import annotations
 
@@ -35,7 +18,7 @@ PROTEOME = "proteome"
 SYNTHETIC = "synthetic"
 STRUCTURE = "structure"
 
-#: Accessions this stage draws from, and what each supplies.
+
 PARTS = {
     "CD8A": "P01732",
     "TNFRSF9": "Q07011",
@@ -44,9 +27,7 @@ PARTS = {
     "CASP9": "P55211",
 }
 
-#: The membrane-proximal stalk used as a hinge. There is no "hinge" feature to
-#: read, so its length is a stated design choice and its position is derived:
-#: the segment immediately preceding the annotated transmembrane start.
+
 HINGE_RESIDUES = 45
 
 
@@ -59,11 +40,7 @@ class Part:
     feature: str = ""
     start: int | None = None
     end: int | None = None
-    #: A size without a sequence. Set only where the length is known and the
-    #: residues genuinely are not — the adaptor receptor's anti-tag binder is
-    #: the one such part. Size is what the payload budget needs and size is
-    #: something this pipeline has measured; the sequence is withheld rather
-    #: than invented. `supplied` is what every consumer must branch on.
+
     declared_residues: int | None = None
 
     @property
@@ -73,12 +50,14 @@ class Part:
 
     @property
     def residues(self) -> int:
+        """The part's length in residues, declared or actual."""
         if not self.sequence and self.declared_residues is not None:
             return self.declared_residues
         return len(self.sequence)
 
     @property
     def bases(self) -> int:
+        """The part's coding length in bases."""
         return self.residues * 3
 
     @property
@@ -96,6 +75,7 @@ class DomainSource(DataSource):
     namespace = "domains"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The assembled part table and the accessions behind it."""
         return [
             CacheEntry(
                 key="parts",
@@ -109,9 +89,11 @@ class DomainSource(DataSource):
         ]
 
     def fetch(self) -> Path:
+        """Build the part table from the proteome entries it names."""
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Assemble the part table into a temporary file."""
             print("  fetching construct parts", flush=True)
             payload = {}
             for gene, accession in sorted(PARTS.items()):
@@ -148,6 +130,7 @@ class DomainSource(DataSource):
         return self.cache.ensure(entry, fetcher)
 
     def load(self) -> dict[str, dict]:
+        """The cached construct parts, keyed by role."""
         entry = next(iter(self.cache_entries()))
         if not self.cache.is_valid(entry):
             self.fetch()
@@ -155,6 +138,7 @@ class DomainSource(DataSource):
 
 
 def _feature(record: dict, kind: str, contains: str = "") -> dict:
+    """One named feature's residue range from a proteome entry."""
     for f in record["features"]:
         if f["type"] != kind:
             continue
@@ -184,8 +168,7 @@ def build_parts(store: dict[str, dict] | None = None) -> dict[str, Part]:
 
     signal = _feature(cd8a, "Signal")
     transmem = _feature(cd8a, "Transmembrane")
-    # The stalk immediately before the membrane. Length is the design choice in
-    # HINGE_RESIDUES; the position is read from the annotated segment.
+
     hinge_end = transmem["start"] - 1
     hinge_start = hinge_end - HINGE_RESIDUES + 1
     if hinge_start < 1:
@@ -218,12 +201,6 @@ def build_parts(store: dict[str, dict] | None = None) -> dict[str, Part]:
             "CD3zeta cytoplasmic", PROTEOME,
             _slice(zeta, zeta_tail["start"], zeta_tail["end"]),
             PARTS["CD247"], "Topological domain", zeta_tail["start"], zeta_tail["end"]),
-        # The switch is FKBP12 fused to caspase-9 with its CARD removed, which is
-        # what makes it dimeriser-inducible rather than constitutively active.
-        # The CARD boundary is read from the entry, not assumed.
-        # Read from the annotated chain rather than assumed to be the whole
-        # entry: the mature protein starts after the initiator methionine, and
-        # this was the one part bypassing the feature lookup every other uses.
         "switch_fkbp": Part(
             "FKBP12", PROTEOME,
             _slice(fkbp, fkbp_chain["start"], fkbp_chain["end"]),
@@ -237,27 +214,10 @@ def build_parts(store: dict[str, dict] | None = None) -> dict[str, Part]:
     return out
 
 
-#: Designed sequences with no database entry. Named, marked, and never given a
-#: fabricated accession.
 SYNTHETIC_PARTS = {
     "linker": Part("(G4S)x3 linker", SYNTHETIC, "GGGGSGGGGSGGGGS"),
     "switch_linker": Part("SGGGS linker", SYNTHETIC, "SGGGS"),
     "skip": Part("T2A skip peptide", SYNTHETIC, "EGRGSLLTCGDVEENPGP"),
-    # The adaptor receptor's binding domain. It binds a tag, not a human
-    # protein, so it is not retrievable from the proteome the way every other
-    # proteome part is -- and no anti-tag antibody exists in the cached
-    # structural set either: 0 of 21,914 SAbDab entries name fluorescein as
-    # antigen. It is therefore declared here rather than fetched.
-    #
-    # **The sequence is deliberately not supplied.** Writing a plausible-looking
-    # scFv here would put an unverified binder inside a construct that reads as
-    # designed, which is the single thing this stage exists to prevent. What is
-    # declared instead is its SIZE: 240 aa, the median of the 30 real scFvs
-    # Stage 5 retrieved (705-765 bp, median 720 bp). Size is what the payload
-    # budget question needs, and size is something this pipeline has measured.
-    #
-    # Stage 6 carries `binder_supplied=False` on any construct using it and
-    # withholds the amino-acid sequence rather than emitting a fabricated one.
     "adaptor_binder": Part(
         "anti-tag binder (sequence not supplied)", SYNTHETIC, "",
         declared_residues=240,

@@ -1,23 +1,4 @@
-"""Reviewed human proteome and the surface filter built on it.
-
-The seventh requested field, lipidation, is not optional. Anchors of that kind
-leave no transmembrane segment behind and are not consistently spelled out in
-the localisation text, so without it that entire class of protein is invisible
-to the attachment gate — which would silently drop several of the best known
-targets.
-
-The eighth, chain boundaries, is requested because a mature protein is not
-always one molecule. Where a precursor is cleaved, some of the resulting chains
-are released rather than held at the surface, and a binder raised against a
-released chain meets its antigen in plasma rather than on a cell. The surface
-filter itself does not consult this field — attachment and orientation are
-decided by the membrane evidence alone — so adding it left the surface set
-identical. It is not free even so: the field list is
-inside the cache fingerprint, so adding it invalidated the proteome cache and
-re-fetched all 20,431 entries. The field is carried so that a later stage can
-tell the anchored chain from the shed one instead of treating the precursor as
-uniformly reachable.
-"""
+"""Reviewed human proteome and the surface filter built on it."""
 
 from __future__ import annotations
 
@@ -45,13 +26,8 @@ FIELDS = [
     "ft_lipid",
     "ft_chain",
 ]
-#: The release this project is pinned to. The search service always serves its
-#: current release and offers no way to request an older one, so the pin cannot
-#: be enforced by the request. It is enforced on the response instead: the
-#: service states which release it served, and a fetch that does not match this
-#: value fails rather than filing whatever arrived under this label. Bumping
-#: this constant changes the cache fingerprint, so the change invalidates the
-#: cache and re-fetches instead of silently replacing the contents.
+
+
 RELEASE_PIN = "2026_02"
 RELEASE_HEADER = "X-UniProt-Release"
 RELEASE_DATE_HEADER = "X-UniProt-Release-Date"
@@ -64,30 +40,10 @@ _TOPO_SEGMENT = re.compile(r"TOPO_DOM\s+(\S+?)\.\.(\S+?);((?:(?!TOPO_DOM).)*)", 
 _CHAIN_SEGMENT = re.compile(r"CHAIN\s+(\S+?)\.\.(\S+?);((?:(?!CHAIN).)*)", re.S)
 _GPI = re.compile(r"GPI-anchor", re.IGNORECASE)
 
-# Localisation phrases that place a protein at the outward face of the cell
-# itself. Matched case-insensitively as substrings of the localisation text so
-# that polarised variants ("Apical cell membrane") are covered.
+
 _PLASMA_MEMBRANE_TERMS = ("cell membrane", "cell surface")
 
-# The subcellular field is a list of location statements optionally followed by a
-# free-text note. A statement asserts where the protein is; a note is prose, and
-# the phrases above are common English inside it. Read across all fourteen entries
-# where a plasma-membrane phrase appears ONLY in a note, the note says:
-#
-#   * that the protein is there            "Located on cell surface microvilli."
-#   * that it is NOT there                 "Integral membrane protein not
-#                                           detected at the cell membrane."
-#   * that it passes through               "Cycles via the cell surface and
-#                                           endosomes upon lumenal pH disruption."
-#   * something about lipids               "Preferentially binds to cardiolipin
-#                                           relative to other common cell
-#                                           membrane lipids."
-#
-# A substring test reads all four the same way. Matching notes admitted the
-# negation; dropping notes discards the assertion. Neither direction is safe, so
-# notes decide nothing: admission reads location statements only, and an entry
-# whose sole plasma-membrane evidence sits in a note is recorded in a third state
-# rather than silently resolved either way.
+
 _NOTE_FIELD = "Note="
 _LOCATION_BLOCK = "SUBCELLULAR LOCATION:"
 
@@ -102,15 +58,10 @@ def location_statements(subcellular: str) -> str:
         kept.append(block if cut == -1 else block[:cut])
     return " ".join(kept)
 
-# The one topological note that means the outward face of the cell. Matched
-# exactly: "Lumenal" and "Perinuclear space" sit on the same side of the bilayer
-# but inside an organelle, and would be wrongly admitted by a substring test.
+
 _OUTWARD_NOTE = "Extracellular"
 
-# Compartments that place an anchored protein inside the cell. Used only to
-# separate "measured and placed internally" from "nothing on record", which are
-# reported apart rather than pooled: the second group is held out for want of
-# evidence, not judged against.
+
 _INTRACELLULAR_COMPARTMENTS = (
     "endoplasmic reticulum",
     "golgi",
@@ -162,37 +113,22 @@ class ProteinRecord:
     topo_notes: list[str] = field(default_factory=list)
     extracellular_residues: int | None = None
 
-    #: Mature chains carved out of the precursor, in annotation order. A chain
-    #: whose bounds could not be read is kept rather than dropped: the chain
-    #: exists either way, and losing the row would understate how many pieces a
-    #: precursor is cut into. An empty list means the entry carries no chain
-    #: annotation at all, which is not the same as being a single chain.
     chains: list["Chain"] = field(default_factory=list)
 
-    # filter outcome
     attached: bool = False
     outward: bool = False
     membrane_class: str | None = None
 
-    #: The only plasma-membrane evidence for this entry sits in a free-text note,
-    #: which cannot be read either way (see the note above `location_statements`).
-    #: Such an entry is NOT admitted — an unreachable target is the dangerous
-    #: direction — but it is enumerated by name in the output rather than dropped
-    #: quietly, because the annotation is genuinely ambiguous and the set is small
-    #: enough to audit.
     outward_note_only: bool = False
 
     @property
     def is_surface(self) -> bool:
+        """Whether both surface gates admit this entry."""
         return self.attached and self.outward
 
 
 def _count_extracellular_residues(topo_field: str) -> int | None:
-    """Total annotated outward-facing residues, or None when never annotated.
-
-    None is a third state on purpose. A protein nobody annotated must not be
-    scored as though it were measured and found small.
-    """
+    """Total annotated outward-facing residues, or None when never annotated."""
     total = 0
     measured = False
     for start, end, tail in _TOPO_SEGMENT.findall(topo_field):
@@ -203,35 +139,20 @@ def _count_extracellular_residues(topo_field: str) -> int | None:
             lo = int(start.lstrip("<>?"))
             hi = int(end.lstrip("<>?"))
         except ValueError:
-            # Bounds recorded as uncertain. The segment exists but its length
-            # does not, so it contributes nothing and cannot make the total
-            # meaningful on its own.
             continue
         if hi >= lo:
             total += hi - lo + 1
             measured = True
-    # A protein annotated as outward-facing but with no segment whose length
-    # could be read is not a protein measured at zero residues. Returning zero
-    # here would let it be scored as measured and tiny, which is the imputation
-    # the accessibility component is required to avoid.
+
     return total if measured else None
 
 
-#: Markers the annotation uses for a position it does not know exactly.
 _UNCERTAIN = "<>?"
 _CHAIN_ID = re.compile(r'/id="([^"]*)"')
 
 
 def _bound(text: str) -> tuple[int | None, bool]:
-    """A residue position and whether the annotation hedged it.
-
-    ``<37`` means "somewhere at or before 37", not 37. Stripping the marker and
-    returning the number would turn a hedge into a measurement, and the caller
-    could never tell — which is the whole failure class this project keeps
-    finding. The number is kept because it is still the best available estimate,
-    and the flag is kept beside it so a rule that needs an exact boundary can
-    refuse rather than proceed on one that was never exact.
-    """
+    """A residue position and whether the annotation hedged it."""
     stripped = text.lstrip(_UNCERTAIN)
     uncertain = stripped != text
     try:
@@ -269,23 +190,14 @@ class Chain:
 
     @property
     def length(self) -> int | None:
+        """The chain's length, or nothing where a bound is missing."""
         if self.start is None or self.end is None:
             return None
         return self.end - self.start + 1
 
 
 def parse_chains(chain_field: str) -> list[Chain]:
-    """Mature chains carved out of the precursor, in annotation order.
-
-    A chain whose bounds cannot be read is kept with empty bounds rather than
-    skipped. Dropping it would make a cleaved precursor look like an uncleaved
-    one, which is the direction that matters: it is the difference between a
-    protein held at the surface and one released into plasma.
-
-    The chain identifier is retained because the stage that picks between chains
-    has to be able to say which one it picked; a start and end alone name a range
-    rather than a chain.
-    """
+    """Mature chains carved out of the precursor, in annotation order."""
     chains: list[Chain] = []
     for start, end, tail in _CHAIN_SEGMENT.findall(chain_field):
         note_match = _NOTE.search(tail)
@@ -312,10 +224,7 @@ def names_compartment(subcellular: str) -> bool:
 
 
 def parse_row(row: list[str]) -> ProteinRecord:
-    # Width tracks FIELDS. A row padded or truncated to the old width would drop
-    # the new column silently, and the drop would only surface as an empty chain
-    # list — indistinguishable from a protein that genuinely has no chain
-    # annotation, and only after the re-fetch had already been paid for.
+    """One proteome row into a record."""
     accession, gene, protein_name, subcellular, transmem, topo, lipid, chain = (
         (row + [""] * len(FIELDS))[: len(FIELDS)]
     )
@@ -336,13 +245,8 @@ def parse_row(row: list[str]) -> ProteinRecord:
         chains=parse_chains(chain),
     )
 
-    # Gate 1 — is it held in a membrane at all. Secreted proteins fail here.
     rec.attached = transmem_count > 0 or gpi
 
-    # Gate 2 — positive evidence that it faces outward. Stated as evidence to
-    # look for rather than compartments to exclude: that is what keeps out the
-    # multi-pass proteins of internal compartments, which are topologically
-    # outward facing but unreachable from outside the cell.
     statements = location_statements(subcellular).lower()
     rec.outward = (
         gpi
@@ -365,14 +269,7 @@ def parse_row(row: list[str]) -> ProteinRecord:
 
 
 def check_release(meta: dict) -> str:
-    """Confirm the service served the release this project is pinned to.
-
-    Separated from the fetch so it can be exercised without downloading 20,431
-    entries. The failure it guards is silent by construction: the manifest
-    records the release as a label, so a service that had moved on would file a
-    different proteome under the pinned name and every count measured against
-    the old one would drift without anything raising.
-    """
+    """Confirm the service served the release this project is pinned to."""
     served = meta.get("extra", {}).get(RELEASE_HEADER.lower())
     if served is None:
         raise CacheError(
@@ -395,6 +292,7 @@ class UniProtSource(DataSource):
     namespace = "uniprot"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The pinned proteome release and the fields requested from it."""
         return [
             CacheEntry(
                 key="human_reviewed",
@@ -409,6 +307,7 @@ class UniProtSource(DataSource):
         ]
 
     def _url(self) -> str:
+        """The query URL for the pinned field list."""
         params = {
             "query": QUERY,
             "fields": ",".join(FIELDS),
@@ -418,9 +317,11 @@ class UniProtSource(DataSource):
         return f"{BASE}?{urllib.parse.urlencode(params)}"
 
     def fetch(self) -> Path:
+        """Download the proteome if it is absent."""
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Stream the proteome into a temporary file."""
             print("  fetching reviewed human proteome", flush=True)
             meta = stream_paginated_to_file(
                 self._url(),
@@ -435,6 +336,7 @@ class UniProtSource(DataSource):
         return self.cache.ensure(entry, fetcher)
 
     def load(self) -> list[ProteinRecord]:
+        """Every reviewed entry, parsed."""
         entry = next(iter(self.cache_entries()))
         path = self.cache.path(entry)
         if not self.cache.is_valid(entry):
@@ -454,15 +356,14 @@ class UniProtSource(DataSource):
 
 
 def summarise(records: list[ProteinRecord]) -> dict:
+    """Counts of what the surface filter admitted and withheld."""
     surface = [r for r in records if r.is_surface]
     note_only = [r for r in records if r.outward_note_only]
     attached = [r for r in records if r.attached]
     withheld = [r for r in attached if not r.outward]
 
-    # Anchored, not shown to face outward, and placed in a named compartment.
     internal = [r for r in withheld if names_compartment(r.subcellular)]
-    # Anchored, but nothing on record says where. Held out for want of evidence,
-    # reported separately rather than discarded or counted against them.
+
     unresolved = [r for r in withheld if not names_compartment(r.subcellular)]
 
     return {
@@ -484,6 +385,7 @@ def summarise(records: list[ProteinRecord]) -> dict:
 
 
 def load_surface() -> tuple[list[ProteinRecord], dict]:
+    """The surface-accessible proteome and the counts behind it."""
     records = UniProtSource().load()
     return [r for r in records if r.is_surface], summarise(records)
 
@@ -491,11 +393,7 @@ def load_surface() -> tuple[list[ProteinRecord], dict]:
 if __name__ == "__main__":
     recs = UniProtSource().load()
     stats = summarise(recs)
-    # Measured against the pinned release, not reconstructed. The previous
-    # figures here were an estimate carried from a prior run and had never been
-    # this code's output; they sat 0.46% above the surface count and were read
-    # as a discrepancy. Now that the release is enforced on the response, these
-    # are reproducible and a difference means something changed.
+
     expected = {
         "entries": 20431,
         "surface": 3466,

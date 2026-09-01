@@ -219,13 +219,7 @@ ADVANCED = "ADVANCED"
 
 
 def design_class(construct) -> str | None:
-    """Which of the two the client asked for this design is, if either.
-
-    Conservative means the conventional single-antigen receptor carrying a
-    binder with clinical precedent. Advanced means an architecture the spec
-    lists as non-conventional: a gated dual or an adaptor. The definitions come
-    from the architecture table, not from what happens to have survived.
-    """
+    """Which of the two the client asked for this design is, if either."""
     if construct.verdict != "BUILDABLE":
         return None
     clinical = any(s.provenance == "stage5" for s in construct.segments)

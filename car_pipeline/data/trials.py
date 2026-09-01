@@ -1,29 +1,4 @@
-"""Interventional trial counts per antigen, from the public registry.
-
-**Matching is inexact by construction and the output says so.** The query is free
-text over the registry, so a returned study is one that *mentions* the antigen,
-not one testing a binder against it. A count reported as the second would be a
-claim the registry cannot support — this project has already been bitten once by
-a free-text search returning a plausible integer that was entirely spurious.
-
-What the count is good for is the terminated, withdrawn and suspended tally. That
-is not proof of a safety problem and is not reported as one; it is a signal that
-something happened to people already and is worth reading before dosing more.
-
-**Two limits, both measured, both carried into every row rather than assumed
-away.**
-
-*The tallies cover one page.* `total` is the registry-wide count; the stopped,
-phase and CAR tallies are computed over the studies actually returned. For an
-antigen with more studies than the page holds those tallies are a floor, and the
-row says so with `truncated`. Paginating an antigen with 26,605 studies to count
-its terminations is not proportionate to what the number is used for.
-
-*The query is the gene symbol only.* Synonyms are not searched, and the
-undercount that causes is large rather than marginal: measured live, `CLDN18`
-returns 3 studies while `Claudin 18.2` returns 156. A zero here means "no study
-mentions this symbol", never "this antigen is untried".
-"""
+"""Interventional trial counts per antigen, from the public registry."""
 
 from __future__ import annotations
 
@@ -41,7 +16,7 @@ USER_AGENT = "car-platform/stage9"
 RELEASE_PIN = "v2"
 PAGE_SIZE = 200
 
-#: Statuses that mean a trial stopped before its planned end.
+
 STOPPED = {"TERMINATED", "WITHDRAWN", "SUSPENDED"}
 
 
@@ -49,7 +24,7 @@ STOPPED = {"TERMINATED", "WITHDRAWN", "SUSPENDED"}
 class TrialSummary:
     antigen: str
     total: int = 0
-    #: Studies actually inspected. The tallies below cover these, not `total`.
+
     returned: int = 0
     truncated: bool = False
     phases: dict[str, int] = field(default_factory=dict)
@@ -59,6 +34,7 @@ class TrialSummary:
 
     @property
     def has_stopped(self) -> bool:
+        """Whether any tallied trial was stopped."""
         return self.stopped > 0
 
 
@@ -67,10 +43,12 @@ class TrialSource(DataSource):
     namespace = "trials"
 
     def __init__(self, antigens: list[str] | None = None, **kwargs):
+        """Bind this source to the antigen list it summarises."""
         super().__init__(**kwargs)
         self.antigens = sorted(antigens or [])
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The per-antigen trial tallies, keyed by the screened set."""
         return [
             CacheEntry(
                 key="counts",
@@ -84,6 +62,7 @@ class TrialSource(DataSource):
         ]
 
     def _query(self, antigen: str) -> dict:
+        """Ask the registry for one antigen's studies."""
         params = {
             "query.term": antigen,
             "filter.overallStatus": "",
@@ -98,9 +77,11 @@ class TrialSource(DataSource):
             return json.loads(response.read())
 
     def fetch(self) -> Path:
+        """Tally the registry for every antigen in the set."""
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Query the registry into a temporary file."""
             print(f"  querying the trial registry for {len(self.antigens)} antigens",
                   flush=True)
             payload = {}
@@ -125,7 +106,6 @@ class TrialSource(DataSource):
                 payload[antigen] = {
                     "total": total,
                     "returned": len(studies),
-                    # The tallies below cover `returned`, not `total`.
                     "truncated": total > len(studies),
                     "phases": phases,
                     "stopped": stopped,
@@ -148,6 +128,7 @@ class TrialSource(DataSource):
         return self.cache.ensure(entry, fetcher)
 
     def load(self) -> dict[str, TrialSummary]:
+        """The cached tallies, keyed by antigen."""
         entry = next(iter(self.cache_entries()))
         if not self.cache.is_valid(entry):
             self.fetch()

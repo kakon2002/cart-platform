@@ -1,11 +1,4 @@
-"""Normal tissue transcript baseline, release 10.
-
-Joined on symbol first. A minority of genes were renamed between the proteome
-annotation and this one and cannot be reached that way at all; those go through
-an identifier bridge built from the tissue atlas gene table. The bridge is
-recorded per gene at join time rather than inferred afterwards, because after
-the fact a renamed gene and a directly matched one look identical.
-"""
+"""Normal tissue transcript baseline, release 10."""
 
 from __future__ import annotations
 
@@ -41,6 +34,7 @@ class TissueProfile:
     join_path: str
 
     def max_tpm(self) -> float:
+        """The highest value across this profile's tissues."""
         return float(self.values.max())
 
     def silent_everywhere(self, threshold: float = 1.0) -> bool:
@@ -53,6 +47,7 @@ class GTExSource(DataSource):
     namespace = "gtex"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The pinned median-expression release."""
         return [
             CacheEntry(
                 key="gene_median_tpm",
@@ -62,21 +57,25 @@ class GTExSource(DataSource):
         ]
 
     def fetch(self) -> Path:
+        """Download the release if it is absent."""
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Stream the release into a temporary file."""
             print("  fetching normal tissue medians", flush=True)
             return stream_to_file(URL, tmp)
 
         return self.cache.ensure(entry, fetcher)
 
     def _path(self) -> Path:
+        """The cached file, fetching first if it is absent."""
         entry = next(iter(self.cache_entries()))
         if not self.cache.is_valid(entry):
             return self.fetch()
         return self.cache.path(entry)
 
     def tissues(self) -> list[str]:
+        """The tissue column names, in file order."""
         with gzip.open(self._path(), "rt", encoding="utf-8") as fh:
             fh.readline()
             fh.readline()
@@ -88,12 +87,7 @@ class GTExSource(DataSource):
         surface,
         atlas_by_accession: dict,
     ) -> tuple[dict[str, TissueProfile], list[str], int]:
-        """Return profiles keyed by accession, the tissue axis, and the gene total.
-
-        A protein with no row here is absent from the result entirely. It is
-        never given a row of zeros: not measured and measured at zero are
-        different findings, and only one of them is reassuring.
-        """
+        """Return profiles keyed by accession, the tissue axis, and the gene total."""
         wanted_symbols = {rec.gene for rec in surface if rec.gene}
         ensembl_for: dict[str, str] = {}
         for rec in surface:
@@ -131,15 +125,8 @@ class GTExSource(DataSource):
                         symbol,
                     )
 
-        # The file states its own dimensions. Checking them costs nothing and is
-        # the only thing standing between a truncated download and a gene total
-        # that looks entirely reasonable.
         self._verify_dimensions(declared, gene_total, len(tissues))
 
-        # Resolved per protein, in the protein's own order. Driving this from
-        # the file instead would make the recorded route depend on which row
-        # happened to be reached first, and that route is what a rejection
-        # criterion later counts.
         profiles: dict[str, TissueProfile] = {}
         for rec in surface:
             hit = rows_by_symbol.get(rec.gene) if rec.gene else None
@@ -167,6 +154,7 @@ class GTExSource(DataSource):
 
     @staticmethod
     def _verify_dimensions(declared: list[str], rows: int, cols: int) -> None:
+        """Refuse a matrix whose shape disagrees with its header."""
         try:
             declared_rows, declared_cols = int(declared[0]), int(declared[1])
         except (IndexError, ValueError):

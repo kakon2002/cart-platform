@@ -1,21 +1,4 @@
-"""Genomic span per gene, from a pinned annotation release.
-
-Carried for one reason: the per-cell detection rate this project measures tracks
-how long a gene is more strongly than it tracks how much of it is expressed.
-Measured over the pool, the rank correlation between detection rate and genomic
-span is +0.68 against +0.20 for bulk tumour expression, and the span effect holds
-inside every quartile of expression. The cause is known — the cell atlas was
-quantified against a pre-mRNA reference, so intronic reads are counted and
-intronic content scales with span.
-
-This source does not correct that. It measures it, so a co-expression figure can
-be reported beside the span it is confounded with and a reader can tell an
-absolutely high overlap from one that is only high for genes of that length.
-
-**Not a blocking dataset and not declared as one in Stage 1.** Nothing gates on
-it; it annotates. If a later stage ever gates on a span-derived quantity, it needs
-a Stage 1 row and a connector registration at that point, not before.
-"""
+"""Genomic span per gene, from a pinned annotation release."""
 
 from __future__ import annotations
 
@@ -40,6 +23,7 @@ class GeneSpanSource(DataSource):
     namespace = "genespan"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The pinned annotation release this source reads."""
         return [
             CacheEntry(
                 key="annotation",
@@ -49,22 +33,18 @@ class GeneSpanSource(DataSource):
         ]
 
     def fetch(self) -> Path:
+        """Download the annotation if it is absent."""
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Stream the annotation into a temporary file."""
             print("  fetching gene annotation", flush=True)
             return stream_to_file(URL, tmp)
 
         return self.cache.ensure(entry, fetcher)
 
     def load(self) -> dict[str, int]:
-        """Symbol to genomic span in bases.
-
-        The longest annotated span wins where a symbol appears more than once.
-        A symbol on more than one contig is a real thing in this annotation and
-        the maximum is the conservative reading: it is the figure the capture
-        artefact would scale with.
-        """
+        """Symbol to genomic span in bases."""
         entry = next(iter(self.cache_entries()))
         path = self.cache.path(entry)
         if not self.cache.is_valid(entry):

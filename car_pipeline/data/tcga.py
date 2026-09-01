@@ -1,19 +1,4 @@
-"""Bulk tumour expression for the indication cohort.
-
-Files are requested in small batches. The whole cohort as a single request is
-roughly three quarters of a gigabyte that either arrives complete or fails
-complete, with no way to resume; batching turns one all-or-nothing transfer
-into many recoverable ones.
-
-The gene axis of every file is compared against the first before any values are
-stacked. After stacking, columns are positional — two files disagreeing on gene
-order would misalign the matrix silently, and nothing downstream could detect
-it.
-
-The single metastatic sample is kept as its own category. Folding it into
-either group would misstate that group's median, and the cohort is small enough
-that one sample moves it.
-"""
+"""Bulk tumour expression for the indication cohort."""
 
 from __future__ import annotations
 
@@ -34,9 +19,7 @@ from car_pipeline.data.source import (
     post_json,
 )
 
-#: The reference cohort. Kept as the default so an unparameterised caller keeps
-#: its old behaviour, but every cache entry now carries the project it came
-#: from, so two cohorts coexist on disk instead of overwriting one slot.
+
 DEFAULT_PROJECT = "TCGA-PAAD"
 WORKFLOW = "STAR - Counts"
 MEASURE = "tpm_unstranded"
@@ -55,7 +38,7 @@ SAMPLE_TYPES = {
     "Metastatic": METASTATIC,
 }
 
-# Leading rows of each file are alignment tallies, not genes.
+
 _TALLY_PREFIX = "N_"
 
 
@@ -65,12 +48,14 @@ class Cohort:
     gene_symbols: np.ndarray
     samples: np.ndarray
     sample_types: np.ndarray
-    values: np.ndarray  # samples x genes, float32
+    values: np.ndarray
 
     def group(self, category: str) -> np.ndarray:
+        """The sample rows belonging to one sample type."""
         return self.values[self.sample_types == category]
 
     def median_for(self, gene_index: int, category: str) -> float:
+        """Median expression for one column across the chosen samples."""
         block = self.group(category)
         if block.size == 0:
             return float("nan")
@@ -82,16 +67,12 @@ class TCGASource(DataSource):
     namespace = "tcga"
 
     def __init__(self, project: str | None = None, root=None) -> None:
+        """Bind this source to one cohort project."""
         super().__init__(root=root)
         self.project = project or DEFAULT_PROJECT
 
     def _entry(self, kind: str) -> CacheEntry:
-        """Look an entry up by its unqualified kind.
-
-        Callers ask for "cohort"; the entry is keyed `cohort__TCGA-BRCA`. Doing
-        the join here means no call site has to know the naming scheme, and a
-        missed one raises here rather than silently matching nothing.
-        """
+        """Look an entry up by its unqualified kind."""
         want = f"{kind}__{self.project}"
         for entry in self.cache_entries():
             if entry.key == want:
@@ -99,10 +80,7 @@ class TCGASource(DataSource):
         raise KeyError(f"no cache entry {want!r} for project {self.project!r}")
 
     def cache_entries(self) -> Iterable[CacheEntry]:
-        # The project is in BOTH the key and the filename. The key matters as
-        # much: manifest paths are derived from the key alone, so namespacing
-        # only the payload leaves two cohorts sharing one manifest -- the same
-        # bug with a longer fuse.
+        """The file index and the assembled cohort matrix."""
         tag = self.project
         fp = {
             "project": self.project,
@@ -116,9 +94,8 @@ class TCGASource(DataSource):
                        filename=f"cohort__{tag}.npz", fingerprint=fp),
         ]
 
-    # -- file index -------------------------------------------------------
-
     def _query_index(self) -> list[dict]:
+        """Ask the archive which files belong to this cohort."""
         payload = {
             "filters": {
                 "op": "and",
@@ -181,9 +158,11 @@ class TCGASource(DataSource):
         return rows
 
     def file_index(self) -> list[dict]:
+        """The cohort's file list, fetching it if absent."""
         entry = self._entry("file_index")
 
         def fetcher(tmp: Path) -> dict:
+            """Fetch or assemble one artifact into a temporary file."""
             print("  querying cohort file index", flush=True)
             rows = self._query_index()
             tmp.write_text(json.dumps(rows, indent=2), encoding="utf-8")
@@ -192,9 +171,8 @@ class TCGASource(DataSource):
         path = self.cache.ensure(entry, fetcher)
         return json.loads(path.read_text(encoding="utf-8"))
 
-    # -- payload ----------------------------------------------------------
-
     def _download_batch(self, ids: list[str]) -> dict[str, bytes]:
+        """Retrieve one batch of per-sample files."""
         body = json.dumps({"ids": ids}).encode("utf-8")
         with _open(
             DATA_ENDPOINT,
@@ -206,7 +184,7 @@ class TCGASource(DataSource):
             payload = resp.read()
 
         out: dict[str, bytes] = {}
-        # A single-file request returns the file itself; several return an archive.
+
         if len(ids) == 1:
             out[ids[0]] = payload
             return out
@@ -224,6 +202,7 @@ class TCGASource(DataSource):
 
     @staticmethod
     def _parse_file(blob: bytes) -> tuple[list[str], list[str], np.ndarray]:
+        """Read one per-sample expression file."""
         text = blob.decode("utf-8")
         gene_ids: list[str] = []
         symbols: list[str] = []
@@ -248,10 +227,12 @@ class TCGASource(DataSource):
         return gene_ids, symbols, np.asarray(values, dtype=np.float32)
 
     def build_cohort(self) -> Path:
+        """Assemble the cohort matrix from its per-sample files."""
         entry = self._entry("cohort")
         rows = self.file_index()
 
         def fetcher(tmp: Path) -> dict:
+            """Fetch or assemble one artifact into a temporary file."""
             axis: list[str] | None = None
             symbols: list[str] | None = None
             samples: list[str] = []
@@ -283,10 +264,7 @@ class TCGASource(DataSource):
                             "file; values cannot be stacked positionally"
                         )
                     samples.append(meta["submitter_id"] or meta["file_id"])
-                    # An unrecognised category keeps its own label rather than
-                    # being folded into a catch-all. Folded, it would vanish
-                    # from every per-category count while still inflating the
-                    # sample total, and the two would stop adding up silently.
+
                     types.append(
                         SAMPLE_TYPES.get(meta["sample_type"], meta["sample_type"])
                     )
@@ -311,6 +289,7 @@ class TCGASource(DataSource):
         return self.cache.ensure(entry, fetcher)
 
     def load(self) -> Cohort:
+        """The cohort matrix and the axes it is indexed by."""
         path = self.build_cohort()
         with np.load(path, allow_pickle=False) as data:
             return Cohort(
@@ -327,6 +306,7 @@ JOIN_ENSEMBL_BRIDGE = "ensembl_bridge"
 
 
 def symbol_index(cohort: Cohort) -> dict[str, int]:
+    """Column positions keyed by gene symbol."""
     out: dict[str, int] = {}
     for i, sym in enumerate(cohort.gene_symbols):
         out.setdefault(str(sym), i)
@@ -334,6 +314,7 @@ def symbol_index(cohort: Cohort) -> dict[str, int]:
 
 
 def ensembl_index(cohort: Cohort) -> dict[str, int]:
+    """Column positions keyed by Ensembl identifier."""
     out: dict[str, int] = {}
     for i, gid in enumerate(cohort.genes):
         out.setdefault(str(gid).split(".")[0], i)
@@ -343,12 +324,7 @@ def ensembl_index(cohort: Cohort) -> dict[str, int]:
 def match_surface(
     cohort: Cohort, surface, atlas_by_accession: dict
 ) -> dict[str, tuple[int, str]]:
-    """Map surface accessions onto column positions, recording the route taken.
-
-    Symbol first; renamed genes are reached through the identifier bridge, which
-    this source can support because it carries stable gene identifiers of its
-    own. A protein with no column is simply absent — never a column of zeros.
-    """
+    """Map surface accessions onto column positions, recording the route taken."""
     by_symbol = symbol_index(cohort)
     by_ensembl = ensembl_index(cohort)
 
@@ -389,8 +365,6 @@ if __name__ == "__main__":
 
     print(f"  joined through the identifier bridge: {bridged}")
 
-    # Every sample must sit in exactly one named category, or the per-category
-    # counts and the sample total stop describing the same set of files.
     known = {PRIMARY_TUMOUR, SOLID_NORMAL, METASTATIC}
     stray = sorted({str(t) for t in cohort.sample_types} - known)
     print(f"  categories outside the expected three: {stray or 'none'}")
