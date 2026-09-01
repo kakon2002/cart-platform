@@ -1,8 +1,8 @@
 {
   "clear": 126,
   "total": 134,
-  "minutes": 25.0,
-  "fresh": true,
+  "minutes": 25.7,
+  "fresh": false,
   "report": "reports/full-run.md",
   "accepted": {
     "4/P4": "Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.",
@@ -25,7 +25,7 @@
     {
       "stage": "6",
       "id": "K2",
-      "detail": "MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all"
+      "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
     }
   ],
   "stale": [],
@@ -51,7 +51,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.5,
+      "seconds": 0.6,
       "exit": 0,
       "criteria": [
         {
@@ -344,7 +344,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 9.0,
+      "seconds": 8.7,
       "exit": 2,
       "criteria": [
         {
@@ -430,7 +430,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 219.1,
+      "seconds": 272.5,
       "exit": 2,
       "criteria": [
         {
@@ -501,7 +501,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 224.2,
+      "seconds": 208.7,
       "exit": 0,
       "criteria": [
         {
@@ -547,7 +547,7 @@
       "clear": 7,
       "total": 8,
       "ok": false,
-      "seconds": 0.6,
+      "seconds": 0.4,
       "exit": 2,
       "criteria": [
         {
@@ -558,7 +558,7 @@
         {
           "id": "K2",
           "tripped": true,
-          "detail": "MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all"
+          "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
         },
         {
           "id": "K3",
@@ -598,7 +598,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 4.1,
+      "seconds": 3.5,
       "exit": 0,
       "criteria": [
         {
@@ -644,7 +644,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 0.7,
+      "seconds": 0.6,
       "exit": 0,
       "criteria": [
         {
@@ -685,7 +685,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 4.5,
+      "seconds": 3.8,
       "exit": 0,
       "criteria": [
         {
@@ -726,7 +726,7 @@
       "clear": 10,
       "total": 10,
       "ok": true,
-      "seconds": 216.3,
+      "seconds": 216.7,
       "exit": 0,
       "criteria": [
         {
@@ -742,7 +742,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 5a0e36175525 rather than blocking"
+          "detail": "a run returns 202 with job a8d95a291c0b rather than blocking"
         },
         {
           "id": "A4",
@@ -787,7 +787,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 799.6,
+      "seconds": 805.9,
       "exit": 0,
       "criteria": [
         {

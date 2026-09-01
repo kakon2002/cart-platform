@@ -1,8 +1,8 @@
 # Full run
 
-Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
+Derived artifacts reused; raw sources read from `data/` unchanged.
 
-**126/134 criteria clear across 12 stages**, 25.0 minutes.
+**126/134 criteria clear across 12 stages**, 25.7 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,14 +10,14 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 18/19 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 219s |
-| 5 | Binder discovery | 7/7 | clear | 224s |
-| 6 | Construct assembly | 7/8 | **TRIPPED** | 1s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 273s |
+| 5 | Binder discovery | 7/7 | clear | 209s |
+| 6 | Construct assembly | 7/8 | **TRIPPED** | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
-| 11 | Final ranking | 6/6 | clear | 5s |
-| API | HTTP surface | 10/10 | clear | 216s |
-| MULTI | Multi-indication | 11/11 | clear | 800s |
+| 11 | Final ranking | 6/6 | clear | 4s |
+| API | HTTP surface | 10/10 | clear | 217s |
+| MULTI | Multi-indication | 11/11 | clear | 806s |
 
 ## Every criterion
 
@@ -128,7 +128,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 ### Stage 6 — Construct assembly (7/8)
 
 - clear `K1` — 0 constructs translate back to their own sequence
-- **TRIPPED** `K2` — MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all
+- **TRIPPED** `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
 - clear `K3` — domain boundaries partition every construct exactly
 - clear `K4` — every part of every construct names its source (0 parts in the first construct)
 - clear `K5` — part costs sum to the printed total for every construct
@@ -168,7 +168,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 5a0e36175525 rather than blocking
+- clear `A3` — a run returns 202 with job a8d95a291c0b rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -226,5 +226,5 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
   - Accepted: Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.
 - Stage 4a `A6` — MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
   - Accepted: A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row's condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible.
-- Stage 6 `K2` — MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all
+- Stage 6 `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
   - **Not on the accepted list. This is new.**
