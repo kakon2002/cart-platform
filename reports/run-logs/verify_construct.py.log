@@ -5,7 +5,7 @@ loading upstream
 REJECTION CRITERIA
 ========================================================================
   clear    K1: 0 constructs translate back to their own sequence
-  TRIPPED  K2: MUC16: expected a construct, got none; MUC17: expected a construct, got none; nothing was assembled at all
+  TRIPPED  K2: no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
   clear    K3: domain boundaries partition every construct exactly
   clear    K4: every part of every construct names its source (0 parts in the first construct)
   clear    K5: part costs sum to the printed total for every construct
