@@ -53,6 +53,17 @@ ACCEPTED = {
     ("4", "P8"): "48.6% of cleared pairs stop clearing if an unmeasured "
                  "antigen saturates its organ. This is the cost of treating "
                  "missing as a third state instead of imputing it.",
+    ("4", "P13"): "Accepted on the evidence in "
+                  "specs/p13-partner-concentration.md. P13 measures partner "
+                  "concentration as a share of dual recommendations, in a set "
+                  "where concentration is structural: 290 of 19,900 pairs are "
+                  "admissible, and 21 of the 21 targets that took the hub had "
+                  "exactly one admissible eligible partner. The statistic "
+                  "therefore cannot distinguish a rule preference from scarce "
+                  "supply, and no change to the selection objective moves it -- "
+                  "forcing every target that had a choice to choose otherwise "
+                  "leaves the share at 70.0%. Accepted rather than fixed, with "
+                  "P17 added to measure the property that is actually true.",
     ("4", "P15"): "Partner choice is unstable under pool halving (71.4%). "
                   "The pairing stage is complete-with-limitations by decision.",
     ("4a", "A6"): "A positive pin written before the run. It expected MSLN to "

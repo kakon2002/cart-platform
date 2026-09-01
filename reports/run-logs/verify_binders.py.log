@@ -1,6 +1,6 @@
 loading stage 4 decisions
   200 decisions, stage4 hash 8cb155b103141a36, usable as a result: no
-  upstream tripped P13, P15, P4, P8 — this stage annotates them and does not treat them as settled
+  upstream tripped P13, P15, P17, P4, P8 — this stage annotates them and does not treat them as settled
 retrieving binders
     retrieved 25/200
     retrieved 50/200
