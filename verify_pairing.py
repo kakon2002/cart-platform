@@ -346,6 +346,16 @@ def main() -> int:
     )
     top_pair = ranked_pairs[0] if ranked_pairs else None
     top_two = set(pool_genes[:2])
+    recommended = [d for d in decisions if d.outcome == stage4.DUAL]
+    forced = [d for d in recommended if d.partner_forced]
+    forced_share = len(forced) / len(recommended) if recommended else 0.0
+    criterion(
+        "P17", bool(recommended) and forced_share > 0.5,
+        f"{len(forced)} of {len(recommended)} dual recommendations "
+        f"({forced_share:.1%}) had exactly one admissible eligible partner, so "
+        "no selection was made; limit 50%, above which the majority of "
+        "recommendations name a partner the stage did not choose between")
+
     criterion("P14", bool(top_pair) and {top_pair.gene_a, top_pair.gene_b} == top_two,
               f"top pair is {top_pair.gene_a}+{top_pair.gene_b}, "
               f"top two singles are {pool_genes[0]}+{pool_genes[1]}"

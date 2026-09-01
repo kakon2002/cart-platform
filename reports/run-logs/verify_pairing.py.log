@@ -42,11 +42,12 @@ REJECTION CRITERIA
   clear    P11: outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)
   clear    P12: 0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)
   TRIPPED  P13: most common partner takes 70.0% of dual recommendations (PRSS21)
+  TRIPPED  P17: 22 of 30 dual recommendations (73.3%) had exactly one admissible eligible partner, so no selection was made; limit 50%, above which the majority of recommendations name a partner the stage did not choose between
   clear    P14: top pair is NPSR1+PTPRN2, top two singles are TMC5+ITGB6
   TRIPPED  P15: pool halved to 100: 17 of 18 shared dual targets change partner (94.4%, limit 50%)
   report   P16: 10,644 of 19,110 measured pairs reach f_AB >= 0.02 (reported, not gated)
 ========================================================================
-  10/14 criteria clear
+  10/15 criteria clear
   decisions written to C:\cart-platform\data\stage4\decisions.json
   usable as a result: no
 
@@ -115,4 +116,4 @@ WHAT EACH ARCHITECTURE REACHES  (measured; no recommendation implied)
     better than this — but not better than the single-target one,
     which is deflated by the same assay in the same direction.
 
-  STOPPING: P4, P8, P13, P15 tripped. The specification changes and the run repeats; the result does not get an explanation.
+  STOPPING: P4, P8, P13, P17, P15 tripped. The specification changes and the run repeats; the result does not get an explanation.

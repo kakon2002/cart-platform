@@ -2,22 +2,22 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**126/133 criteria clear across 12 stages**, 24.5 minutes.
+**126/134 criteria clear across 12 stages**, 25.0 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Design spec | 31/31 | clear | 1s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 18/19 | **TRIPPED** | 20s |
-| 4 | Target pairing | 10/14 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 215s |
-| 5 | Binder discovery | 7/7 | clear | 206s |
-| 6 | Construct assembly | 7/8 | **TRIPPED** | 0s |
+| 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 219s |
+| 5 | Binder discovery | 7/7 | clear | 224s |
+| 6 | Construct assembly | 7/8 | **TRIPPED** | 1s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
-| 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 10/10 | clear | 217s |
-| MULTI | Multi-indication | 11/11 | clear | 795s |
+| 11 | Final ranking | 6/6 | clear | 5s |
+| API | HTTP surface | 10/10 | clear | 216s |
+| MULTI | Multi-indication | 11/11 | clear | 800s |
 
 ## Every criterion
 
@@ -82,7 +82,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `G6` — risk recomputed independently for all 1665 rejected targets matches the stored value on 1665; the gate changed no risk
 - **TRIPPED** `R14` — no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
 
-### Stage 4 — Target pairing (10/14)
+### Stage 4 — Target pairing (10/15)
 
 - clear `P1` — combined risk vs min of members, rho=0.7910 (limit 0.95)
 - clear `P2` — 6,426 of 19,900 (32.29%) beat the better member by more than 0.05 (limit 1%)
@@ -96,6 +96,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `P11` — outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)
 - clear `P12` — 0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)
 - **TRIPPED** `P13` — most common partner takes 70.0% of dual recommendations (PRSS21)
+- **TRIPPED** `P17` — 22 of 30 dual recommendations (73.3%) had exactly one admissible eligible partner, so no selection was made; limit 50%, above which the majority of recommendations name a partner the stage did not choose between
 - clear `P14` — top pair is NPSR1+PTPRN2, top two singles are TMC5+ITGB6
 - **TRIPPED** `P15` — pool halved to 100: 17 of 18 shared dual targets change partner (94.4%, limit 50%)
 
@@ -167,7 +168,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 9bdb88c3b68c rather than blocking
+- clear `A3` — a run returns 202 with job 5a0e36175525 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -218,6 +219,8 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - Stage 4 `P8` — 172 of 294 cleared pairs (58.5%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
   - Accepted: 48.6% of cleared pairs stop clearing if an unmeasured antigen saturates its organ. This is the cost of treating missing as a third state instead of imputing it.
 - Stage 4 `P13` — most common partner takes 70.0% of dual recommendations (PRSS21)
+  - Accepted: Accepted on the evidence in specs/p13-partner-concentration.md. P13 measures partner concentration as a share of dual recommendations, in a set where concentration is structural: 290 of 19,900 pairs are admissible, and 21 of the 21 targets that took the hub had exactly one admissible eligible partner. The statistic therefore cannot distinguish a rule preference from scarce supply, and no change to the selection objective moves it -- forcing every target that had a choice to choose otherwise leaves the share at 70.0%. Accepted rather than fixed, with P17 added to measure the property that is actually true.
+- Stage 4 `P17` — 22 of 30 dual recommendations (73.3%) had exactly one admissible eligible partner, so no selection was made; limit 50%, above which the majority of recommendations name a partner the stage did not choose between
   - **Not on the accepted list. This is new.**
 - Stage 4 `P15` — pool halved to 100: 17 of 18 shared dual targets change partner (94.4%, limit 50%)
   - Accepted: Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.

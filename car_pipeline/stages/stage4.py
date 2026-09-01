@@ -378,6 +378,8 @@ class Decision:
     partner_accession: str | None = None
 
     pool_index: int = -1
+    partner_options: int | None = None
+    partner_forced: bool | None = None
 
     architecture: str = ""
     route_reason: str = ""
@@ -545,6 +547,9 @@ def decide(
                 pair_coverage_measured=chosen.coverage.measured,
             )
 
+        options = dict(partner_options=len(admissible),
+                       partner_forced=len(admissible) == 1)
+
         risk, organ = risk_of.get(r.gene, (None, None))
         best_pair_risk = admissible[0].risk.combined if admissible else None
         if tol is None:
@@ -574,6 +579,7 @@ def decide(
                     gene=r.gene,
                     outcome=SINGLE,
                     **route_fields,
+                    **options,
                     **evidence,
                     **pair_evidence(best),
                     partner=_other(best, r.gene) if best else None,
@@ -594,6 +600,7 @@ def decide(
                     gene=r.gene,
                     outcome=DUAL,
                     **route_fields,
+                    **options,
                     **evidence,
                     **pair_evidence(best),
                     partner=_other(best, r.gene),
@@ -702,6 +709,8 @@ def _decision_payload(d: Decision) -> dict:
         "partner": d.partner,
         "partner_accession": d.partner_accession,
         "pool_index": d.pool_index,
+        "partner_options": d.partner_options,
+        "partner_forced": d.partner_forced,
         "failed_on": d.failed_on or None,
         "architecture": d.architecture or None,
         "route_reason": d.route_reason or None,

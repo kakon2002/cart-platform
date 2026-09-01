@@ -6,7 +6,7 @@ us had been working from.
 
 ## The question
 
-Three genes have now held the hub: NRG3, then NPSR1, then LRRC15, now PRSS21.
+The hub has changed hands three times across four states, LAMP5 then LRRC15 twice then PRSS21; the measured sequence is recorded below.
 The obvious reading is that the selection rule has a systematic preference and
 the identity of the gene is incidental. The rule sorts admissible pairs by
 combined risk and takes the minimum, and combined risk is the minimum per organ
@@ -130,6 +130,68 @@ something true through a statistic that cannot isolate it, and because the
 alternative is fitting either the rule or the criterion to a number.
 
 Nothing here is implemented. This document is for review.
+
+## The sequence, which is the finding
+
+The hub changed hands repeatedly, and each time the diagnosis was wrong until
+the forced fraction was measured. Recorded from what the verifier printed on
+each state:
+
+| state | P13 reported | verdict |
+| --- | --- | --- |
+| reference | LAMP5, 38.5% | clear, below the limit |
+| evidence-fix branch | LRRC15, 70.6% | tripped |
+| after P0 | LRRC15, 72.0% | tripped |
+| after the P1 stromal gate | PRSS21, 70.0% | tripped |
+
+A fourth gene, NPSR1, held the equivalent position in the rescue analysis at 82
+of 99 rescued targets, though that is a different statistic from P13 and is
+recorded here only because it was read as the same phenomenon at the time.
+
+*A note on this list.* It was put to me as three genes, NRG3, NPSR1 and PRSS21.
+The states above are what the verifiers actually printed, and NRG3 does not
+appear among them; LRRC15 held the hub twice. The correction does not change
+the conclusion and the sequence is recorded as measured rather than as recalled,
+because a list of names is exactly the kind of thing that drifts.
+
+**Each time, the explanation offered was about the gene.** LRRC15 was a
+fibroblast marker, so the concentration was contamination and the stromal gate
+would fix it. It did not: the gate removed LRRC15 and the concentration
+reappeared at 70.0% on a gene that passes the gate cleanly. NPSR1 was
+implausibly low in tumour, so the 5 TPM eligibility floor would fix it. It did
+not, for the same reason.
+
+**The lesson is that a concentration statistic says nothing without knowing how
+many alternatives existed.** Three rounds of gene-level diagnosis were spent
+before anyone counted the options, and the count settled it in one measurement:
+21 of the 21 targets that took the hub had exactly one admissible partner. The
+statistic was never about the genes. It was about a set of 290 admissible pairs
+out of 19,900, in which most targets have no choice to make.
+
+## Disposition
+
+**P13 is accepted under section 9**, with this document as its rationale. It is
+accepted rather than fixed because it measures concentration in a set where
+concentration is structural, so it cannot distinguish a rule preference from
+scarce supply, and because no available change to the selection rule moves the
+number it reports.
+
+**P17 is added** to measure the property that is actually true: the fraction of
+dual recommendations that had exactly one admissible eligible partner.
+
+Its limit is **50%**, and the reasoning is prior to the measurement. A dual
+recommendation asserts that the stage selected a partner. Where exactly one
+admissible eligible partner exists, no selection occurred and the recommendation
+reports availability in the grammar of a choice. If more than half of
+recommendations are of that kind, the output is predominantly not a ranking of
+partners and should not be read as one. The boundary is therefore the simple
+majority, the point at which "most recommendations are selections" stops being
+true. It is not derived from the observed value, and a limit fitted to that
+value would have sat nearer 70%.
+
+Each recommendation also carries `partner_options` and `partner_forced`, so a
+reader can see per row whether a choice was made rather than inferring it from
+an aggregate.
 
 ## Recorded separately: the atlas composition finding
 
