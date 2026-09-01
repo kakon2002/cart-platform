@@ -27,7 +27,7 @@ pin.** A set of purely negative assertions passes completely against a dead code
 path. That is not hypothetical here - it is how a stage returned nothing for all
 200 targets while every check on it passed.
 
-485 decisions across 47 modules.
+492 decisions across 48 modules.
 
 ## Contents
 
@@ -563,6 +563,17 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* A mean over every cell is dominated by the nuclear transcripts this assay always captures, which say nothing about any cell type in particular; the sanity check is that the acinar enzymes CTRB1, CPA1 and PRSS1 come out at the top of 22,164 genes, which a population mean does not deliver.
 
+**34. singlecell.py:8** - Nothing in this module ever holds the whole matrix: the archive is streamed on download, streamed again on expansion in 4 MiB blocks while hashing and fsyncing, and read back in row blocks of 8,192 for both the group-means accumulation and the malignant-cell pass.
+
+> *Without it:* The obvious implementation, reading the h5ad in whole and grouping by cell type, is not a slower path but one that does not complete: 8.3 GB expanded against the memory available. Anyone reinstating a whole-matrix read, or raising the row block to go faster, gets an OOM kill mid-aggregation rather than an error naming the cause.
+
+**35. singlecell.py:12** - The authors' annotations are used as given, with one editorial act: the two author immune branches are merged into one compartment, and every cell-type to branch to compartment mapping is printed line by line so that act is visible in the run output rather than buried in a dict.
+
+> *Without it:* The compartment axis is otherwise the authors' annotation plus one silent re-annotation nobody can see. A reader comparing the run against the source publication finds one fewer immune branch with nothing explaining where it went, and a future collapse of two branches that do NOT describe the same compartment lands the same way. COMPARTMENT_ORDER holds six labels against a longer list of author branches, so the merge is not inferable from the constant alone.
+
+**36. singlecell.py:116** - The registry key for this source stays the class name; the accession is per-run detail reported through series_name, not baked into the dataset identity. Cache entries are namespaced by atlas tag separately.
+
+> *Without it:* Putting the accession in the dataset identity makes the same source a different dataset for every indication, so the Stage 1 row for the single-cell atlas changes name whenever the atlas does and can no longer be tracked as one required source across indications.
 
 ## `car_pipeline/data/depmap.py`
 
@@ -702,6 +713,9 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Without the flag the construct emits as a complete designed sequence, and a downstream reader cannot tell the one unverified binder from the retrieved ones.
 
+**10. domains.py:86** - Part.described defines what it means for a part to say where it came from per provenance class rather than uniformly: synthetic needs only a name, structure only an accession, proteome an accession plus both bounds. It is the property criterion K4 stands on.
+
+> *Without it:* The obvious uniform rule, requiring an accession with a residue range for everything, rejects every structure-derived part, because a part retrieved from PDB entities carries an accession and no residue range at all -- the anti-tag binder is exactly that case -- so K4 would trip on a correctly sourced construct. Loosening it the other way to accession-only lets a proteome part with no range pass K4. The criterion's own spec wording is narrower than the implementation, so the code cannot be reconstructed from the criterion either.
 
 ## `car_pipeline/data/trials.py`
 
@@ -744,6 +758,9 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* An aggregate over the tissue profile lets a gene with one strongly expressing normal tissue pass as silent, which is exactly the on-target/off-tumour case the flag exists to catch; the threshold sits at 1 TPM rather than zero. The report expects 472 measured-and-silent proteins, so an aggregate or exact-zero rule changes that count without looking broken.
 
+**6. coverage.py:16** - The coverage report is built deliberately without the two heaviest sources. It takes the surface set, the tissue atlas indexes, the normal baseline and the tumour join, and reads neither heavy archive.
+
+> *Without it:* Wiring the heavy sources in for completeness makes every coverage run expand an eight gigabyte archive to produce counts it cannot change: the evidence classes and join paths come from the four light sources alone. Unrecorded, the omission reads as an oversight and the next person adds them back, paying the decompression on every run for identical numbers.
 
 ## `car_pipeline/data/availability.py`
 
@@ -1834,6 +1851,12 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* A fixed path renders a previous run's page while printing a confident success line about the current one.
 
 
+## `car_pipeline/stages/validation.py`
+
+**1. validation.py:219** - The two design classes are defined from the architecture table, not from what survived: conservative is the conventional single-antigen receptor carrying a binder with clinical precedent, advanced is an architecture the spec lists as non-conventional, meaning a gated dual or an adaptor.
+
+> *Without it:* Both labels are the kind that get filled in by whatever is available. Defining conservative as "the safest thing in the pool" labels a dual conservative on a run where no single survives, and defining advanced as "the rest" labels a plain receptor advanced. The definitions have to be fixed against the architecture table so the honest answer stays reachable, which is the answer this pool actually gives: no conservative design exists here, reported rather than filled.
+
 ## `strip_comments.py`
 
 **1. strip_comments.py:41** - The strip works from a token stream, not a regular expression over lines.
@@ -1863,6 +1886,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **7. strip_comments.py:137** - No file is written whose parsed tree changes, with docstrings normalised out of both sides first.
 
 > *Without it:* This is the only failure the tool can have, and it is silent: an edit that removes a statement rather than a comment produces a file that still parses and still imports. The guard has already refused a write twice - once for the brace escaping above, and once more before that.
+
+**8. strip_comments.py:16** - The skipped trees are matched as resolved paths under the project root, not by directory name anywhere in the path.
+
+> *Without it:* The skip list names `data` for the cache at `data/`. Matching the name against every path component also matched the source package `car_pipeline/data/`, so thirteen modules and three hundred comments were never visited, and the check that confirmed the sweep reused the same predicate and confirmed its own blind spot. The two entries look interchangeable and are not: `reports` is safe under either rule and `data` is not, so the next person shortening this back to a name test sees no failure until a package happens to share a label with a cache. The general form of the error is written up in `specs/verification-sharing-assumptions.md`, instance 7.
 
 
 ---
