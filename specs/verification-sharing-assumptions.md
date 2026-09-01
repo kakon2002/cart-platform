@@ -1,8 +1,9 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found six times in this
-repository. The fifth was found by suspecting the fourth, and the sixth was
-introduced by a change made after the first five were written down.
+Read this before writing a criterion. It has been found seven times in this
+repository. The fifth was found by suspecting the fourth, the sixth was
+introduced by a change made after the first five were written down, and the
+seventh is the root cause of the third, found only when the third was fixed.
 
 ## The pattern
 
@@ -17,7 +18,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The six
+## The seven
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -41,7 +42,7 @@ exactly as it did.
 **3. The check sharing a skip list with its subject.** The comment strip skipped
 directories named in `SKIP_DIRS`, which contains `data` for the cache. The test
 was every path component, so the source package `car_pipeline/data/` matched and
-was skipped: fifteen modules, three hundred comments, untouched. The
+was skipped: thirteen modules, three hundred comments, untouched. The
 verification that confirmed "zero comments remain" reused the same `SKIP_DIRS`
 logic, so it confirmed its own blind spot and reported a clean sweep.
 
@@ -104,6 +105,34 @@ so the verifier would have printed 10/11 while reporting twelve criteria. That
 is instance 1 reappearing as a placement rather than a constant, in the same
 change that closed instance 6, and it was caught by reading the output rather
 than by the suite.
+
+**7. The name-based match that reached past its subject.** Instance 3 recorded
+the effect: the strip skipped `car_pipeline/data/` and the check reused the same
+predicate. Fixing it exposed the cause, which is not about caches or comments at
+all. `SKIP_DIRS` held the *name* `data`, and the test asked whether any path
+component equalled it. A name is not an address. One directory was meant - the
+cache at `data/` - and the rule selected every directory in the tree that
+happened to share the label, which is how a package of thirteen modules ended up
+inside a skip list written for a cache.
+
+*Broken-thing question:* if the rule selected the wrong directories, the sweep
+would report a clean pass over the ones it did visit, which is exactly what it
+reported.
+
+This is the same shape as two matches already recorded elsewhere in this
+repository: `renal` matching **adrenal gland**, and `cortex` matching
+**Kidney_Cortex**. In all three the string is a real name for the intended
+subject, the match is textual rather than structural, and the surplus is silent
+- an adrenal gland is not a kidney, `Kidney_Cortex` is not every cortex, and
+`car_pipeline/data/` is not the cache. Nothing errors, because over-matching
+produces a *larger* answer that still typechecks. The fix in each case is the
+same: match the thing by what identifies it - a resolved path under a known
+root, an identifier, a column key - not by a word that appears in its name.
+
+The reason this belongs in a note about verification is that a name-based rule
+is what a verifier is most likely to reuse. It is short, it reads correctly, and
+copying it into the check is the obvious way to keep the two consistent. The two
+are then consistent about the wrong set.
 
 ## What to do instead
 

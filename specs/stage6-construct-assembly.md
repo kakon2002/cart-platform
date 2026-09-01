@@ -155,3 +155,95 @@ assembly step corrupts the sequence; K2 fails if the binder never arrives.
 2. K1 and K2 run before anything else is written
 3. `stages/stage6.py` — assemble, cost, verdict
 4. `verify_construct.py` — criteria, then the biology
+
+---
+
+## Amendment - K2 re-pinned
+
+**K2's pins were chosen for a property its targets no longer have, and they are
+the second stale pin found in this suite, not the first.**
+
+**Why MUC16 and MUC17 were pinned.** Section 6 records the reasoning verbatim:
+they were *"the only two recommendations carrying a binder on both arms"*. The
+pin was never about those two genes. It was about the one thing K2 exists to
+test - the Stage 5 to Stage 6 join across a *dual*, where two independent
+binders must both arrive verbatim in one construct. MSLN and CLDN18 were named
+in the same row as the obvious pins that could not serve, because neither
+yielded a construct to check. MUC16 and MUC17 were what was left.
+
+**Which decision set this is measured on.** K2 reads the persisted Stage 4
+artifact through `read_decisions(allow_unusable=True)`. That artifact is written
+by `verify_pairing.py:163`, which calls `decide()` with no tolerances, so every
+row carries `route_reason="no tolerances supplied; routing disabled"` and the
+manifest flags `usable_as_result: False`. The architecture routing therefore
+never runs and no ADAPTOR row can exist in it. This is declared, not hidden, and
+the verifier opts into it by name - but it bounds what K2 can see, and the bound
+is recorded here because the numbers below are meaningless without it.
+
+**Why they no longer hold.** The property has moved off them. Measured on that
+artifact:
+
+| | count |
+|---|---|
+| Stage 4 decisions | 200 |
+| outcomes | 167 NO_DESIGN, 30 DUAL, 3 SINGLE |
+| genes carrying a binder the assembler can use | 28 |
+| duals carrying a binder on **both** arms | **0** |
+| duals carrying a binder on their **own** arm | 4 |
+| ADAPTOR rows (routing disabled) | 0 |
+| constructs assembled | **0 of 200** |
+
+MUC16 and MUC17 both still carry a usable binder on their own arm. What changed
+is the arm they are joined to: MUC16 now pairs to CASR and MUC17 to PRSS21, and
+neither partner carries a binder, so both rows end NO_CONSTRUCT with *"dual
+design, but the partner has no binder"*. The other two duals holding an own-arm
+binder are CDH17 to PRSS21 and IL22RA1 to PRSS21 - the same partner three times,
+which is the partner concentration already recorded under P13.
+
+Two things empty this stage, and the smaller one is the interesting one. With
+routing disabled, only SINGLE and DUAL can build at all, so the adaptor route -
+the architecture the platform actually ships for every surviving design in the
+worked indication - is absent by construction rather than by outcome. Within
+what remains, the 3 SINGLE rows retrieve no binder and all 30 DUAL rows have a
+partner that carries none, three of them the same hub partner. Neither cause
+alone would leave the stage at zero; both are needed, and only the second is a
+property of the pool.
+
+**The finding, which is not the re-pin.** There is nothing to re-pin onto. No
+dual in the current pool carries a binder on both arms, so the two-arm join K2
+was written to exercise is not exercised anywhere. Picking any pair that does
+not test the join would restate the original mistake in fresher genes. K2 now
+derives its pin set from the run, through `two_armed_duals()`, and where that
+set is empty it **trips and says the join is untested** rather than clearing on
+an empty set. The per-construct verbatim checks are unchanged and still run
+against whatever assembled.
+
+**Not weakened.** The old K2 also tripped today, through its `nothing was
+assembled at all` clause. The amendment does not change whether K2 trips; it
+changes what K2 is able to say, and stops it going quietly green the day one
+dual assembles while the two-arm join is still uncovered.
+
+**Second stale pin, not the first.** The first was the Stage 4a end-state
+assertion recorded at `verify_api.py:94`, which pinned one terminal status and
+would have failed once routing sent designs to an architecture that fits - a
+criterion testing yesterday's answer. This is the same defect with the sign
+reversed: that one would have failed on an improvement, this one would have
+passed on a regression. Both come from writing a *result* into a criterion
+instead of the *property* the criterion is for. The standing correction is
+unchanged and now has two instances behind it: pin the property, derive the
+subjects from the run.
+
+**What K2 does not cover, and now says so.** Because routing is disabled in the
+set it reads, K2 has never exercised an adaptor construct, and the adaptor is
+what the platform returns for every surviving design in the worked indication.
+That gap is a property of which artifact the verifier is pointed at, not of the
+criterion, so it is not repaired by re-pinning. It is recorded here rather than
+changed, because pointing the construct verifiers at a routed decision set
+changes what the whole suite verifies and is a scope decision.
+
+**Still open, priced separately, not fixed here.** With 0 constructs assembled,
+K1, K3, K4, K5 and K6 all clear on the empty set - K4 prints *"0 parts in the
+first construct"*. Their printed text is honest about the zero; their verdicts
+are not. That is the same shape as this amendment, but flipping five criteria is
+a criteria-design decision rather than a repair, so it is reported and left for
+the tolerance call, not taken unilaterally.
