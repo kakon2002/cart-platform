@@ -1,22 +1,4 @@
-"""Joins every source onto the surface set and records what is known about each.
-
-The evidence class records the **best tier of measurement available, never what
-the measurement said**. Staining that came back clean is still protein-level
-evidence; it belongs in the same class as staining that came back strong. Mixing
-the two would make "nobody looked" and "somebody looked and saw nothing"
-indistinguishable, and only one of those is reassuring.
-
-Nothing is dropped. Every protein in the surface set leaves with a class.
-
-Join routes are recorded as the join happens. Working them out afterwards by
-comparing symbols gets the transcript baseline wrong, because its own key is an
-identifier rather than a symbol, and a row reached by its primary key would be
-misread as one reached by a fallback.
-
-The two heaviest sources are optional here. This report reads neither, and
-expanding an eight gigabyte archive to produce counts it cannot change would be
-a waste.
-"""
+"""Joins every source onto the surface set and records what is known about each."""
 
 from __future__ import annotations
 
@@ -55,13 +37,6 @@ class CoverageRow:
         return JOIN_ENSEMBL_BRIDGE in self.join_paths.values()
 
 
-# Antigen-receptor and major histocompatibility loci, matched on the actual
-# naming pattern rather than on a leading fragment. A bare prefix test is wrong
-# here in a way that is easy to miss: "TRA" also captures triadin, the
-# TRAF-interacting proteins and the arginine transporter, and "KIR" captures the
-# kirre-like family, none of which are polymorphic immune loci. The count can
-# still come out right while the test is wrong, because a miscategorised gene
-# only shows up if it happens to land in this class.
 _IMMUNE_LOCUS = re.compile(
     r"""^(
         HLA-.+          # histocompatibility loci
@@ -74,10 +49,12 @@ _IMMUNE_LOCUS = re.compile(
 
 
 def _immune_locus(gene: str) -> bool:
+    """Whether the symbol belongs to an immunoglobulin or MHC locus."""
     return bool(_IMMUNE_LOCUS.match(gene))
 
 
 def _endogenous_retroviral(gene: str, protein_name: str) -> bool:
+    """Whether the entry is an endogenous retroviral product."""
     return gene.startswith("ERV") or "endogenous retrovirus" in protein_name.lower()
 
 
@@ -120,7 +97,6 @@ def build_coverage(
             row.has_tumour_expression = True
             row.join_paths["tumour_expression"] = tumour[1]
 
-        # Best tier available, in order. What the measurement said plays no part.
         if row.has_staining:
             row.evidence_class = PROTEIN_CONFIRMED
         elif row.has_normal_baseline or row.has_tumour_expression:
@@ -134,6 +110,7 @@ def build_coverage(
 
 
 def summarise(rows: Iterable[CoverageRow]) -> dict:
+    """Counts per evidence class and join path across the coverage rows."""
     rows = list(rows)
     counts = {
         PROTEIN_CONFIRMED: 0,
@@ -156,11 +133,7 @@ def summarise(rows: Iterable[CoverageRow]) -> dict:
 
 
 def categorise_insufficient(rows: Iterable[CoverageRow], protein_names: dict) -> dict:
-    """Break down what the unresolved group actually contains.
-
-    Not a reservoir of hidden targets, but kept rather than discarded: an
-    unmeasured protein is not a refuted one.
-    """
+    """Break down what the unresolved group actually contains."""
     immune = ervs = other = 0
     examples: list[str] = []
     for r in rows:

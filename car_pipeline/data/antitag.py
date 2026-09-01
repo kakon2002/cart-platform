@@ -80,6 +80,7 @@ class AntiTagSource(DataSource):
     namespace = "antitag"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The pinned binder entry, keyed by entry and revision."""
         return [
             CacheEntry(
                 key=f"binder__{ENTRY_ID}",
@@ -98,6 +99,7 @@ class AntiTagSource(DataSource):
         entry = next(iter(self.cache_entries()))
 
         def fetcher(tmp: Path) -> dict:
+            """Retrieve the pinned entities, refusing a moved revision."""
             print(f"  retrieving anti-tag binder from {ENTRY_ID}", flush=True)
             header = _get(f"{ENTRY_URL}/{ENTRY_ID}")
             accession = header.get("rcsb_accession_info") or {}

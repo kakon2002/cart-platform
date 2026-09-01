@@ -1,23 +1,4 @@
-"""Tissue atlas connector, pinned to release 23.
-
-The pin is not conservatism. Per-tissue staining and pathology tables were
-withdrawn from the per-dataset downloads after this release; later ones ship
-only the consolidated gene table, with no per-tissue calls at all. All four
-files are taken from the same release so the gene set and the tissue vocabulary
-stay consistent with each other.
-
-The level column carries values outside the documented four, and two of them
-change the answer:
-
-* Placeholder rows mark genes that were never stained. Counting them as
-  coverage inflates the surface-protein figure by roughly a fifth. They are
-  dropped at parse, but the gene's symbol, accession and localisation call are
-  kept — absence of staining is not absence of the gene.
-* Gradient calls on gut enterocytes mean the protein *is* present. Sorting them
-  off the end of the scale would place them below "not detected", which
-  understates expression — the dangerous direction for a dataset whose whole
-  job is flagging risk. They rank with the lowest positive level.
-"""
+"""Tissue atlas connector, pinned to release 23."""
 
 from __future__ import annotations
 
@@ -43,8 +24,7 @@ FILES = {
     "proteinatlas": "proteinatlas.tsv",
 }
 
-# Ordinal scale. The gradient calls sit with the lowest positive level: they
-# report presence, and ranking them below "not detected" would understate it.
+
 LEVEL_RANK = {
     "Not detected": 0,
     "Low": 1,
@@ -54,10 +34,10 @@ LEVEL_RANK = {
     "High": 3,
 }
 
-# Never stained. A placeholder, not a measurement.
+
 PLACEHOLDER_LEVELS = {"N/A", ""}
 
-# A withdrawn call: unscored, and not a detection.
+
 WITHDRAWN_LEVELS = {"Not representative"}
 
 PLASMA_MEMBRANE = "Plasma membrane"
@@ -74,35 +54,35 @@ class AtlasGene:
 
     @property
     def has_staining(self) -> bool:
+        """Whether any normal tissue was stained for this entry."""
         return bool(self.staining)
 
     @property
     def has_subcellular_call(self) -> bool:
+        """Whether a subcellular location was recorded."""
         return bool(self.main_location or self.additional_location)
 
     @property
     def at_plasma_membrane(self) -> bool:
+        """Whether a location statement places it at the plasma membrane."""
         return PLASMA_MEMBRANE in self.main_location or (
             PLASMA_MEMBRANE in self.additional_location
         )
 
     def peak_level(self) -> int | None:
+        """The highest staining level recorded across tissues."""
         if not self.staining:
             return None
         return max(level for _, _, level in self.staining)
 
 
 def _split_locations(cell: str) -> list[str]:
+    """Split a location field into its separate statements."""
     return [p.strip() for p in cell.split(";") if p.strip()]
 
 
 def _columns(header: list[str], required: list[str], filename: str) -> dict[str, int]:
-    """Resolve required column positions, refusing to proceed without them.
-
-    A missing column left as an absent index produces an empty table rather than
-    an error, and an empty table is indistinguishable from a source that simply
-    has nothing to say.
-    """
+    """Resolve required column positions, refusing to proceed without them."""
     idx = {name: i for i, name in enumerate(header)}
     missing = [c for c in required if c not in idx]
     if missing:
@@ -115,6 +95,7 @@ class HPASource(DataSource):
     namespace = "hpa"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The pinned atlas release this source reads."""
         return [
             CacheEntry(
                 key=key,
@@ -125,11 +106,13 @@ class HPASource(DataSource):
         ]
 
     def fetch(self) -> None:
+        """Download the atlas if it is absent."""
         for entry in self.cache_entries():
             if self.cache.is_valid(entry):
                 continue
 
             def fetcher(tmp: Path, entry: CacheEntry = entry) -> dict:
+                """Stream the atlas into a temporary file."""
                 archive = tmp.with_suffix(".zip")
                 print(f"  fetching {entry.filename}", flush=True)
                 stream_to_file(f"{BASE}{entry.filename}.zip", archive)
@@ -140,24 +123,24 @@ class HPASource(DataSource):
             self.cache.ensure(entry, fetcher)
 
     def path_for(self, key: str) -> Path:
+        """The cached path for one key, fetching first if it is absent."""
         entry = next(e for e in self.cache_entries() if e.key == key)
         if not self.cache.is_valid(entry):
             self.fetch()
         return self.cache.path(entry)
 
-    # -- parsing ----------------------------------------------------------
-
     def load(self) -> dict[str, AtlasGene]:
+        """Every atlas entry, parsed."""
         genes: dict[str, AtlasGene] = {}
 
         def get(ensembl: str) -> AtlasGene:
+            """One atlas entry by accession."""
             g = genes.get(ensembl)
             if g is None:
                 g = AtlasGene(ensembl=ensembl)
                 genes[ensembl] = g
             return g
 
-        # gene table: symbols and accessions
         with open(self.path_for("proteinatlas"), encoding="utf-8", newline="") as fh:
             header = fh.readline().rstrip("\r\n").split("\t")
             idx = _columns(header, ["Ensembl", "Gene", "Uniprot"], "gene table")
@@ -175,12 +158,9 @@ class HPASource(DataSource):
                 if i_sym is not None and len(row) > i_sym:
                     g.symbol = row[i_sym].strip()
                 if i_acc is not None and len(row) > i_acc:
-                    # The column can carry several accessions; the first is the
-                    # one the atlas treats as canonical.
                     acc = row[i_acc].strip()
                     g.accession = acc.split(",")[0].strip() if acc else ""
 
-        # normal tissue staining
         dropped_placeholder = 0
         dropped_withdrawn = 0
         with open(self.path_for("normal_tissue"), encoding="utf-8", newline="") as fh:
@@ -220,7 +200,6 @@ class HPASource(DataSource):
                     (sys.intern(row[i_tis]), sys.intern(row[i_cell]), rank)
                 )
 
-        # subcellular localisation
         with open(
             self.path_for("subcellular_location"), encoding="utf-8", newline=""
         ) as fh:
@@ -252,6 +231,7 @@ class HPASource(DataSource):
 
 
 def summarise(genes: dict[str, AtlasGene]) -> dict:
+    """Counts of what the atlas records across the entries read."""
     values = list(genes.values())
     return {
         "genes": len(values),

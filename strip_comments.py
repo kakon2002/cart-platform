@@ -11,14 +11,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 
-SKIP_DIRS = {".venv", ".git", "__pycache__", "data", "reports"}
+SKIP_ANYWHERE = {".venv", ".git", "__pycache__"}
+
+SKIP_PATHS = ("data", "reports")
 
 
 def targets() -> list[Path]:
     """Every Python file in the project except vendored and generated trees."""
+    skip_roots = [(ROOT / name).resolve() for name in SKIP_PATHS]
     out = []
     for path in ROOT.rglob("*.py"):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if any(part in SKIP_ANYWHERE for part in path.parts):
+            continue
+
+        resolved = path.resolve()
+        if any(resolved.is_relative_to(root) for root in skip_roots):
             continue
         out.append(path)
     return sorted(out)

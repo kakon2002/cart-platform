@@ -1,27 +1,4 @@
-"""Antibody annotation over deposited structures, and named therapeutics.
-
-Two sources, cached under the usual discipline.
-
-**The curated structure summary** says which chain of a complex is heavy, which
-is light and which is the antigen. Without it those have to be guessed from
-entity description text, which the specification called the weak link. It is a
-bulk CSV; the front end that serves it is a JavaScript application, and an
-earlier probe read that shell as the source being unreachable. It is not — the
-application has a REST interface and this is one of its routes.
-
-**The therapeutic table** carries named antibodies with their clinical stage and,
-the part that matters most, their actual variable-region sequences. A binder does
-not have to be a solved structure to be usable; a sequence is what a construct is
-built from.
-
-Target matching on the therapeutic table is by **token**, never by substring. The
-field is compound and synonym-laden — measured values include `CEACAM5/CD66e`,
-`MUC1/PEM/EMA`, `CLDN18;CD3E` and `IAP/CD47;CLDN18` — so the field is split on
-`;` to separate the antigens of a bispecific and on `/` to separate synonyms,
-then matched exactly. Substring matching would put MUC16 and MUC18 in the MUC1
-bucket, and would match `CLDN1` inside `CLDN18`, which this table contains as
-separate targets.
-"""
+"""Antibody annotation over deposited structures, and named therapeutics."""
 
 from __future__ import annotations
 
@@ -70,15 +47,10 @@ class Therapeutic:
 
     @property
     def has_sequence(self) -> bool:
+        """Whether both variable regions are present."""
         return bool(self.heavy_sequence and self.light_sequence)
 
 
-#: The two identifier formats these sources use for the same entry. The curated
-#: summary keys on the extended form, `pdb_00004f3f`; the structure search returns
-#: the short form, `4F3F`. Joining one directly against the other matches nothing
-#: — and matches nothing *silently*, producing an empty candidate list for every
-#: target that reads exactly like "no binder exists". It did, for all 200, until a
-#: positive known answer was added to catch it.
 _EXTENDED_PREFIX = "pdb_0000"
 
 
@@ -106,6 +78,7 @@ class AntibodySource(DataSource):
     namespace = "antibodies"
 
     def cache_entries(self) -> Iterable[CacheEntry]:
+        """The two tables this source caches, and the release that defines them."""
         return [
             CacheEntry(
                 key="structure_summary",
@@ -120,9 +93,11 @@ class AntibodySource(DataSource):
         ]
 
     def _entry(self, key: str) -> CacheEntry:
+        """One cache entry by key."""
         return next(e for e in self.cache_entries() if e.key == key)
 
     def fetch(self) -> Path:
+        """Download whichever of the two tables is missing."""
         for key, url, label in (
             ("structure_summary", SUMMARY_URL, "antibody structure summary"),
             ("therapeutics", THERAPEUTIC_URL, "therapeutic antibodies"),
@@ -132,6 +107,7 @@ class AntibodySource(DataSource):
                 continue
 
             def fetcher(tmp: Path, _url=url, _label=label) -> dict:
+                """Stream one table into a temporary file."""
                 print(f"  fetching {_label}", flush=True)
                 return stream_to_file(_url, tmp)
 
@@ -139,6 +115,7 @@ class AntibodySource(DataSource):
         return self.cache.path(self._entry("structure_summary"))
 
     def _rows(self, key: str) -> list[dict]:
+        """One cached table as dict rows, fetching first if it is absent."""
         entry = self._entry(key)
         if not self.cache.is_valid(entry):
             self.fetch()
@@ -146,11 +123,7 @@ class AntibodySource(DataSource):
         return list(csv.DictReader(io.StringIO(text)))
 
     def structures(self) -> dict[str, list[AntibodyStructure]]:
-        """Antibody instances keyed by the four-character entry code, lower case.
-
-    Keyed on the short form because that is what the structure search returns;
-    the extended form is retained on each instance so the row can be traced back.
-    """
+        """Antibody instances keyed by the four-character entry code, lower case."""
         out: dict[str, list[AntibodyStructure]] = {}
         for row in self._rows("structure_summary"):
             raw = (row.get("PDB") or "").strip()
@@ -173,6 +146,7 @@ class AntibodySource(DataSource):
         return out
 
     def therapeutics(self) -> list[Therapeutic]:
+        """The therapeutic antibodies, one record per named entry."""
         out: list[Therapeutic] = []
         for row in self._rows("therapeutics"):
             name = (row.get("Therapeutic") or "").strip()
@@ -199,6 +173,7 @@ class AntibodySource(DataSource):
         return out
 
     def therapeutics_by_target(self) -> dict[str, list[Therapeutic]]:
+        """Therapeutics indexed by every target token they name."""
         index: dict[str, list[Therapeutic]] = {}
         for therapeutic in self.therapeutics():
             for token in therapeutic.targets:

@@ -9,7 +9,28 @@ from car_pipeline.data.domains import PROTEOME, SYNTHETIC
 from car_pipeline.stages import stage4, stage5, stage6
 
 
-PINNED_ASSEMBLED = ["MUC16", "MUC17"]
+def usable_binder(record) -> bool:
+    """Whether this record carries a binder the assembler could use."""
+    if record is None:
+        return False
+    return any(
+        candidate.heavy_sequence and candidate.light_sequence
+        and not stage6.assemblable(
+            candidate.heavy_sequence + candidate.light_sequence)
+        for candidate in record.sequence)
+
+
+def two_armed_duals(decisions: list[dict], binders: dict) -> list[tuple[str, str]]:
+    """The duals carrying a binder on both arms, which is what K2 pins on."""
+    out = []
+    for row in decisions:
+        partner = row.get("partner")
+        if row["outcome"] != stage4.DUAL or not partner:
+            continue
+        if usable_binder(binders.get(row["gene"])) and usable_binder(
+                binders.get(partner)):
+            out.append((row["gene"], partner))
+    return out
 
 
 def main() -> int:
@@ -48,14 +69,13 @@ def main() -> int:
               f"{len(built)} constructs translate back to their own sequence"
               if not bad_round_trip else f"round trip fails for {bad_round_trip[:5]}")
 
+    owed = two_armed_duals(decisions, binders)
     k2_bad = []
 
-    for gene in PINNED_ASSEMBLED:
+    for gene, partner in owed:
         c = by_gene.get(gene)
         if c is None or not c.amino_acid_sequence:
-            k2_bad.append(f"{gene}: expected a construct, got none")
-    if not built:
-        k2_bad.append("nothing was assembled at all")
+            k2_bad.append(f"{gene}+{partner}: owed a construct, got none")
     for c in built:
         record = binders.get(c.gene)
         picked = next((t for t in record.sequence if t.name == c.binder_name), None)
@@ -72,10 +92,17 @@ def main() -> int:
                       None)
             if pp is None or pp.heavy_sequence not in c.amino_acid_sequence:
                 k2_bad.append(f"{c.gene}: partner VH absent")
-    criterion("K2", bool(k2_bad),
-              f"{len(built)} constructs carry their binders verbatim, including "
-              f"the pinned {', '.join(PINNED_ASSEMBLED)}"
-              if not k2_bad else "; ".join(k2_bad[:4]))
+    criterion(
+        "K2", bool(k2_bad) or not owed,
+        "; ".join(k2_bad[:4]) if k2_bad else
+        (f"{len(built)} constructs carry their binders verbatim, including the "
+         f"{len(owed)} dual(s) carrying a binder on both arms: "
+         + ", ".join(f"{g}+{p}" for g, p in owed[:4])) if owed else
+        (f"no dual carries a binder on both arms, so the two-arm join is not "
+         f"exercised anywhere in this decision set ({len(built)} of "
+         f"{len(decisions)} rows assembled; routing is disabled here, so no "
+         f"adaptor exists to assemble either); the criterion has nothing to "
+         f"pin on and reports that rather than clearing on an empty set"))
 
     k3_bad = []
     for c in built:
