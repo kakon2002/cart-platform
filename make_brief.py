@@ -23,7 +23,11 @@ from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import stage3, stage4
 from car_pipeline.stages.stage1 import build_spec
 
+TERMINABLE = PDAC_PROJECT.terminable_risk_ceiling
+
 NAMED = ("MSLN", "CLDN18")
+
+KNOWN = ("MSLN", "CLDN18", "CEACAM5", "CEACAM6", "MUC1")
 PIPELINE_PAIR = ("NPSR1", "PTPRN2")
 TOP_N = 20
 
@@ -92,7 +96,10 @@ def load():
         value = float(np.median(cohort.values[primary, cj[0]]))
         if np.isfinite(value):
             tumour_tpm[r.gene] = value
-    return pool, pairs, ceiling, tumour_tpm
+    inputs = stage3.RiskInputs(
+        model=model, calibration=calibration, by_accession=by_acc,
+        by_symbol=by_sym, profiles=gtex_profiles, tissues=gtex_tissues)
+    return pool, pairs, ceiling, tumour_tpm, inputs
 
 
 def _partner(p, gene):
@@ -126,6 +133,101 @@ def row_for(p, ceiling):
     }
 
 
+def attribution_table(inputs, pool, genes):
+    """Where each named target's risk came from, organ by organ."""
+    out = {}
+    for gene in genes:
+        entry = next((r for r in pool if r.gene == gene), None)
+        if entry is None:
+            print(f"\n  {gene}: not in the pool")
+            continue
+        a = inputs.attribute(entry.accession, gene)
+        if a.risk is None:
+            print(f"\n  {gene}: no organ scored")
+            continue
+        margin = "only organ" if a.margin is None else "%.4f" % a.margin
+        print()
+        print("=" * 118)
+        print(f"{gene} ({entry.accession}) — risk {a.risk:.4f} on "
+              f"{', '.join(a.winners)}, ahead of the next organ by {margin}")
+        print("=" * 118)
+        print("%-18s %9s %8s %5s %9s  %s"
+              % ("organ", "weighted", "score", "tier", "arm", "the measurement behind it"))
+        for o in a.organs:
+            if o.staining is None:
+                stain = stage3.NOT_MEASURED
+            else:
+                stain = (f"{o.staining.label} {o.staining.level_name} "
+                         f"{o.staining.score:.4f}")
+            if o.baseline is None:
+                base = stage3.NOT_MEASURED
+            else:
+                base = (f"{o.baseline.label} {o.baseline.tpm:.1f} TPM "
+                        f"{o.baseline.score:.4f}")
+            print("%-18s %9.4f %8.4f %5d %9s  %s"
+                  % (o.organ, o.weighted, o.score, o.tier, o.arm, stain))
+            print("%-18s %9s %8s %5s %9s  %s" % ("", "", "", "", "", base))
+        out[gene] = a.as_payload()
+    return out
+
+
+def arm_isolation(inputs, pool, genes, persistent, terminable):
+    """What each arm would say about these targets with the other one absent."""
+    print()
+    print("=" * 118)
+    print("WHICH ARM DECIDES, AND WHAT EACH WOULD SAY ALONE")
+    print("=" * 118)
+    print("%-10s %8s %-12s %-28s %-28s"
+          % ("target", "risk", "decided by", "staining arm alone",
+             "transcript arm alone"))
+    out = {}
+    for gene in genes:
+        entry = next((r for r in pool if r.gene == gene), None)
+        if entry is None:
+            print("%-10s %8s %s" % (gene, "-", "not in the pool"))
+            continue
+        a = inputs.attribute(entry.accession, gene)
+        if a.risk is None:
+            print("%-10s %8s %s" % (gene, "-", "no organ scored"))
+            continue
+
+        def alone(pick):
+            """The risk this arm reaches with the other arm's readings removed."""
+            best, organ = None, None
+            for o in a.organs:
+                reading = pick(o)
+                if reading is None:
+                    continue
+                value = reading.score * o.weight
+                if best is None or value > best:
+                    best, organ = value, o.organ
+            return best, organ
+
+        stain, stain_organ = alone(lambda o: o.staining)
+        base, base_organ = alone(lambda o: o.baseline)
+        winner = next(o for o in a.organs if o.organ == a.winners[0])
+
+        def phrase(value, organ):
+            """The arm's own verdict against the terminable ceiling."""
+            if value is None:
+                return "no reading"
+            return "%.4f %s, %s %.2f" % (
+                value, organ, "over" if value > terminable else "under",
+                terminable)
+
+        print("%-10s %8.4f %-12s %-28s %-28s"
+              % (gene, a.risk, winner.arm, phrase(stain, stain_organ),
+                 phrase(base, base_organ)))
+        out[gene] = {
+            "risk": a.risk, "decided_by": winner.arm,
+            "winning_organs": a.winners,
+            "staining_alone": stain, "staining_alone_organ": stain_organ,
+            "baseline_alone": base, "baseline_alone_organ": base_organ,
+            "persistent_ceiling": persistent, "terminable_ceiling": terminable,
+        }
+    return out
+
+
 def table(title, rows):
     """Print one table."""
     print()
@@ -150,7 +252,7 @@ def table(title, rows):
 
 def main() -> int:
     """Build every table the brief needs."""
-    pool, pairs, ceiling, tumour_tpm = load()
+    pool, pairs, ceiling, tumour_tpm, risk_inputs = load()
     by_gene = {r.gene: r for r in pool}
     blocked = {g for g, r in by_gene.items() if not r.cleared}
 
@@ -265,7 +367,12 @@ def main() -> int:
               f"combined={p.risk.combined} cleared={p.cleared} "
               f"unresolved_organs={len(p.risk.unresolved_organs or [])}")
 
+    attribution = attribution_table(risk_inputs, pool, NAMED)
+    arms = arm_isolation(risk_inputs, pool, KNOWN, ceiling, TERMINABLE)
+
     out = {
+        "risk_attribution": attribution,
+        "arm_isolation": arms,
         "pool": len(pool),
         "blocked_alone": len(blocked),
         "rescued": len(rescued),
