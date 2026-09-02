@@ -570,6 +570,145 @@ def protein_arm_measured(model, atlas_gene) -> bool:
     return False
 
 
+NOT_MEASURED = "NOT_MEASURED"
+
+ARM_STAINING = "STAINING"
+ARM_BASELINE = "BASELINE"
+ARM_TIED = "TIED"
+
+
+@dataclass(frozen=True)
+class ArmReading:
+    """One arm's winning measurement within one organ."""
+
+    label: str
+    score: float
+    level: int | None = None
+    level_name: str | None = None
+    tpm: float | None = None
+
+    def as_payload(self) -> dict:
+        """The reading at full precision, so the score can be recomputed from it."""
+        out = {"label": self.label, "score": self.score}
+        if self.level is not None:
+            out["level"] = self.level
+            out["level_name"] = self.level_name
+        if self.tpm is not None:
+            out["tpm"] = self.tpm
+        return out
+
+
+@dataclass(frozen=True)
+class OrganRisk:
+    """One organ's inputs to the outer maximum."""
+
+    organ: str
+    score: float
+    tier: int
+    weight: float
+    weighted: float
+    arm: str
+    staining: ArmReading | None
+    baseline: ArmReading | None
+
+    def as_payload(self) -> dict:
+        """The organ row, with an unmeasured arm named rather than zeroed."""
+        return {
+            "organ": self.organ,
+            "score": self.score,
+            "tier": self.tier,
+            "weight": self.weight,
+            "weighted": self.weighted,
+            "arm": self.arm,
+            "staining": (NOT_MEASURED if self.staining is None
+                         else self.staining.as_payload()),
+            "baseline": (NOT_MEASURED if self.baseline is None
+                         else self.baseline.as_payload()),
+        }
+
+
+@dataclass(frozen=True)
+class RiskAttribution:
+    """Every measurement behind a target's risk, and what each contributed."""
+
+    organs: list[OrganRisk]
+    risk: float | None
+    winners: list[str]
+    margin: float | None
+
+    def as_payload(self) -> dict:
+        """The attribution as the evidence trail serves it."""
+        return {
+            "risk": self.risk,
+            "winning_organs": self.winners,
+            "margin": self.margin,
+            "organs_scored": len(self.organs),
+            "organs": [o.as_payload() for o in self.organs],
+        }
+
+
+def attribute_risk(
+    model: RiskModel,
+    atlas_gene,
+    baseline_values: np.ndarray | None,
+    baseline_tissues: list[str],
+    calibration: CalibrationCurve,
+) -> RiskAttribution:
+    """The inputs to all three reductions, per organ, reconstructing the risk."""
+    staining: dict[str, ArmReading] = {}
+    baseline: dict[str, ArmReading] = {}
+
+    if atlas_gene is not None:
+        for tissue, _cell_type, level in atlas_gene.staining:
+            organ = model.organ_for_atlas(tissue)
+            if organ is None:
+                continue
+            score = calibration.score(level)
+            best = staining.get(organ)
+            if best is None or score > best.score:
+                staining[organ] = ArmReading(
+                    label=tissue, score=score, level=level,
+                    level_name=LEVEL_NAMES.get(level, str(level)))
+
+    if baseline_values is not None:
+        for label, tpm in zip(baseline_tissues, baseline_values):
+            organ = model.organ_for_baseline(label)
+            if organ is None:
+                continue
+            value = float(tpm)
+            score = _baseline_score(value)
+            best = baseline.get(organ)
+            if best is None or score > best.score:
+                baseline[organ] = ArmReading(label=label, score=score, tpm=value)
+
+    organs: list[OrganRisk] = []
+    for organ in sorted(set(staining) | set(baseline)):
+        stained, based = staining.get(organ), baseline.get(organ)
+        if stained is not None and based is not None:
+            score = max(stained.score, based.score)
+            arm = (ARM_TIED if stained.score == based.score
+                   else ARM_STAINING if stained.score > based.score
+                   else ARM_BASELINE)
+        elif stained is not None:
+            score, arm = stained.score, ARM_STAINING
+        else:
+            score, arm = based.score, ARM_BASELINE
+        weight = model.weight(organ)
+        organs.append(OrganRisk(
+            organ=organ, score=score, tier=model.tier(organ), weight=weight,
+            weighted=score * weight, arm=arm,
+            staining=stained, baseline=based))
+
+    organs.sort(key=lambda o: (-o.weighted, o.organ))
+    if not organs:
+        return RiskAttribution([], None, [], None)
+
+    top = organs[0].weighted
+    winners = [o.organ for o in organs if o.weighted == top]
+    margin = top - organs[1].weighted if len(organs) > 1 else None
+    return RiskAttribution(organs, top, winners, margin)
+
+
 def worst_organ(
     model: RiskModel, per_organ: dict[str, float]
 ) -> tuple[float | None, str | None]:
@@ -578,6 +717,29 @@ def worst_organ(
         return None, None
     organ = max(per_organ, key=lambda o: per_organ[o] * model.weight(o))
     return per_organ[organ] * model.weight(organ), organ
+
+
+@dataclass(frozen=True)
+class RiskInputs:
+    """What attribution needs to reconstruct any target's risk on demand."""
+
+    model: RiskModel
+    calibration: CalibrationCurve
+    by_accession: dict
+    by_symbol: dict
+    profiles: dict
+    tissues: list[str]
+
+    def attribute(self, accession: str, gene: str) -> RiskAttribution:
+        """Reconstruct one target's risk from the measurements underneath it."""
+        profile = self.profiles.get(accession)
+        return attribute_risk(
+            self.model,
+            self.by_accession.get(accession) or self.by_symbol.get(gene),
+            profile.values if profile is not None else None,
+            self.tissues,
+            self.calibration,
+        )
 
 
 def compute_risk(

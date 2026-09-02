@@ -34,10 +34,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 - **The contract** (9) - `spec.py`, `project.py`
 - **Indications** (22) - `indication.py`, `pdac.py`, `breast.py`, `registry.py`
 - **Sources and the cache** (139) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
-- **Stages** (171) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `validation.py`
-- **The service** (38) - `pipeline.py`, `server.py`
-- **Running it** (59) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
-- **The criteria** (70) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
+- **Stages** (175) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `validation.py`
+- **The service** (39) - `pipeline.py`, `server.py`
+- **Running it** (60) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `make_brief.py`, `strip_comments.py`
+- **The criteria** (73) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
 
 
 ---
@@ -971,6 +971,22 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* Printing the module constants "describes the module, not the run that produced the output" — a perturbed sensitivity run would emit a header claiming the default parameters beside numbers produced by different ones, and the printed configuration hash would be the only surviving hint.
 
 
+**35. stage3.py:597** - Attribution reconstructs the three reductions from the same inputs rather than being recorded as `compute_risk` runs.
+
+> *Without it:* Instrumenting the scoring path makes the explanation a by-product of the thing it explains, so the two cannot disagree and the reconstruction proves nothing. Recomputing independently is what gives T1 its force: the attribution and the risk are derived twice from the same measurements, and the criterion asserts they meet to within 1e-12.
+
+**36. stage3.py:604** - An organ whose two arms score equally is reported `TIED`, and a target reaching its maximum on several organs lists all of them.
+
+> *Without it:* Both reductions are a maximum, and a maximum silently picks a winner among equals. `worst_organ` returns whichever organ dict iteration reached first, which is an artefact of insertion order and not a fact about the target. Reporting one organ where several tie would attribute the verdict to evidence that only shares the credit; 314 targets reach their maximum on more than one organ.
+
+**37. stage3.py:246** - The attribution payload carries its numbers unrounded, unlike every other payload in this file.
+
+> *Without it:* The record has to reconstruct the risk from itself - that is the whole claim of §3. Rounding a TPM to four places changes the score the baseline curve returns from it, so a reader recomputing from the served record would get a number that disagrees with the one served beside it, in the fifth decimal, for no reason they could see.
+
+**38. stage3.py:660** - `RiskInputs` bundles the five objects attribution needs so one target can be explained on demand.
+
+> *Without it:* The alternative is attributing all 3,466 targets during the screen and carrying the result on `Ranked`, which puts 65,077 organ rows in memory to serve the one gene a reader asked about. The facility is a read of state that already exists; making it a stored output would make it something the pipeline maintains.
+
 ## `car_pipeline/stages/stage4.py`
 
 **1. stage4.py:13** - Per-organ risk scores are read from the ranking stage rather than recomputed here, so pairing a target with itself reproduces its single-antigen risk exactly.
@@ -1658,6 +1674,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* The pairing reason read "Stage 4 closed at 10 of 14 criteria with four documented limitations." The service does not run the suite and cannot know either number, so both were transcribed once and left there. A criterion was later added: the stage now closes at 10 of 15 with five limitations, and the sentence had been wrong on both figures ever since, on a live endpoint. Naming the limitations instead of counting them says more and cannot go stale.
 
+**26. server.py:517** - Risk attribution hangs off the existing evidence trail instead of becoming its own endpoint.
+
+> *Without it:* Two endpoints would report the same risk from different code, and the number they disagreed about would be the one under dispute. The evidence trail already answers per gene and already carries `risk` and `risk_organ`; the attribution belongs beside them, where a reader sees the verdict and its grounds in one response.
+
 
 ---
 
@@ -1878,6 +1898,12 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* The sentence carried two hardcoded claims inside prose that otherwise looks computed. It said "the only single-antigen target, NPSR1" where three were recommended - MSLNL, NPSR1 and ZPLD1 - and it asserted "the two dual designs that assemble are both over the payload budget" where zero duals assemble and no construct is over budget at all. Both were true when written and neither was ever recomputed. This is the standing correction from the stale-pin finding, in output prose rather than in a criterion: state the property, derive the subjects from the run. It is worse here than in a criterion, because a criterion that goes stale eventually trips, and prose never does - it is the platform's own front-page explanation of its result, and it was confidently wrong to every reader.
 
+## `make_brief.py`
+
+**1. make_brief.py:26** - The targets the brief works through are named here, in the report generator, and nowhere in the pipeline.
+
+> *Without it:* The attribution facility has to stay target-agnostic - that is the platform's first rule and T8 enforces it on the code path. But a brief with no worked example explains nothing, and the example has to be some particular target. Putting the selection in the generator keeps both true: the pipeline knows no gene, and the report names two.
+
 ## `strip_comments.py`
 
 **1. strip_comments.py:41** - The strip works from a token stream, not a regular expression over lines.
@@ -2000,6 +2026,18 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **7. verify_ranking.py:409** - Component drift is reported on every run, not only when it trips.
 
 > *Without it:* A composite drifting toward one component stops being a multi-criteria score long before it reaches the rejection threshold. Only the trend shows that.
+
+**8. verify_ranking.py:355** - T5 counts the winning organs each arm decided, separating those carrying a non-zero score from the zero-scored ties, and requires both arms to be present among the former.
+
+> *Without it:* T1 to T4 are identities: an attribution correct about every target it describes satisfies them, including one that describes none and one that only ever sees a single arm. T5 is the criterion that would catch a facility exercised on half its inputs. The separation matters because a protein absent from every organ scores zero everywhere, so every one of its organs ties for the maximum; counted raw that is 4,893 baseline winners, of which 2,769 carry a score above zero. Reporting only the raw figure would claim more evidence than the run contains.
+
+**9. verify_ranking.py:414** - T8 reads the attribution functions' string constants out of the parse tree and intersects them with the run's own gene symbols.
+
+> *Without it:* "No gene is seeded" is the platform's first rule, and an attribution facility written around one target would break it quietly - the code would look general and behave specially. Checking literals structurally rather than by grep means the criterion cannot be satisfied by spelling a symbol differently, and taking the symbol set from the run rather than a list means it covers every gene the screen actually saw.
+
+**10. verify_ranking.py:339** - T4 recomputes each organ's staining presence from the atlas entry rather than reading it off the attribution it is checking.
+
+> *Without it:* As first written T4 asked whether a staining score appeared where the protein arm was unmeasured, and whether a winning arm reported itself absent. Both are impossible by construction: `attribute_risk` only records a staining reading when it found one, and only names an arm that supplied a value. The criterion could not fail. Deriving the stained organs independently from `atlas_gene.staining` gives it something to disagree with, and it does: blinding the attribution to the protein arm trips it on 34,623 organ rows.
 
 
 ## `verify_ranking_final.py`

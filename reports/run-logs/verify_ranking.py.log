@@ -3,7 +3,7 @@ loading sources
 ========================================================================
 TARGET DISCOVERY - STAGE 3
 ========================================================================
-  project              pancreatic-ductal-adenocarcinoma-20260902T171248-dcf0675f
+  project              pancreatic-ductal-adenocarcinoma-20260902T181915-6c1a0965
   indication           Pancreatic Ductal Adenocarcinoma
   discovery mode       B
   target supplied      None
@@ -15,7 +15,7 @@ TARGET DISCOVERY - STAGE 3
   fold disagreement    2.0x
   risk ceiling         0.15
   universe             3466
-  revision             eb03bed-dirty
+  revision             6229ac3-dirty
   configuration hash   a91c696f2e1318f7
   margin denominator   Pancreas (bulk only)
   field offset         the cohort fold runs 3.6x below the baseline fold at the median, over 2,832 proteins with both
@@ -105,8 +105,16 @@ REJECTION CRITERIA
   clear    G5: 1665 rejected against 1665 with a measured ratio at or below 1.0; none carries an absence note
   clear    G6: risk recomputed independently for all 1665 rejected targets matches the stored value on 1665; the gate changed no risk
   TRIPPED  R14: no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
+  clear    T1: the attribution reproduces the reported risk for all 3,400 targets that carry one, to within 1e-12 before rounding
+  clear    T2: every reported organ attains the maximum it is credited with; 314 target(s) reach it on more than one organ and say so
+  clear    T3: every one of 65,077 attributed organ rows recomputes its own score from the measurement it names, and names the arm that won
+  clear    T4: 30,454 organ rows carry NOT_MEASURED on the protein arm, and every organ's staining presence agrees with the atlas entry read independently, so absence is never scored as stained-and-clean
+  clear    T5: both arms decide verdicts that carry a non-zero score: BASELINE=2,769, STAINING=856 winning organs, out of BASELINE=4,893, STAINING=856 counting the zero-scored ties every absent protein produces
+  clear    T6: all 3,400 targets scoring two or more organs report a margin that agrees with their own organ list
+  clear    T7: the attribution payload carries no confidence, evidence-class or measured-weight field; the two scores stay apart
+  clear    T8: no gene symbol appears as a literal anywhere in the attribution code path (79 string literals checked against 3,454 symbols)
 ========================================================================
-  18/19 criteria clear
+  26/27 criteria clear
 
   WATCH  strongest single-component correlation: 0.815 (tumour_vs_normal), rejection at 0.95
   REPORT arm switch, not gated: 72 of 83 protein-confirmed targets clearing on the transcript arm alone are blocked once staining is added (86.7%); the switched set is determined by presence, not magnitude

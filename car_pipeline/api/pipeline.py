@@ -102,6 +102,10 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         overrides, ceiling, calibration=calibration,
         margin_label=indication.gtex_bulk_label)
 
+    risk_inputs = stage3.RiskInputs(
+        model=model, calibration=calibration, by_accession=by_acc,
+        by_symbol=by_sym, profiles=gtex_profiles, tissues=gtex_tissues)
+
     if indication.atlas is None:
         return {
             "indication": indication,
@@ -110,6 +114,7 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
             "spec": spec,
             "ceiling": ceiling,
             "ranked": ranked,
+            "risk_inputs": risk_inputs,
             "pool": [],
             "pairs": [],
             "decisions": [],
@@ -209,6 +214,7 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         "spec": spec,
         "ceiling": ceiling,
         "ranked": ranked,
+        "risk_inputs": risk_inputs,
         "pool": pool,
         "pairs": pairs,
         "decisions": decisions,

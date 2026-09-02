@@ -2,22 +2,22 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**127/135 criteria clear across 12 stages**, 22.2 minutes.
+**135/143 criteria clear across 12 stages**, 21.8 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
-| 1 | Design spec | 31/31 | clear | 1s |
+| 1 | Design spec | 31/31 | clear | 0s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
-| 3 | Target discovery | 18/19 | **TRIPPED** | 20s |
+| 3 | Target discovery | 26/27 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 273s |
-| 5 | Binder discovery | 7/7 | clear | 209s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 265s |
+| 5 | Binder discovery | 7/7 | clear | 201s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
 | API | HTTP surface | 10/10 | clear | 11s |
-| MULTI | Multi-indication | 11/11 | clear | 803s |
+| MULTI | Multi-indication | 11/11 | clear | 794s |
 
 ## Every criterion
 
@@ -60,7 +60,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `validation sets` — pass
 - clear `count drift` — yes
 
-### Stage 3 — Target discovery (18/19)
+### Stage 3 — Target discovery (26/27)
 
 - clear `R1` — outside top decile: none
 - clear `R2` — cleared the ceiling: none (across 4 accessions)
@@ -81,6 +81,14 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `G5` — 1665 rejected against 1665 with a measured ratio at or below 1.0; none carries an absence note
 - clear `G6` — risk recomputed independently for all 1665 rejected targets matches the stored value on 1665; the gate changed no risk
 - **TRIPPED** `R14` — no criticality tier places two staining levels on opposite sides of the 0.15 ceiling, so the arm gates on presence only — tier1 0.288/0.379/0.460(all above)  tier2 0.173/0.227/0.276(all above)  tier3 0.086/0.114/0.138(all below)
+- clear `T1` — the attribution reproduces the reported risk for all 3,400 targets that carry one, to within 1e-12 before rounding
+- clear `T2` — every reported organ attains the maximum it is credited with; 314 target(s) reach it on more than one organ and say so
+- clear `T3` — every one of 65,077 attributed organ rows recomputes its own score from the measurement it names, and names the arm that won
+- clear `T4` — 30,454 organ rows carry NOT_MEASURED on the protein arm, and every organ's staining presence agrees with the atlas entry read independently, so absence is never scored as stained-and-clean
+- clear `T5` — both arms decide verdicts that carry a non-zero score: BASELINE=2,769, STAINING=856 winning organs, out of BASELINE=4,893, STAINING=856 counting the zero-scored ties every absent protein produces
+- clear `T6` — all 3,400 targets scoring two or more organs report a margin that agrees with their own organ list
+- clear `T7` — the attribution payload carries no confidence, evidence-class or measured-weight field; the two scores stay apart
+- clear `T8` — no gene symbol appears as a literal anywhere in the attribution code path (79 string literals checked against 3,454 symbols)
 
 ### Stage 4 — Target pairing (10/15)
 
@@ -169,7 +177,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 82753d793ce9 rather than blocking
+- clear `A3` — a run returns 202 with job 9472a39edb9c rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting

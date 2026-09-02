@@ -516,6 +516,8 @@ def evidence_view(project_id: str, gene: str) -> dict:
             "risk": ranked.risk, "risk_organ": ranked.risk_organ,
             "cleared": ranked.cleared, "confidence": ranked.confidence,
             "components": {k: ranked.component_value(k) for k in ranked.components},
+            "risk_attribution": r["risk_inputs"].attribute(
+                ranked.accession, ranked.gene).as_payload(),
         },
         "stage4_pairing": decision,
         "stage5_binders": None if binder is None else {

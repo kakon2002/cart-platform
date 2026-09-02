@@ -74,6 +74,34 @@ def top_n(rows, n=50):
     return [r.accession for r in scored[:n]]
 
 
+def _keys(payload):
+    """Every key anywhere in a nested payload."""
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            yield key
+            yield from _keys(value)
+    elif isinstance(payload, list):
+        for item in payload:
+            yield from _keys(item)
+
+
+def _string_literals(path: str, names: tuple[str, ...]) -> set[str]:
+    """Every string constant inside the named top-level definitions."""
+    import ast
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parent / path).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    out: set[str] = set()
+    for node in tree.body:
+        if getattr(node, "name", None) not in names:
+            continue
+        for child in ast.walk(node):
+            if isinstance(child, ast.Constant) and isinstance(child.value, str):
+                out.add(child.value)
+    return out
+
+
 def main() -> int:
     """Run the ranking criteria."""
     print("loading sources", flush=True)
@@ -465,6 +493,172 @@ def main() -> int:
          f"the {ceiling} ceiling, so the arm gates on presence only")
         + " — " + "  ".join(grid),
     )
+
+    attribution = {
+        r.accession: stage3.attribute_risk(
+            model,
+            by_acc.get(r.accession) or (by_sym.get(r.gene) if r.gene else None),
+            gtex_profiles[r.accession].values
+            if r.accession in gtex_profiles else None,
+            gtex_tissues, calibration)
+        for r in rows
+    }
+    with_risk = [r for r in rows if r.risk is not None]
+
+    t1_bad = []
+    for r in with_risk:
+        a = attribution[r.accession]
+        exact, _organ = stage3.compute_risk(
+            model,
+            by_acc.get(r.accession) or (by_sym.get(r.gene) if r.gene else None),
+            gtex_profiles[r.accession].values
+            if r.accession in gtex_profiles else None,
+            gtex_tissues, calibration)
+        if a.risk is None or exact is None or abs(a.risk - exact) > 1e-12:
+            t1_bad.append(f"{r.gene or r.accession}: {a.risk} vs {exact}")
+        elif round(a.risk, 4) != r.risk:
+            t1_bad.append(f"{r.gene or r.accession}: rounds to {round(a.risk, 4)} "
+                          f"not {r.risk}")
+    criterion(
+        "T1", bool(t1_bad),
+        f"the attribution reproduces the reported risk for all {len(with_risk):,} "
+        f"targets that carry one, to within 1e-12 before rounding"
+        if not t1_bad else f"{len(t1_bad)} disagree: {t1_bad[:3]}")
+
+    t2_bad = []
+    for r in with_risk:
+        a = attribution[r.accession]
+        top = max(o.weighted for o in a.organs)
+        attaining = {o.organ for o in a.organs if o.weighted == top}
+        if r.risk_organ not in attaining:
+            t2_bad.append(f"{r.gene or r.accession}: {r.risk_organ} not in "
+                          f"{sorted(attaining)}")
+        elif set(a.winners) != attaining:
+            t2_bad.append(f"{r.gene or r.accession}: winners {a.winners} against "
+                          f"{sorted(attaining)}")
+    ties = [r.gene or r.accession for r in with_risk
+            if len(attribution[r.accession].winners) > 1]
+    criterion(
+        "T2", bool(t2_bad),
+        f"every reported organ attains the maximum it is credited with; "
+        f"{len(ties):,} target(s) reach it on more than one organ and say so"
+        if not t2_bad else f"{len(t2_bad)} disagree: {t2_bad[:3]}")
+
+    t3_bad = []
+    for r in rows:
+        for o in attribution[r.accession].organs:
+            if o.staining is not None:
+                again = calibration.score(o.staining.level)
+                if again != o.staining.score:
+                    t3_bad.append(f"{r.gene}/{o.organ}: staining {again} vs "
+                                  f"{o.staining.score}")
+            if o.baseline is not None:
+                again = stage3._baseline_score(o.baseline.tpm)
+                if again != o.baseline.score:
+                    t3_bad.append(f"{r.gene}/{o.organ}: baseline {again} vs "
+                                  f"{o.baseline.score}")
+            arms = {stage3.ARM_STAINING: o.staining, stage3.ARM_BASELINE: o.baseline}
+            if o.arm == stage3.ARM_TIED:
+                if not (o.staining and o.baseline
+                        and o.staining.score == o.baseline.score == o.score):
+                    t3_bad.append(f"{r.gene}/{o.organ}: TIED without two equal arms")
+            elif arms[o.arm] is None or arms[o.arm].score != o.score:
+                t3_bad.append(f"{r.gene}/{o.organ}: arm {o.arm} is not the maximum")
+    scored_organs = sum(len(a.organs) for a in attribution.values())
+    criterion(
+        "T3", bool(t3_bad),
+        f"every one of {scored_organs:,} attributed organ rows recomputes its own "
+        f"score from the measurement it names, and names the arm that won"
+        if not t3_bad else f"{len(t3_bad)} disagree: {t3_bad[:3]}")
+
+    t4_bad = []
+    for r in rows:
+        entry = by_acc.get(r.accession) or (by_sym.get(r.gene) if r.gene else None)
+        stained_organs = set()
+        if entry is not None:
+            for tissue, _cell_type, _level in entry.staining:
+                organ = model.organ_for_atlas(tissue)
+                if organ is not None:
+                    stained_organs.add(organ)
+        for o in attribution[r.accession].organs:
+            recorded = o.staining is not None
+            if recorded != (o.organ in stained_organs):
+                t4_bad.append(
+                    f"{r.gene}/{o.organ}: attribution says "
+                    f"{'stained' if recorded else stage3.NOT_MEASURED}, the atlas "
+                    f"says {'stained' if o.organ in stained_organs else 'not'}")
+    unmeasured_arms = sum(
+        1 for a in attribution.values() for o in a.organs if o.staining is None)
+    criterion(
+        "T4", bool(t4_bad),
+        f"{unmeasured_arms:,} organ rows carry {stage3.NOT_MEASURED} on the protein "
+        f"arm, and every organ's staining presence agrees with the atlas entry "
+        f"read independently, so absence is never scored as stained-and-clean"
+        if not t4_bad else f"{len(t4_bad)} disagree: {t4_bad[:3]}")
+
+    winning_arm: dict[str, int] = {}
+    deciding: dict[str, int] = {}
+    for r in with_risk:
+        a = attribution[r.accession]
+        top = max(o.weighted for o in a.organs)
+        for o in a.organs:
+            if o.weighted == top:
+                winning_arm[o.arm] = winning_arm.get(o.arm, 0) + 1
+                if o.weighted > 0:
+                    deciding[o.arm] = deciding.get(o.arm, 0) + 1
+    both = (deciding.get(stage3.ARM_STAINING, 0) > 0
+            and deciding.get(stage3.ARM_BASELINE, 0) > 0)
+    criterion(
+        "T5", not both,
+        "both arms decide verdicts that carry a non-zero score: "
+        + ", ".join(f"{k}={v:,}" for k, v in sorted(deciding.items()))
+        + " winning organs, out of "
+        + ", ".join(f"{k}={v:,}" for k, v in sorted(winning_arm.items()))
+        + " counting the zero-scored ties every absent protein produces")
+
+    t6_bad = []
+    for r in rows:
+        a = attribution[r.accession]
+        if len(a.organs) < 2:
+            if a.margin is not None:
+                t6_bad.append(f"{r.gene}: margin on {len(a.organs)} organ(s)")
+            continue
+        ordered = sorted((o.weighted for o in a.organs), reverse=True)
+        if a.margin is None or abs(a.margin - (ordered[0] - ordered[1])) > 1e-12:
+            t6_bad.append(f"{r.gene}: margin {a.margin} against "
+                          f"{ordered[0] - ordered[1]}")
+    multi = [r for r in rows if len(attribution[r.accession].organs) >= 2]
+    criterion(
+        "T6", bool(t6_bad),
+        f"all {len(multi):,} targets scoring two or more organs report a margin "
+        f"that agrees with their own organ list"
+        if not t6_bad else f"{len(t6_bad)} disagree: {t6_bad[:3]}")
+
+    forbidden = ("confidence", "evidence_class", "measured_weight", "composite")
+    sample = [attribution[r.accession].as_payload() for r in with_risk[:200]]
+    leaked = sorted({
+        key for payload in sample
+        for key in _keys(payload)
+        if any(word in key for word in forbidden)
+    })
+    criterion(
+        "T7", bool(leaked),
+        "the attribution payload carries no confidence, evidence-class or "
+        "measured-weight field; the two scores stay apart"
+        if not leaked else f"payload leaks {leaked}")
+
+    symbols = {r.gene for r in rows if r.gene}
+    literals = _string_literals(
+        "car_pipeline/stages/stage3.py",
+        ("attribute_risk", "ArmReading", "OrganRisk", "RiskAttribution",
+         "RiskInputs"),
+    ) | _string_literals("car_pipeline/api/server.py", ("evidence_view",))
+    seeded = sorted(literals & symbols)
+    criterion(
+        "T8", bool(seeded),
+        f"no gene symbol appears as a literal anywhere in the attribution code "
+        f"path ({len(literals)} string literals checked against {len(symbols):,} "
+        f"symbols)" if not seeded else f"seeded with {seeded}")
 
     print("\n" + "=" * 72)
     print("REJECTION CRITERIA")
