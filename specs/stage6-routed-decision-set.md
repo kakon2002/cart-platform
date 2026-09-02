@@ -6,7 +6,9 @@ fix it because the fix is a scope decision rather than a repair. This document
 takes that decision, states what it costs, and fixes the criteria before the run
 that tests them.
 
-Status: **specification only**. No code has changed.
+Status: **implemented**. §1–§8 were written and committed before any code
+changed; §9 records what the run then reported, against the numbers §2 and §6
+predicted.
 
 ---
 
@@ -214,11 +216,14 @@ K0 states the same thing once at the top, so the failure is legible without
 reading six detail lines. Both are wanted: K0 makes it obvious, the individual
 clauses make it true.
 
-## 5. Three defects found while measuring, and what happens to each
+## 5. Five defects found alongside, and what happens to each
 
-None of these was known when the work started. Each is a consequence of the same
-root — the artifact and its manifest describing a configuration that is not the
-one in the file.
+None of these was known when the work started. The first three were found while
+measuring, the last two by the review of the change itself. Each is a
+consequence of the same root — an artifact, a manifest or a criterion describing
+a configuration that is not the one in front of it. All five are fixed here,
+because each is either created or made live by routing the artifact, and leaving
+one behind would mean shipping a change that breaks something it can see.
 
 **5.1 The Stage 4 hash does not cover the routing configuration.**
 `write_decisions` computes `configuration_hash(stage3_hash, pool_genes)` with no
@@ -260,7 +265,35 @@ order of the suite — stage 11 at 05:03, the degraded run at 05:19 — kept it 
 mattering, and `run_all.py` reuses derived artifacts unless `--fresh` is given,
 so the next non-fresh run reads it.
 
-Fixed by routing that read through the same blessed path as its siblings.
+`verify_developability.py:15` does the same, and its own D5 — *"107 rows against
+107 binders carrying a sequence"* — compares the scored rows to the very records
+it scored, so a wrong binder set is invisible there too.
+
+Fixed by routing both reads through the same blessed path as their siblings.
+
+**5.4 The safety gate is blind to a structure-derived binder in both verifiers.**
+`stage9.gate` learns that a receptor carries a structure-derived binder only from
+the `constructs` argument. `pipeline.py:188` passes it. `verify_safety.py:65` and
+`verify_ranking_final.py:57` do not, so `structure_binders()` returns nothing and
+an adaptor row falls through to `NO_GATE` with the reason *"no binder, so there
+is nothing to gate"*.
+
+That sentence is instance 6 of the verification-assumptions note, printed on a
+design whose receptor carries a murine binder. It was recorded as fixed. It is
+fixed in the platform and was never fixed in the two verifiers, and it has been
+invisible because no adaptor row existed in the set they read. Routing that set
+makes it visible in the same change, so it is corrected in the same change: both
+verifiers pass the constructs they have already built. Criterion C7 pins the
+result — 5 `FLAGGED`, not 5 more `NO_GATE`.
+
+**5.5 The pairing report prints a Stage 4 hash that omits the routing.**
+`_report_biology` in `verify_pairing.py` recomputes the hash for display with
+`configuration_hash(s3_hash, pool_genes)` and no tolerances, so once the artifact
+is routed the printed hash and the manifest's `stage4_hash` disagree — a reader
+comparing them would conclude the file came from another configuration. It has
+never printed, because it runs only when nothing tripped and pairing trips on
+five criteria, so this is a latent divergence rather than a wrong number anyone
+has read. It is 5.1 in a second place and is fixed with it.
 
 ## 6. Criteria for this change, fixed before it runs
 
@@ -317,3 +350,82 @@ C6 is the one that tests the new criterion rather than the new code.
    literal.
 8. Full suite, both indications, with every count reported beside the count
    this document predicts.
+
+---
+
+## 9. What the run reported
+
+Every criterion in §6 landed on the number written before it ran.
+
+| | predicted | observed | |
+| --- | --- | --- | --- |
+| C1 | routing recorded, 0 rows disabled | routing recorded, **0 of 200** | clear |
+| C2 | exactly 5 `ADAPTOR`, the named five | **5**: FER1L6, GPR35, TMEM92, TNFSF9, BTNL8 | clear |
+| C3 | `SINGLE` 3, `DUAL` 30 | **3**, **30** | clear |
+| C4 | 5 constructs, 2,868 bp, `BUILDABLE`, 10 parts | **5**, 2,868 bp, `BUILDABLE`, 10 parts (50 across all five) | clear |
+| C5 | hash moves off `8cb155b103141a36` | **`5d097e05887e5b28`** | clear |
+| C6 | K0 trips on unrouted, and on empty | trips on **both**, each naming its own clause | clear |
+| C7 | 192 `BLOCKED`, 5 `FLAGGED`, 3 `NO_GATE`, ceilings {0.15, 0.35} | **192 / 5 / 3**, both ceilings in play | clear |
+| C8 | `RANKED`, 5 survivors, attrition 192 / 0 / 3 / 0 / 0 | **`RANKED`**, 5 survivors, 192 / 0 / 3 / 0 / 0 | clear |
+
+### Stage 6
+
+**8 of 9 clear, against 7 of 8 before.** K0 is the new criterion. K1, K3, K4,
+K5 and K6 now read five constructs where they read none: K4 reports *"10 parts
+in the first construct, 50 across all 5"* where it reported *"0 parts"*. K7
+clears — the five false failures are gone with the per-route restatement.
+
+**K2 still trips**, with the five spurious failures gone and the honest reason
+left: *"no dual carries a binder on both arms, so the two-arm join is not
+exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by
+the anti-tag route, whose binder is verified above)"*. That is the finding the
+assembly spec's amendment already priced, and this change does not repair it.
+Routing converts `NO_DESIGN` rows only, so it was never going to.
+
+### C6 in full, because it is the criterion that tests the criterion
+
+Handed a decision set with routing switched off but constructs still present,
+K0 trips alone and names the routing clause. Handed a routed set that assembles
+nothing, the stage reports **2 of 9 clear** — K0, K1, K2, K3, K4, K5 and K6 all
+trip, each in its own words: *"no construct to translate"*, *"no construct to
+partition"*, *"no construct, so no part was examined"*, *"no construct to
+cost"*, *"no buildable construct to check the switch on"*. K7 and K8 clear, and
+correctly: nothing was owed and 200 rows exist. They read the decision set, not
+the assembled set.
+
+Under the old criteria the same empty set reported **7 of 8 clear**. That
+difference is the whole of this change.
+
+A third case, from the review: K2's clause for *"adaptor rows exist but no
+anti-tag sequence was retrieved"* was written inside the loop over assembled
+constructs, where it could never run — `_assemble` returns an empty protein when
+any part is unsupplied, so such a construct never reaches that loop. A criterion
+that cannot execute its own path, in the change whose subject is criteria that
+cannot execute their own path. It was moved out to the decision set, where it is
+reachable, and tested by substituting the unsupplied part: the stage then reports
+**2 of 9 clear**, K2 naming the cause — *"5 adaptor row(s), but no anti-tag
+sequence was retrieved, so the anti-tag join cannot be verified on any of them"*
+— while K7 correctly clears, because nothing was owed. That is not a hypothetical
+state; it is the state this repository was in before the anti-tag binder was
+retrieved.
+
+### Stage 9
+
+S4 clears in its restated form and now says which branch admitted what: *"3
+admitted against the persistent 0.15, 5 against the terminable 0.35, each on a
+route declaring the exposure stoppable"*. The gate's own report line moves from
+*"reached the immunogenicity and trials questions 0 of 200"* to **5 of 200** —
+the first run in which this gate's own logic decided anything, rather than every
+row being settled by risk carried from Stage 3.
+
+### Stage 4, 5, 10 and 11
+
+Pairing reports 10 of 15 with the same five tripped as before — P4, P8, P13,
+P15, P17 — so routing changed no pairing verdict, which is C3 stated another
+way. Binder discovery 7 of 7 and developability 6 of 6, both unchanged. Final
+ranking 6 of 6, now over `RANKED` with five survivors and a two-design Pareto
+front, where it previously reported that no design reaches the end.
+
+That last line is the point of the exercise. The service has been returning five
+designs for this indication throughout; the suite has been verifying that there
+were none.

@@ -33,11 +33,11 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 - **The contract** (9) - `spec.py`, `project.py`
 - **Indications** (22) - `indication.py`, `pdac.py`, `breast.py`, `registry.py`
-- **Sources and the cache** (134) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
-- **Stages** (167) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`
+- **Sources and the cache** (139) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
+- **Stages** (169) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`
 - **The service** (36) - `pipeline.py`, `server.py`
-- **Running it** (56) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
-- **The criteria** (61) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
+- **Running it** (57) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
+- **The criteria** (70) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
 
 
 ---
@@ -1189,6 +1189,14 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Comparing a full-precision pair risk against a rounded single risk reports a disagreement at the fifth decimal that is arithmetic rather than substance, and a reviewer cannot tell that from a real one.
 
+**55. stage4.py:778** - `write_decisions` takes the tolerances the run used and threads them through the configuration hash, and records them in the manifest as a structure rather than leaving them to be inferred from a reason string.
+
+> *Without it:* Decision 13 against `routing.py` puts the declared ceilings in the hash so that two runs under different policy cannot compare as one. `write_decisions` computed the hash without them, which was harmless only while the artifact it wrote was never routed. The moment one is, a routed and an unrouted set hash identically and each reads as the other's cache. The manifest entry is what a criterion can test structurally; matching on `route_reason` text would make the check a string comparison against a message.
+
+**56. stage4.py:798** - The manifest tallies every outcome the stage can emit and every outcome actually present, not a fixed list of four.
+
+> *Without it:* The list predated the adaptor outcome and did not include it, so a routed set of 200 rows reported as 195. A tally whose categories are enumerated separately from the thing being tallied drops whatever is added later, silently and while still summing to a plausible number.
+
 
 ## `car_pipeline/stages/routing.py`
 
@@ -1975,12 +1983,24 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 ## `verify_ranking_final.py`
 
-**1. verify_ranking_final.py:83** - The front check uses a synthetic case where one candidate is dominated on every objective.
+**1. verify_ranking_final.py:85** - The front check uses a synthetic case where one candidate is dominated on every objective.
 
 > *Without it:* Real data may contain no strictly dominated pair, so the criterion would pass without ever exercising the dominance test.
 
+**2. verify_ranking_final.py:27** - Binder records are read through the same hash-gated path its four sibling verifiers use, rather than straight out of the cache slot.
+
+> *Without it:* `read_binders` validates the payload against its own digest and nothing else - not the Stage 4 hash, not the gene set. The slot is shared, and its last writer is the deliberately degraded run inside the multi-indication verifier, whose pool differs by two genes. Read against that state this verifier reported 6 of 6 clear with nothing able to notice, and only the order of the suite kept it from mattering on a run that reuses derived artifacts.
+
+**3. verify_ranking_final.py:59** - The gate is given the constructs, for the reason recorded against `verify_safety.py`.
+
+> *Without it:* The same defect and the same silence: an adaptor receptor's binder is invisible to the origin check unless the constructs carrying it are passed in.
+
 
 ## `verify_pairing.py`
+
+**0. verify_pairing.py:163** - The declared tolerances are passed to `decide`, so the artifact this verifier persists is the decision set the platform ships.
+
+> *Without it:* Passing none is a positive instruction to disable routing, so no adaptor row can exist in the artifact. Five verifiers read that file as the Stage 4 result, and the adaptor is the architecture every surviving design in the worked indication uses. The construct stage assembled nothing, the safety gate never reached its terminable branch, and the final ranking reported that no design reaches the end while the service returned five. The file is named for the stage's result and has to hold it.
 
 **1. verify_pairing.py:36** - A known-answer check sits on the per-cell derivation, keyed to a gene whose answer is known independently.
 
@@ -2087,9 +2107,9 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 ## `verify_construct.py`
 
-**1. verify_construct.py:16** - The pins are the two duals that carry a binder on both arms, chosen because they are the constructs the stage actually builds.
+**1. verify_construct.py:26** - K2's pin set is derived from the run through `two_armed_duals`, and where it is empty K2 trips and says the two-arm join is untested.
 
-> *Without it:* Of fourteen recommendations only two qualify. The obvious pins do not work: one returned no design at all and the other a partner without a binder, so neither yields a construct and neither can test the join. This is the same join, one stage later, that silently returned nothing for all 200 targets.
+> *Without it:* The pins were originally two named genes, chosen because they were then the only duals carrying a binder on both arms. The property moved off them: both now pair to partners with no binder. A criterion holding a result rather than a property passes on a regression, which is the Stage 4a end-state pin with the sign reversed. Deriving the subjects from the run keeps the criterion pointed at the property; tripping on an empty set is what stops it going green the day one dual assembles while the join is still uncovered.
 
 **2. verify_construct.py:32** - The check reads the cache the binder stage wrote rather than retrieving again, and gates reuse on the recorded hash.
 
@@ -2107,9 +2127,21 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Owing a construct on the binder alone makes the criterion trip on designs the pipeline was never going to build, burying real failures in noise.
 
-**6. verify_construct.py:169** - Counts are checked against the manifest's recorded pool size, not this run's own input.
+**6. verify_construct.py:208** - Counts are checked against the manifest's recorded pool size, not this run's own input.
 
 > *Without it:* Comparing the output to the input it was built from cannot fail.
+
+**7. verify_construct.py:86** - K0 asserts the decision set is routed and yields at least one construct, and is reported before every criterion that reads the assembled set.
+
+> *Without it:* The artifact was written with routing disabled, so nothing assembled, and K1, K3, K4, K5 and K6 each cleared over an empty list - K4 reporting "0 parts in the first construct". A criterion phrased over a population is satisfied by the population being empty. K0 states the precondition once where it is legible; each of the five also trips on an empty population in its own right, so removing K0 would not restore the silence.
+
+**8. verify_construct.py:98** - The binder check is per route: a Stage 5 candidate for a single or a dual, the retrieved anti-tag part for an adaptor.
+
+> *Without it:* Both K2 and K7 assumed every construct's binder is a Stage 5 sequence candidate. An adaptor's is not - it is retrieved from a deposited structure - so five correctly assembled constructs produced five failures under each, reading "chosen binder not in Stage 5" and "construct without a usable binder". Checking a construct against a route it does not use reports a defect in the criterion as a defect in the construct.
+
+**9. verify_construct.py:66** - The anti-tag part is retrieved once and the adaptor clause compares the construct against that object's sequence, name and accession rather than against a literal.
+
+> *Without it:* A literal copied into the criterion agrees with itself if the retrieval changes underneath it, which is how a dead retrieval route passed every check once already.
 
 
 ## `verify_safety.py`
@@ -2126,12 +2158,24 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Comparing output to input cannot fail; the specification pins the number independently.
 
-**4. verify_safety.py:154** - The gate reports which of its own questions actually ran.
+**4. verify_safety.py:190** - The gate reports which of its own questions actually ran.
 
 > *Without it:* A criterion passing on a code path nothing reached has not been tested. The binder stage has already shown what that looks like.
 
+**5. verify_safety.py:108** - S4 is stated against the ceiling applied to each row, with a second clause requiring that anything admitted above the persistent ceiling sits on a route declaring the exposure terminable.
+
+> *Without it:* S4 compared every risk to the persistent ceiling in a design that holds two apart on purpose. It had never seen a target admitted against the terminable one, because none existed in the set it read, and it would have called the first such target a contradiction. Reading the applied ceiling alone would be the opposite error - the record would then justify itself - so the second clause takes the exposure from the routing decision and the ceiling value from the project spec.
+
+**6. verify_safety.py:65** - The gate is given the constructs, so the origin check can see a binder that came from a deposited structure.
+
+> *Without it:* `structure_binders` returns nothing without them, and an adaptor row falls through to NO_GATE with the reason "no binder, so there is nothing to gate" - on a receptor carrying a murine binder. That is a recorded defect, fixed in the service and never in this verifier, and it stayed invisible only because no adaptor row existed in the set this verifier read.
+
 
 ## `verify_developability.py`
+
+**0. verify_developability.py:16** - The binder read is gated on the Stage 4 hash, like its siblings, rather than taking whatever the cache slot holds.
+
+> *Without it:* `read_binders` checks the payload against its own digest and nothing else. D5 then compares the rows scored against the records they were scored from, which is a self-comparison that any binder set satisfies, so a set belonging to another configuration would be scored and reported without a single criterion noticing. Recorded in full against `verify_ranking_final.py`, where the same read had the same gap.
 
 **1. verify_developability.py:18** - Binder records are read from the persisted artifact rather than re-queried.
 

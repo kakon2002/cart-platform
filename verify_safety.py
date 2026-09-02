@@ -62,7 +62,9 @@ def main() -> int:
         stage5_hash, [d["gene"] for d in decisions])
     genes = [d["gene"] for d in decisions]
     trials = TrialSource(antigens=genes).load()
-    gated = stage9.gate(decisions, binders, risks, trials, ceiling)
+    constructs = stage6.build(decisions, binders)
+    gated = stage9.gate(decisions, binders, risks, trials, ceiling,
+                        constructs=constructs)
     by_gene = {g.gene: g for g in gated}
 
     print()
@@ -103,12 +105,30 @@ def main() -> int:
               "every target with a binder carries a Stage 3 risk"
               if not missing_risk else f"no risk for {missing_risk[:5]}")
 
-    contradicts = [g.gene for g in gated
-                   if g.risk is not None and g.risk > ceiling
-                   and g.verdict != stage9.BLOCKED]
-    criterion("S4", bool(contradicts),
-              "no target over the ceiling escapes BLOCKED"
-              if not contradicts else f"{contradicts[:5]} over the ceiling, not blocked")
+    terminable = spec.design_constraints.terminable_risk_ceiling
+    by_row = {d["gene"]: d for d in decisions}
+    admitted = [g for g in gated
+                if g.risk is not None and g.verdict != stage9.BLOCKED]
+    contradicts = [f"{g.gene} risk {g.risk:.4f} over its applied {g.ceiling}"
+                   for g in admitted if g.risk > g.ceiling]
+
+    unearned = [
+        f"{g.gene} at {g.risk:.4f} against ceiling {g.ceiling}, route exposure "
+        f"{by_row.get(g.gene, {}).get('route_exposure')!r}"
+        for g in admitted
+        if g.risk > ceiling
+        and not (by_row.get(g.gene, {}).get("route_exposure") == "terminable"
+                 and g.ceiling == terminable)
+    ]
+    on_terminable = [g.gene for g in admitted if g.ceiling == terminable]
+    criterion("S4", bool(contradicts) or bool(unearned),
+              f"no target escapes the ceiling applied to it: "
+              f"{len(admitted) - len(on_terminable)} admitted against the "
+              f"persistent {ceiling}, {len(on_terminable)} against the "
+              f"terminable {terminable}, each on a route declaring the exposure "
+              f"stoppable"
+              if not (contradicts or unearned)
+              else "; ".join((contradicts + unearned)[:5]))
 
     leaked = [g.gene for g in gated
               if g.epitope_immunogenicity != stage9.NOT_CONNECTED]

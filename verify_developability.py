@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 
+from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.stages import stage4, stage5, stage10
 
 
@@ -12,7 +13,8 @@ def main() -> int:
     print("loading upstream", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
 
-    records, binder_manifest = stage5.read_binders()
+    records = stage5.load_or_retrieve(
+        decisions, AntibodySource(), manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
     rows, status = stage10.assess(binders)
     with_sequence = sum(1 for r in records
