@@ -185,7 +185,7 @@ def _open(
     timeout: int = 300,
     retries: int = 4,
 ):
-    """Open a cached file for reading."""
+    """Open the URL, retrying rate limits and transient failures with backoff."""
     hdrs = {"User-Agent": USER_AGENT}
     if headers:
         hdrs.update(headers)

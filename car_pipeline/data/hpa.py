@@ -134,7 +134,7 @@ class HPASource(DataSource):
         genes: dict[str, AtlasGene] = {}
 
         def get(ensembl: str) -> AtlasGene:
-            """One atlas entry by accession."""
+            """One atlas entry by Ensembl gene identifier, created on first use."""
             g = genes.get(ensembl)
             if g is None:
                 g = AtlasGene(ensembl=ensembl)

@@ -208,7 +208,7 @@ class DepMapSource(DataSource):
 
 
 def gene_index(dep: Dependency) -> dict[str, int]:
-    """Symbol lookup. This source carries no stable gene identifier, so the"""
+    """Symbol lookup: no stable gene identifier here, so the join is symbol-only."""
     out: dict[str, int] = {}
     for i, g in enumerate(dep.genes):
         out.setdefault(str(g), i)

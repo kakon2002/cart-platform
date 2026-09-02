@@ -34,9 +34,9 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 - **The contract** (9) - `spec.py`, `project.py`
 - **Indications** (22) - `indication.py`, `pdac.py`, `breast.py`, `registry.py`
 - **Sources and the cache** (139) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
-- **Stages** (169) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`
-- **The service** (36) - `pipeline.py`, `server.py`
-- **Running it** (57) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
+- **Stages** (171) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `validation.py`
+- **The service** (38) - `pipeline.py`, `server.py`
+- **Running it** (59) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `strip_comments.py`
 - **The criteria** (70) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
 
 
@@ -1553,6 +1553,11 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 ## `car_pipeline/api/server.py`
 
+**0. server.py:210** - The pair view's docstring names the set it actually returns, which is every measured pair, not the admissible ones.
+
+> *Without it:* It said "the admissible pairs". The handler filters on `coverage.measured` - 19,110 pairs - while `admissible` is a different property that holds for 290. The claim was invisible at the default `limit=50`, because the rows are sorted by combined risk ascending and the first fifty happen to be admissible; raise the limit and the response fills with pairs the docstring says are not there. The response envelope was always honest, reporting `evaluated`, `measured` and `returned` by name, which is what makes the docstring the only wrong part. An adversarial panel refuted this flag on the strength of the default response, which is the observed-output trap in miniature.
+
+
 **1. server.py:3** - A screen is submitted as a job and polled, rather than answered in the request.
 
 > *Without it:* A run reads a 9 GB single-cell matrix, evaluates 19,900 pairs and makes a network call per pool member; a synchronous endpoint would time out in every client.
@@ -1648,6 +1653,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **24. server.py:705** - PORT is read from the environment after argparse runs, with --port defaulting to None, rather than being converted while building the parser.
 
 > *Without it:* Converting the environment value in the parser default means an empty or malformed PORT raises an uncaught ValueError before argparse ever runs, so an explicit --port could not override it — the flag that exists to fix the problem becomes unreachable.
+
+**25. server.py:241** - No count of criteria appears in a reason the service cannot compute.
+
+> *Without it:* The pairing reason read "Stage 4 closed at 10 of 14 criteria with four documented limitations." The service does not run the suite and cannot know either number, so both were transcribed once and left there. A criterion was later added: the stage now closes at 10 of 15 with five limitations, and the sentence had been wrong on both figures ever since, on a live endpoint. Naming the limitations instead of counting them says more and cannot go stale.
 
 
 ---
@@ -1865,6 +1874,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Both labels are the kind that get filled in by whatever is available. Defining conservative as "the safest thing in the pool" labels a dual conservative on a run where no single survives, and defining advanced as "the rest" labels a plain receptor advanced. The definitions have to be fixed against the architecture table so the honest answer stays reachable, which is the answer this pool actually gives: no conservative design exists here, reported rather than filled.
 
+**2. validation.py:237** - Every quantity in the no-conservative-backup explanation is counted from the constructs, including the ones that read as fixed background.
+
+> *Without it:* The sentence carried two hardcoded claims inside prose that otherwise looks computed. It said "the only single-antigen target, NPSR1" where three were recommended - MSLNL, NPSR1 and ZPLD1 - and it asserted "the two dual designs that assemble are both over the payload budget" where zero duals assemble and no construct is over budget at all. Both were true when written and neither was ever recomputed. This is the standing correction from the stale-pin finding, in output prose rather than in a criterion: state the property, derive the subjects from the run. It is worse here than in a criterion, because a criterion that goes stale eventually trips, and prose never does - it is the platform's own front-page explanation of its result, and it was confidently wrong to every reader.
+
 ## `strip_comments.py`
 
 **1. strip_comments.py:41** - The strip works from a token stream, not a regular expression over lines.
@@ -1894,6 +1907,14 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **7. strip_comments.py:137** - No file is written whose parsed tree changes, with docstrings normalised out of both sides first.
 
 > *Without it:* This is the only failure the tool can have, and it is silent: an edit that removes a statement rather than a comment produces a file that still parses and still imports. The guard has already refused a write twice - once for the brace escaping above, and once more before that.
+
+**8. strip_comments.py:65** - A docstring is reduced to its opening paragraph *joined* onto one line, not to its first physical line.
+
+> *Without it:* Where an author wrapped a summary sentence across two lines, taking the first physical line deleted the tail and left a fragment ending on a dangling article. Two shipped that way and were found only by reading them: "so the" and "the smallest that fits is the". The guard at decision 7 cannot see this class at all - it blanks every docstring before comparing trees, which is exactly what makes the comparison safe for code and blind to prose. Joining loses nothing: paragraphs after the first are still dropped, which is the stated purpose, but no sentence is ever cut mid-clause.
+
+**9. strip_comments.py:186** - Every summary the tool joins is listed by file and line at the end of the run.
+
+> *Without it:* The tree guard is structurally incapable of reporting docstring changes, so a rewrite that shortens prose leaves no trace anywhere. Printing what was joined is the only signal that the tool touched a summary, and it is what makes decision 8's behaviour reviewable rather than merely better.
 
 **8. strip_comments.py:16** - The skipped trees are matched as resolved paths under the project root, not by directory name anywhere in the path.
 

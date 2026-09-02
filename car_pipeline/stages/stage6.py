@@ -168,7 +168,7 @@ def build(
     adaptor_binder = anti_tag_binder()
 
     def best_binder(gene: str):
-        """The shortest sequence-route binder: the smallest that fits is the"""
+        """The shortest sequence-route binder: the budget's most favourable reading."""
         record = binders.get(gene)
         if record is None:
             return None

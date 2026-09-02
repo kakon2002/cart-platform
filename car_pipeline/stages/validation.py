@@ -237,18 +237,31 @@ def design_class_summary(constructs) -> dict:
     advanced = [c.gene for c, k in labelled if k == ADVANCED]
     reasons = []
     if not conservative:
-        singles = [c.gene for c in constructs if c.outcome == "SINGLE"]
+        singles = [c for c in constructs if c.outcome == "SINGLE"]
+        singles_built = [c for c in singles if c.amino_acid_sequence]
+        duals_built = [c for c in constructs
+                       if c.outcome == "DUAL" and c.amino_acid_sequence]
+        over = [c for c in duals_built if c.verdict != "BUILDABLE"]
+        names = ", ".join(sorted(c.gene for c in singles))
         reasons.append(
             "No conservative backup exists in this pool. A conservative design "
             "is the conventional single-antigen receptor with a "
             "clinically-precedented binder, and no such design is buildable "
             "here: "
-            + (f"the only single-antigen target, {singles[0]}, retrieves no "
-               "binder, so no construct is assembled for it"
-               if singles else "no target clears the ceiling alone")
-            + ". The two dual designs that assemble are both over the payload "
-            "budget. This is reported rather than filled by labelling "
-            "something that does not qualify."
+            + ("no target clears the ceiling alone" if not singles else
+               f"{len(singles)} single-antigen target(s) were recommended "
+               f"({names}) and none of them assembles, for want of a binder"
+               if not singles_built else
+               f"{len(singles)} single-antigen target(s) were recommended "
+               f"({names}) and the {len(singles_built)} that assemble carry no "
+               "binder retrieved as a named therapeutic")
+            + "; "
+            + (f"{len(duals_built)} dual design(s) assemble, {len(over)} of "
+               "them over the payload budget" if duals_built else
+               "no dual design assembles at all, because every dual "
+               "recommendation names a partner that retrieves no binder")
+            + ". This is reported rather than filled by labelling something "
+            "that does not qualify."
         )
     if advanced:
         reasons.append(

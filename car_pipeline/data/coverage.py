@@ -49,7 +49,7 @@ _IMMUNE_LOCUS = re.compile(
 
 
 def _immune_locus(gene: str) -> bool:
-    """Whether the symbol belongs to an immunoglobulin or MHC locus."""
+    """Whether the symbol is a histocompatibility, killer- or antigen-receptor locus."""
     return bool(_IMMUNE_LOCUS.match(gene))
 
 

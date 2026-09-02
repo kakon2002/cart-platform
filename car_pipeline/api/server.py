@@ -207,7 +207,7 @@ def targets_view(project_id: str, limit: int = 50) -> dict:
 
 
 def pairs_view(project_id: str, limit: int = 50) -> dict:
-    """The admissible pairs, ordered by how far under the ceiling they sit."""
+    """Every measured pair, ordered by how far under the ceiling it sits."""
     r = _result(project_id)
     measured = [p for p in r["pairs"] if p.coverage.measured]
     rows = []
@@ -238,7 +238,10 @@ def pairs_view(project_id: str, limit: int = 50) -> dict:
         "reasons": [
             "Coverage does not gate: per-cell detection tracks genomic span "
             "(rho +0.68) more strongly than expression (+0.20).",
-            "Stage 4 closed at 10 of 14 criteria with four documented limitations.",
+            "Stage 4 carries documented limitations, recorded with the run "
+            "rather than counted here: coverage is span-confounded, partner "
+            "choice is unstable under pool halving, and most dual "
+            "recommendations name the only admissible partner there was.",
         ],
     }
 
