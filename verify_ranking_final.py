@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 
 from car_pipeline.configs.pdac import PDAC_PROJECT
+from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.data.coverage import build_coverage
 from car_pipeline.data.depmap import DepMapSource, gene_index
 from car_pipeline.data.gtex import GTExSource
@@ -23,7 +24,8 @@ def main() -> int:
     """Run the final-ranking criteria."""
     print("loading every upstream stage", flush=True)
     decisions, manifest = stage4.read_decisions(allow_unusable=True)
-    records, _bm = stage5.read_binders()
+    records = stage5.load_or_retrieve(
+        decisions, AntibodySource(), manifest["stage4_hash"])
     binders = {r.gene: r for r in records}
     constructs = {c.gene: c for c in stage6.build(decisions, binders)}
 
@@ -54,7 +56,9 @@ def main() -> int:
 
     genes = [d["gene"] for d in decisions]
     trials = TrialSource(antigens=genes).load()
-    gated = {g.gene: g for g in stage9.gate(decisions, binders, risks, trials, ceiling)}
+    gated = {g.gene: g for g in stage9.gate(
+        decisions, binders, risks, trials, ceiling,
+        constructs=list(constructs.values()))}
 
     dev_rows, _status = stage10.assess(binders)
     liabilities: dict[str, list] = {}

@@ -57,8 +57,8 @@ alternative produced a confident wrong answer at some point in the build.
 - **Parameters are fixed before output exists**, and criteria are written before
   the run that tests them.
 
-[specs/design-decisions.md](specs/design-decisions.md) records 485 of these
-across 47 modules — what was chosen, and what breaks without it. The source
+[specs/design-decisions.md](specs/design-decisions.md) records 503 of these
+across 48 modules — what was chosen, and what breaks without it. The source
 itself carries one-line docstrings and no commentary, so that file is the only
 place the reasoning lives.
 
@@ -82,8 +82,8 @@ Python, which lacks this project's dependencies and fails on the first import.
 .venv\Scripts\python.exe run_all.py --fresh
 ```
 
-Twelve stages end to end, **118 of 124 criteria clear**, about 35 minutes.
-The six that trip are recorded limitations, each carrying the decision that
+Twelve stages end to end, **127 of 135 criteria clear**, about 25 minutes.
+The eight that trip are recorded limitations, each carrying the decision that
 accepted it; a criterion tripping *without* one is reported as a regression
 and exits non-zero.
 

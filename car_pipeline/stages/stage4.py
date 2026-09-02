@@ -39,6 +39,12 @@ ADAPTOR = "ADAPTOR"
 UNRESOLVED = "UNRESOLVED"
 
 
+OUTCOMES = (SINGLE, DUAL, ADAPTOR, NO_DESIGN, UNRESOLVED)
+
+
+ROUTING_DISABLED_REASON = "no tolerances supplied; routing disabled"
+
+
 @dataclass
 class PairRisk:
     combined: float | None
@@ -556,7 +562,7 @@ def decide(
             decided = None
             route_fields = dict(
                 architecture=routing.NOT_CONFIGURED,
-                route_reason="no tolerances supplied; routing disabled",
+                route_reason=ROUTING_DISABLED_REASON,
                 route_ceiling=None, route_exposure=None,
             )
         else:
@@ -697,7 +703,7 @@ def configuration_hash(
 DECISIONS_KEY = "decisions"
 
 
-DECISIONS_MANIFEST_VERSION = 1
+DECISIONS_MANIFEST_VERSION = 2
 
 
 def _decision_payload(d: Decision) -> dict:
@@ -753,6 +759,7 @@ def write_decisions(
     pool_genes: list[str],
     stage3_hash: str,
     criteria: dict[str, bool],
+    tolerances: "routing.Tolerances | None",
     root=None,
 ):
     """Persist the decisions, with the hashes and criteria that produced them."""
@@ -771,7 +778,7 @@ def write_decisions(
     if manifest_path.exists():
         manifest_path.unlink()
 
-    config_hash = configuration_hash(stage3_hash, pool_genes)
+    config_hash = configuration_hash(stage3_hash, pool_genes, tolerances)
     rows = [_decision_payload(d) for d in decisions]
     _write_json_atomic(payload_path, {"decisions": rows})
 
@@ -787,9 +794,11 @@ def write_decisions(
             "stage3_hash": stage3_hash,
             "stage4_hash": config_hash,
             "pool_size": len(pool_genes),
+            "routing": (routing.configuration_payload(tolerances)
+                        if tolerances is not None else None),
             "outcomes": {
                 name: sum(1 for d in decisions if d.outcome == name)
-                for name in (SINGLE, DUAL, NO_DESIGN, UNRESOLVED)
+                for name in sorted(set(OUTCOMES) | {d.outcome for d in decisions})
             },
             "criteria_tripped": tripped,
             "usable_as_result": not tripped,

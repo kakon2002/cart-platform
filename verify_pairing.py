@@ -19,7 +19,7 @@ from car_pipeline.data.tcga import (
     match_surface as tcga_match,
 )
 from car_pipeline.data.uniprot import load_surface
-from car_pipeline.stages import stage3, stage4
+from car_pipeline.stages import routing, stage3, stage4
 from car_pipeline.stages.stage1 import build_spec
 
 WATCH = ["MSLN", "CLDN18", "CEACAM6", "CEACAM5", "MUC1"]
@@ -160,7 +160,14 @@ def main() -> int:
           f"{eligible} of {len(pool)} pool members eligible "
           f"({len(pool) - len(tumour_tpm)} without a tumour column)")
 
-    decisions = stage4.decide(pool, pairs, tumour_tpm, per_organ=per_organ)
+    tolerances = routing.Tolerances(
+        persistent=ceiling,
+        terminable=spec.design_constraints.terminable_risk_ceiling,
+    )
+    print(f"  routing ceilings: persistent {tolerances.persistent}, terminable "
+          f"{tolerances.terminable}")
+    decisions = stage4.decide(pool, pairs, tumour_tpm, tolerances,
+                              per_organ=per_organ)
     measurable = sum(1 for p in pairs if p.coverage.measured and p.coverage.f_ab is not None)
     print(f"  span context attached to {annotated:,} pairs of {measurable:,} measured")
 
@@ -392,6 +399,7 @@ def main() -> int:
         pool_genes,
         s3_hash,
         criteria=outcomes,
+        tolerances=tolerances,
     )
     print(f"  decisions written to {written}")
     print(f"  usable as a result: {'no' if tripped else 'yes'}")
@@ -405,7 +413,8 @@ def main() -> int:
               "explanation.")
         return 2
 
-    _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash)
+    _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash,
+                    tolerances)
     return 0
 
 
@@ -526,7 +535,8 @@ def _inv(failures: list[str], cid: str, ok: bool, detail: str) -> None:
         failures.append(cid)
 
 
-def _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash) -> None:
+def _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash,
+                    tolerances) -> None:
     """Print the biology behind the pairs the stage chose."""
     print()
     print("=" * 72)
@@ -534,7 +544,7 @@ def _report_biology(pool, pairs, decisions, cells, ceiling, s3_hash) -> None:
     print("=" * 72)
     print(f"  stage 3 configuration hash   {s3_hash}")
     print(f"  stage 4 configuration hash   "
-          f"{stage4.configuration_hash(s3_hash, [r.gene for r in pool])}")
+          f"{stage4.configuration_hash(s3_hash, [r.gene for r in pool], tolerances)}")
     print(f"  pool                         {len(pool)} by composite, risk ignored")
     print(f"  pairs                        {len(pairs):,}")
 

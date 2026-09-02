@@ -1,9 +1,10 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found seven times in this
+Read this before writing a criterion. It has been found eight times in this
 repository. The fifth was found by suspecting the fourth, the sixth was
-introduced by a change made after the first five were written down, and the
-seventh is the root cause of the third, found only when the third was fixed.
+introduced by a change made after the first five were written down, the seventh
+is the root cause of the third, found only when the third was fixed, and the
+eighth was found by reading a criterion's own output rather than its verdict.
 
 ## The pattern
 
@@ -18,7 +19,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The seven
+## The eight
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -133,6 +134,39 @@ The reason this belongs in a note about verification is that a name-based rule
 is what a verifier is most likely to reuse. It is short, it reads correctly, and
 copying it into the check is the obvious way to keep the two consistent. The two
 are then consistent about the wrong set.
+
+**8. The five that cleared on an empty set.** The construct stage's K1, K3, K4,
+K5 and K6 each iterate the constructs that were assembled. The artifact they
+read was written by a call that passed no tolerances, so routing was disabled,
+no adaptor row could exist, and nothing assembled. Five loops over an empty list
+produced five empty failure lists and five clear verdicts. K4 printed *"0 parts
+in the first construct"* and cleared on that sentence.
+
+*Broken-thing question:* if the construct stage assembled nothing at all — which
+is exactly what it was doing — every one of the five would report success.
+
+The number was in the output the whole time. `0` is a count, it typechecks, and
+a criterion phrased as *"no construct fails X"* is satisfied by there being no
+construct. Only K2 tripped, and only because a previous amendment had already
+given it a positive clause; the other five had none. **A criterion phrased over
+a population must say what it does when the population is empty**, and the
+answer must be that it fails.
+
+The fix is in `specs/stage6-routed-decision-set.md`: the artifact is now written
+routed, so there is something to read; K0 asserts the set is routed and non-empty
+before the others run; and each of the five trips on an empty population in its
+own right, saying so in its own words. Both halves are wanted. K0 makes the
+failure legible in one line, the five clauses make it true even if K0 is ever
+removed. Handed an empty set the stage now reports 2 of 9 clear where it used to
+report 7 of 8.
+
+This is the third of a sub-family: a criterion that never executes the path it
+claims to cover. The first was M4 and M5, which asserted a field of an object
+they had constructed themselves and grepped source text, both green over 55 lines
+of dead code. The second was instance 1's summary literal, under which a tenth
+criterion ran, passed, and was invisible in a total that said nine. **A criterion
+that does not execute the path it claims to cover is not a criterion**, and none
+of the three was found by the suite. All three were found by reading output.
 
 ## What to do instead
 

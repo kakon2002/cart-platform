@@ -5,12 +5,13 @@ from __future__ import annotations
 import sys
 
 from car_pipeline.data.antibodies import AntibodySource
-from car_pipeline.data.domains import PROTEOME, SYNTHETIC
+from car_pipeline.data.domains import PROTEOME, STRUCTURE, SYNTHETIC, anti_tag_binder
 from car_pipeline.stages import stage4, stage5, stage6
 
 
-def usable_binder(record) -> bool:
-    """Whether this record carries a binder the assembler could use."""
+def stage5_usable(binders: dict, gene: str | None) -> bool:
+    """Whether Stage 5 gave this target a binder the assembler can use."""
+    record = binders.get(gene) if gene else None
     if record is None:
         return False
     return any(
@@ -27,10 +28,22 @@ def two_armed_duals(decisions: list[dict], binders: dict) -> list[tuple[str, str
         partner = row.get("partner")
         if row["outcome"] != stage4.DUAL or not partner:
             continue
-        if usable_binder(binders.get(row["gene"])) and usable_binder(
-                binders.get(partner)):
+        if stage5_usable(binders, row["gene"]) and stage5_usable(binders, partner):
             out.append((row["gene"], partner))
     return out
+
+
+def needs_met(binders: dict, outcome: str, gene: str, partner: str | None,
+              adaptor_supplied: bool) -> bool:
+    """Whether every binder this architecture needs was actually retrieved."""
+    if outcome == stage4.ADAPTOR:
+        return adaptor_supplied
+    if outcome == stage4.DUAL:
+        return (stage5_usable(binders, gene)
+                and bool(partner) and stage5_usable(binders, partner))
+    if outcome == stage4.SINGLE:
+        return stage5_usable(binders, gene)
+    return False
 
 
 def main() -> int:
@@ -47,7 +60,11 @@ def main() -> int:
     constructs = stage6.build(decisions, binders)
     by_gene = {c.gene: c for c in constructs}
     built = [c for c in constructs if c.amino_acid_sequence]
+    adaptor_part = anti_tag_binder()
     print(f"  {len(decisions)} decisions, {len(built)} assembled")
+    print("  anti-tag binder "
+          + (f"retrieved from {adaptor_part.accession}" if adaptor_part.supplied
+             else "declares a size but no sequence"))
 
     print()
     print("=" * 72)
@@ -63,21 +80,69 @@ def main() -> int:
         if is_tripped:
             tripped.append(cid)
 
+    route_config = manifest.get("routing")
+    disabled = [d["gene"] for d in decisions
+                if (d.get("route_reason") or "") == stage4.ROUTING_DISABLED_REASON]
+    k0_bad = []
+    if not route_config:
+        k0_bad.append("the manifest records no routing configuration")
+    if disabled:
+        k0_bad.append(f"{len(disabled)} of {len(decisions)} rows carry "
+                      f"{stage4.ROUTING_DISABLED_REASON!r}")
+    if not built:
+        k0_bad.append(f"nothing assembled from {len(decisions)} decisions, so "
+                      "every criterion below would report on an empty set")
+    criterion(
+        "K0", bool(k0_bad),
+        f"the decision set is routed (persistent "
+        f"{route_config['persistent_ceiling']}, terminable "
+        f"{route_config['terminable_ceiling']}) and yields {len(built)} "
+        f"construct(s) for the criteria below to read"
+        if not k0_bad else "; ".join(k0_bad))
+
     bad_round_trip = [c.gene for c in built
                       if stage6.translate(c.dna) != c.amino_acid_sequence]
-    criterion("K1", bool(bad_round_trip),
+    criterion("K1", bool(bad_round_trip) or not built,
               f"{len(built)} constructs translate back to their own sequence"
-              if not bad_round_trip else f"round trip fails for {bad_round_trip[:5]}")
+              if built and not bad_round_trip else
+              f"round trip fails for {bad_round_trip[:5]}" if bad_round_trip else
+              "no construct to translate")
 
-    owed = two_armed_duals(decisions, binders)
+    owed_pairs = two_armed_duals(decisions, binders)
     k2_bad = []
 
-    for gene, partner in owed:
+    for gene, partner in owed_pairs:
         c = by_gene.get(gene)
         if c is None or not c.amino_acid_sequence:
             k2_bad.append(f"{gene}+{partner}: owed a construct, got none")
+    adaptor_rows = [d for d in decisions if d["outcome"] == stage4.ADAPTOR]
+    if adaptor_rows and not adaptor_part.supplied:
+        k2_bad.append(
+            f"{len(adaptor_rows)} adaptor row(s), but no anti-tag sequence was "
+            "retrieved, so the anti-tag join cannot be verified on any of them")
+
+    by_route = {"anti-tag": 0, "stage 5": 0}
     for c in built:
+        if c.outcome == stage4.ADAPTOR:
+            by_route["anti-tag"] += 1
+            if c.binder_name != adaptor_part.name:
+                k2_bad.append(f"{c.gene}: names binder {c.binder_name!r}, not the "
+                              "retrieved anti-tag part")
+            if adaptor_part.sequence not in c.amino_acid_sequence:
+                k2_bad.append(f"{c.gene}: the anti-tag sequence is absent")
+            carried = [s for s in c.segments if s.provenance == STRUCTURE]
+            if len(carried) != 1 or carried[0].accession != adaptor_part.accession:
+                k2_bad.append(
+                    f"{c.gene}: {len(carried)} structure-derived segment(s), "
+                    f"accession {[s.accession for s in carried]} against "
+                    f"{adaptor_part.accession!r}")
+            continue
+
+        by_route["stage 5"] += 1
         record = binders.get(c.gene)
+        if record is None:
+            k2_bad.append(f"{c.gene}: no Stage 5 record for an assembled target")
+            continue
         picked = next((t for t in record.sequence if t.name == c.binder_name), None)
         if picked is None:
             k2_bad.append(f"{c.gene}: chosen binder {c.binder_name} not in Stage 5")
@@ -89,20 +154,29 @@ def main() -> int:
         if c.partner_binder_name:
             pr = binders.get(c.partner)
             pp = next((t for t in pr.sequence if t.name == c.partner_binder_name),
-                      None)
-            if pp is None or pp.heavy_sequence not in c.amino_acid_sequence:
-                k2_bad.append(f"{c.gene}: partner VH absent")
+                      None) if pr else None
+            if pp is None:
+                k2_bad.append(f"{c.gene}: partner binder {c.partner_binder_name} "
+                              "not in Stage 5")
+            else:
+                if pp.heavy_sequence not in c.amino_acid_sequence:
+                    k2_bad.append(f"{c.gene}: partner VH absent")
+                if pp.light_sequence not in c.amino_acid_sequence:
+                    k2_bad.append(f"{c.gene}: partner VL absent")
     criterion(
-        "K2", bool(k2_bad) or not owed,
+        "K2", bool(k2_bad) or not owed_pairs,
         "; ".join(k2_bad[:4]) if k2_bad else
-        (f"{len(built)} constructs carry their binders verbatim, including the "
-         f"{len(owed)} dual(s) carrying a binder on both arms: "
-         + ", ".join(f"{g}+{p}" for g, p in owed[:4])) if owed else
+        (f"{len(built)} constructs carry their binders verbatim "
+         f"({by_route['anti-tag']} by the anti-tag route, "
+         f"{by_route['stage 5']} by the Stage 5 route), including the "
+         f"{len(owed_pairs)} dual(s) carrying a binder on both arms: "
+         + ", ".join(f"{g}+{p}" for g, p in owed_pairs[:4])) if owed_pairs else
         (f"no dual carries a binder on both arms, so the two-arm join is not "
          f"exercised anywhere in this decision set ({len(built)} of "
-         f"{len(decisions)} rows assembled; routing is disabled here, so no "
-         f"adaptor exists to assemble either); the criterion has nothing to "
-         f"pin on and reports that rather than clearing on an empty set"))
+         f"{len(decisions)} rows assembled, {by_route['anti-tag']} of them by "
+         f"the anti-tag route, whose binder is verified above); the criterion "
+         f"has nothing to pin on and reports that rather than clearing on an "
+         f"empty set"))
 
     k3_bad = []
     for c in built:
@@ -115,21 +189,27 @@ def main() -> int:
         else:
             if pos != len(c.amino_acid_sequence):
                 k3_bad.append(c.gene)
-    criterion("K3", bool(k3_bad),
-              "domain boundaries partition every construct exactly"
-              if not k3_bad else f"gaps or overlaps in {k3_bad[:5]}")
+    criterion("K3", bool(k3_bad) or not built,
+              f"domain boundaries partition all {len(built)} constructs exactly"
+              if built and not k3_bad else
+              f"gaps or overlaps in {k3_bad[:5]}" if k3_bad else
+              "no construct to partition")
 
     undescribed = [
         (c.gene, s.name) for c in built for s in c.segments
         if not (s.provenance == SYNTHETIC
                 or (s.provenance == PROTEOME and s.accession and s.start_residue)
-                or (s.provenance == "structure" and s.accession)
+                or (s.provenance == STRUCTURE and s.accession)
                 or s.provenance == "stage5")
     ]
-    criterion("K4", bool(undescribed),
+    criterion("K4", bool(undescribed) or not built,
               f"every part of every construct names its source "
-              f"({len(built[0].segments) if built else 0} parts in the first construct)"
-              if not undescribed else f"{len(undescribed)} parts without a source")
+              f"({len(built[0].segments) if built else 0} parts in the first "
+              f"construct, {sum(len(c.segments) for c in built)} across all "
+              f"{len(built)})"
+              if built and not undescribed else
+              f"{len(undescribed)} parts without a source" if undescribed else
+              "no construct, so no part was examined")
 
     k5_bad = []
     for c in built:
@@ -137,41 +217,40 @@ def main() -> int:
         expected_headroom = stage6.BUDGET_BP - summed
         if summed != c.total_bp or expected_headroom != c.headroom_bp:
             k5_bad.append(c.gene)
-    criterion("K5", bool(k5_bad),
-              "part costs sum to the printed total for every construct"
-              if not k5_bad else f"arithmetic disagrees for {k5_bad[:5]}")
+    criterion("K5", bool(k5_bad) or not built,
+              f"part costs sum to the printed total for all {len(built)} constructs"
+              if built and not k5_bad else
+              f"arithmetic disagrees for {k5_bad[:5]}" if k5_bad else
+              "no construct to cost")
 
-    no_switch = [c.gene for c in built
-                 if c.verdict == stage6.BUILDABLE and not c.has_switch]
-    criterion("K6", bool(no_switch),
-              "every buildable construct carries the mandatory safety switch"
-              if not no_switch else f"{no_switch[:5]} buildable without a switch")
-
-    def usable(gene):
-        """Whether the target has a binder whose regions can actually be assembled."""
-        r = binders.get(gene)
-        return bool(r and [t for t in r.sequence
-                           if t.heavy_sequence and t.light_sequence
-                           and not stage6.assemblable(
-                               t.heavy_sequence + t.light_sequence)])
+    buildable = [c for c in built if c.verdict == stage6.BUILDABLE]
+    no_switch = [c.gene for c in buildable if not c.has_switch]
+    criterion("K6", bool(no_switch) or not buildable,
+              f"all {len(buildable)} buildable constructs carry the mandatory "
+              f"safety switch"
+              if buildable and not no_switch else
+              f"{no_switch[:5]} buildable without a switch" if no_switch else
+              "no buildable construct to check the switch on")
 
     k7_bad, withheld_by_outcome = [], 0
     for c in constructs:
-        owed = (
-            usable(c.gene)
-            and c.outcome in stage6.BUILDABLE_OUTCOMES
-            and (c.outcome != "DUAL" or usable(c.partner))
+        owed_here = (
+            c.outcome in stage6.BUILDABLE_OUTCOMES
+            and needs_met(binders, c.outcome, c.gene, c.partner,
+                          adaptor_part.supplied)
         )
-        if owed and not c.amino_acid_sequence:
+        if owed_here and not c.amino_acid_sequence:
             k7_bad.append(f"{c.gene}: owed a construct, got none")
-        if not usable(c.gene) and c.amino_acid_sequence:
-            k7_bad.append(f"{c.gene}: construct without a usable binder")
-        if usable(c.gene) and c.outcome not in stage6.BUILDABLE_OUTCOMES:
+        if not owed_here and c.amino_acid_sequence:
+            k7_bad.append(f"{c.gene}: {c.outcome} construct built without the "
+                          "binder its architecture needs")
+        if stage5_usable(binders, c.gene) and c.outcome not in stage6.BUILDABLE_OUTCOMES:
             withheld_by_outcome += 1
     criterion("K7", bool(k7_bad),
-              f"every owed construct was built and none was built without a binder; "
-              f"{withheld_by_outcome} targets have a binder but no recommendation "
-              f"(§5.1)" if not k7_bad else "; ".join(k7_bad[:3]))
+              f"every owed construct was built and none was built without the "
+              f"binder its architecture needs; {withheld_by_outcome} targets "
+              f"have a binder but no recommendation (§5.1)"
+              if not k7_bad else "; ".join(k7_bad[:3]))
 
     expected_rows = manifest["pool_size"]
     out_genes = {c.gene for c in constructs}
@@ -197,13 +276,18 @@ def main() -> int:
         n = counts.get(verdict, 0)
         print(f"    {verdict:18s} {n:4d}  ({n / len(constructs):.0%})")
 
-    singles = [c for c in built if c.outcome != "DUAL"]
-    duals = [c for c in built if c.outcome == "DUAL"]
+    singles = [c for c in built if c.outcome == stage4.SINGLE]
+    duals = [c for c in built if c.outcome == stage4.DUAL]
+    adaptors = [c for c in built if c.outcome == stage4.ADAPTOR]
     print()
-    print(f"    single-antigen assembled {len(singles)}, "
-          f"{sum(1 for c in singles if c.verdict == stage6.BUILDABLE)} within budget")
-    print(f"    dual assembled           {len(duals)}, "
-          f"{sum(1 for c in duals if c.verdict == stage6.BUILDABLE)} within budget")
+    for label, group in (("single-antigen", singles), ("dual", duals),
+                         ("adaptor", adaptors)):
+        print(f"    {label + ' assembled':24s} {len(group):4d}, "
+              f"{sum(1 for c in group if c.verdict == stage6.BUILDABLE)} "
+              f"within budget")
+    for c in adaptors:
+        print(f"      {c.gene:10s} {c.total_bp:5d} bp   headroom "
+              f"{c.headroom_bp:4d}   {c.verdict}")
 
     print()
     print("  The budget, itemised")

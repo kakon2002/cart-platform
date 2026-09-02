@@ -247,3 +247,40 @@ first construct"*. Their printed text is honest about the zero; their verdicts
 are not. That is the same shape as this amendment, but flipping five criteria is
 a criteria-design decision rather than a repair, so it is reported and left for
 the tolerance call, not taken unilaterally.
+
+---
+
+## Amendment - the decision set is routed, and K0 added
+
+**The call left open above has been taken.** It is specified in
+`specs/stage6-routed-decision-set.md` and summarised here, because that document
+changes what §6 means.
+
+`verify_pairing` now passes the declared tolerances to `decide`, so the persisted
+artifact is the decision set the platform ships rather than one with routing
+switched off. Five rows move from `NO_DESIGN` to `ADAPTOR` - FER1L6, GPR35,
+TMEM92, TNFSF9, BTNL8 - and five constructs assemble at 2,868 bp, `BUILDABLE`,
+10 parts each. No `SINGLE` and no `DUAL` row changes, because the adaptor branch
+in `decide` is reached only where neither of those applies.
+
+**§6 gains K0, and five criteria change what they do on nothing.** K0 trips if
+the manifest records no routing configuration, if any row carries the
+routing-disabled reason, or if nothing assembled. K1, K3, K4, K5 and K6 each
+trip on an empty population in their own right. Handed an empty set the stage
+now reports 2 of 9 clear where it reported 7 of 8.
+
+**K2 and K7 were restated, not relaxed.** Both assumed every construct's binder
+is a Stage 5 sequence candidate. An adaptor's is not - it is the anti-tag part,
+retrieved from a deposited structure - so run unchanged against the routed set
+each produced five false failures on five correctly assembled constructs. K2 now
+checks the binder by the route that supplied it, and for the anti-tag route
+asserts the retrieved sequence appears verbatim, that the segment carrying it
+declares that provenance and accession, and that the construct names it. It also
+gained the partner VL check it was missing. K7 now asks whether every binder a
+row's own architecture needs was retrieved.
+
+**K2 still trips**, and for the one honest reason: no dual in this pool carries a
+binder on both arms, so the two-arm join remains unexercised. Routing does not
+change that and was never going to. What changed is that K2 no longer reports
+five spurious failures beside the real one, and that the other criteria now
+read 5 constructs instead of 0.
