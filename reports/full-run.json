@@ -1,8 +1,8 @@
 {
-  "clear": 126,
-  "total": 134,
-  "minutes": 25.7,
-  "fresh": false,
+  "clear": 127,
+  "total": 135,
+  "minutes": 24.0,
+  "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
     "4/P4": "Coverage is span-confounded: f_AB tracks genomic span (+0.68) more than expression (+0.20). Reported beside a span-matched percentile and removed from partner selection.",
@@ -25,7 +25,7 @@
     {
       "stage": "6",
       "id": "K2",
-      "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
+      "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by the anti-tag route, whose binder is verified above); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
     }
   ],
   "stale": [],
@@ -51,7 +51,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -238,7 +238,7 @@
       "clear": 18,
       "total": 19,
       "ok": false,
-      "seconds": 19.9,
+      "seconds": 20.0,
       "exit": 1,
       "criteria": [
         {
@@ -344,7 +344,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 8.7,
+      "seconds": 8.9,
       "exit": 2,
       "criteria": [
         {
@@ -395,7 +395,7 @@
         {
           "id": "P11",
           "tripped": false,
-          "detail": "outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)"
+          "detail": "outcome spread {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}, largest 81.0% (limit 95%)"
         },
         {
           "id": "P12",
@@ -430,7 +430,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 272.5,
+      "seconds": 211.3,
       "exit": 2,
       "criteria": [
         {
@@ -501,7 +501,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 208.7,
+      "seconds": 223.5,
       "exit": 0,
       "criteria": [
         {
@@ -544,46 +544,51 @@
     {
       "number": "6",
       "name": "Construct assembly",
-      "clear": 7,
-      "total": 8,
+      "clear": 8,
+      "total": 9,
       "ok": false,
       "seconds": 0.4,
       "exit": 2,
       "criteria": [
         {
+          "id": "K0",
+          "tripped": false,
+          "detail": "the decision set is routed (persistent 0.15, terminable 0.35) and yields 5 construct(s) for the criteria below to read"
+        },
+        {
           "id": "K1",
           "tripped": false,
-          "detail": "0 constructs translate back to their own sequence"
+          "detail": "5 constructs translate back to their own sequence"
         },
         {
           "id": "K2",
           "tripped": true,
-          "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
+          "detail": "no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by the anti-tag route, whose binder is verified above); the criterion has nothing to pin on and reports that rather than clearing on an empty set"
         },
         {
           "id": "K3",
           "tripped": false,
-          "detail": "domain boundaries partition every construct exactly"
+          "detail": "domain boundaries partition all 5 constructs exactly"
         },
         {
           "id": "K4",
           "tripped": false,
-          "detail": "every part of every construct names its source (0 parts in the first construct)"
+          "detail": "every part of every construct names its source (10 parts in the first construct, 50 across all 5)"
         },
         {
           "id": "K5",
           "tripped": false,
-          "detail": "part costs sum to the printed total for every construct"
+          "detail": "part costs sum to the printed total for all 5 constructs"
         },
         {
           "id": "K6",
           "tripped": false,
-          "detail": "every buildable construct carries the mandatory safety switch"
+          "detail": "all 5 buildable constructs carry the mandatory safety switch"
         },
         {
           "id": "K7",
           "tripped": false,
-          "detail": "every owed construct was built and none was built without a binder; 24 targets have a binder but no recommendation (\u00a75.1)"
+          "detail": "every owed construct was built and none was built without the binder its architecture needs; 24 targets have a binder but no recommendation (\u00a75.1)"
         },
         {
           "id": "K8",
@@ -598,7 +603,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 3.5,
+      "seconds": 3.6,
       "exit": 0,
       "criteria": [
         {
@@ -619,7 +624,7 @@
         {
           "id": "S4",
           "tripped": false,
-          "detail": "no target over the ceiling escapes BLOCKED"
+          "detail": "no target escapes the ceiling applied to it: 3 admitted against the persistent 0.15, 5 against the terminable 0.35, each on a route declaring the exposure stoppable"
         },
         {
           "id": "S5",
@@ -685,7 +690,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 3.8,
+      "seconds": 3.7,
       "exit": 0,
       "criteria": [
         {
@@ -711,7 +716,7 @@
         {
           "id": "N5",
           "tripped": false,
-          "detail": "status NO_DESIGN_REACHES_THE_END matches the survivor count 0"
+          "detail": "status RANKED matches the survivor count 5"
         },
         {
           "id": "N6",
@@ -726,7 +731,7 @@
       "clear": 10,
       "total": 10,
       "ok": true,
-      "seconds": 216.7,
+      "seconds": 10.9,
       "exit": 0,
       "criteria": [
         {
@@ -742,12 +747,12 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job a8d95a291c0b rather than blocking"
+          "detail": "a run returns 202 with job 75657f63035d rather than blocking"
         },
         {
           "id": "A4",
           "tripped": false,
-          "detail": "job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']"
+          "detail": "job finished complete after stages ['sources', 'pairing', 'ranking']"
         },
         {
           "id": "A5",
@@ -787,7 +792,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 805.9,
+      "seconds": 955.6,
       "exit": 0,
       "criteria": [
         {

@@ -5,14 +5,13 @@ REJECTION CRITERIA
 ========================================================================
   clear    A1: project created (201), target_antigen None and discovery mode B
   clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-  clear    A3: a run returns 202 with job a8d95a291c0b rather than blocking
+  clear    A3: a run returns 202 with job 75657f63035d rather than blocking
 
   polling
     running   sources  loading cached sources
     running   pairing  evaluating pairs
-    running   binders  retrieving binders
     complete  ranking  RANKED
-  clear    A4: job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
+  clear    A4: job finished complete after stages ['sources', 'pairing', 'ranking']
   clear    A5: 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
   clear    A6: end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
   clear    A7: top target CEACAM5 with a 6-component breakdown

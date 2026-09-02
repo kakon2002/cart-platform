@@ -3,7 +3,7 @@ loading sources
 ========================================================================
 TARGET DISCOVERY - STAGE 3
 ========================================================================
-  project              pancreatic-ductal-adenocarcinoma-20260901T195458-eb5f4e63
+  project              pancreatic-ductal-adenocarcinoma-20260902T161340-9b3bfe2c
   indication           Pancreatic Ductal Adenocarcinoma
   discovery mode       B
   target supplied      None
@@ -15,7 +15,7 @@ TARGET DISCOVERY - STAGE 3
   fold disagreement    2.0x
   risk ceiling         0.15
   universe             3466
-  revision             4b58527-dirty
+  revision             52ee9c7-dirty
   configuration hash   a91c696f2e1318f7
   margin denominator   Pancreas (bulk only)
   field offset         the cohort fold runs 3.6x below the baseline fold at the median, over 2,832 proteins with both

@@ -1,18 +1,20 @@
 loading upstream
-  200 decisions, 0 assembled
+  200 decisions, 5 assembled
+  anti-tag binder retrieved from 1P4B_1+2
 
 ========================================================================
 REJECTION CRITERIA
 ========================================================================
-  clear    K1: 0 constructs translate back to their own sequence
-  TRIPPED  K2: no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
-  clear    K3: domain boundaries partition every construct exactly
-  clear    K4: every part of every construct names its source (0 parts in the first construct)
-  clear    K5: part costs sum to the printed total for every construct
-  clear    K6: every buildable construct carries the mandatory safety switch
-  clear    K7: every owed construct was built and none was built without a binder; 24 targets have a binder but no recommendation (§5.1)
+  clear    K0: the decision set is routed (persistent 0.15, terminable 0.35) and yields 5 construct(s) for the criteria below to read
+  clear    K1: 5 constructs translate back to their own sequence
+  TRIPPED  K2: no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by the anti-tag route, whose binder is verified above); the criterion has nothing to pin on and reports that rather than clearing on an empty set
+  clear    K3: domain boundaries partition all 5 constructs exactly
+  clear    K4: every part of every construct names its source (10 parts in the first construct, 50 across all 5)
+  clear    K5: part costs sum to the printed total for all 5 constructs
+  clear    K6: all 5 buildable constructs carry the mandatory safety switch
+  clear    K7: every owed construct was built and none was built without the binder its architecture needs; 24 targets have a binder but no recommendation (§5.1)
   clear    K8: 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 ========================================================================
-  7/8 criteria clear
+  8/9 criteria clear
 
   STOPPING: K2 tripped.
