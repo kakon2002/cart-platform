@@ -13,6 +13,7 @@ PER CELL DERIVATION — known answer check
   cells 64,538  genes 198  patients 43  evaluable 29
 evaluating pairs
   partner eligibility at 5.0 TPM: 185 of 200 pool members eligible (0 without a tumour column)
+  routing ceilings: persistent 0.15, terminable 0.35
   span context attached to 19,110 pairs of 19,110 measured
 
 ========================================================================
@@ -39,7 +40,7 @@ REJECTION CRITERIA
   TRIPPED  P8: 172 of 294 cleared pairs (58.5%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
   report   P9: 30 of 30 recommended pairs sit below the patient floor of 0.6 (reported, not gated — see 6.5b)
   clear    P10: 0 targets recommended dual despite clearing alone
-  clear    P11: outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)
+  clear    P11: outcome spread {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}, largest 81.0% (limit 95%)
   clear    P12: 0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)
   TRIPPED  P13: most common partner takes 70.0% of dual recommendations (PRSS21)
   TRIPPED  P17: 22 of 30 dual recommendations (73.3%) had exactly one admissible eligible partner, so no selection was made; limit 50%, above which the majority of recommendations name a partner the stage did not choose between

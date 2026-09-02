@@ -1,8 +1,8 @@
 # Full run
 
-Derived artifacts reused; raw sources read from `data/` unchanged.
+Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**126/134 criteria clear across 12 stages**, 25.7 minutes.
+**127/135 criteria clear across 12 stages**, 24.0 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,14 +10,14 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 18/19 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 273s |
-| 5 | Binder discovery | 7/7 | clear | 209s |
-| 6 | Construct assembly | 7/8 | **TRIPPED** | 0s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 211s |
+| 5 | Binder discovery | 7/7 | clear | 224s |
+| 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
-| API | HTTP surface | 10/10 | clear | 217s |
-| MULTI | Multi-indication | 11/11 | clear | 806s |
+| API | HTTP surface | 10/10 | clear | 11s |
+| MULTI | Multi-indication | 11/11 | clear | 956s |
 
 ## Every criterion
 
@@ -93,7 +93,7 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
 - clear `P7` — 0 cleared pairs contain a ubiquitous immune protein (in pool: none) []
 - **TRIPPED** `P8` — 172 of 294 cleared pairs (58.5%) stop clearing if the unmeasured antigen saturates its organ (limit 10%)
 - clear `P10` — 0 targets recommended dual despite clearing alone
-- clear `P11` — outcome spread {'NO_DESIGN': 167, 'DUAL': 30, 'SINGLE': 3}, largest 83.5% (limit 95%)
+- clear `P11` — outcome spread {'NO_DESIGN': 162, 'DUAL': 30, 'SINGLE': 3, 'ADAPTOR': 5}, largest 81.0% (limit 95%)
 - clear `P12` — 0 of 30 dual recommendations change at 2 counts (0.0%, limit 50%)
 - **TRIPPED** `P13` — most common partner takes 70.0% of dual recommendations (PRSS21)
 - **TRIPPED** `P17` — 22 of 30 dual recommendations (73.3%) had exactly one admissible eligible partner, so no selection was made; limit 50%, above which the majority of recommendations name a partner the stage did not choose between
@@ -125,15 +125,16 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
 - clear `B13` — 200 records out of 200 decisions in; 0 genes dropped, 0 added
 - clear `B11` — 0 candidates claim a resolved isoform (neither route can determine one)
 
-### Stage 6 — Construct assembly (7/8)
+### Stage 6 — Construct assembly (8/9)
 
-- clear `K1` — 0 constructs translate back to their own sequence
-- **TRIPPED** `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
-- clear `K3` — domain boundaries partition every construct exactly
-- clear `K4` — every part of every construct names its source (0 parts in the first construct)
-- clear `K5` — part costs sum to the printed total for every construct
-- clear `K6` — every buildable construct carries the mandatory safety switch
-- clear `K7` — every owed construct was built and none was built without a binder; 24 targets have a binder but no recommendation (§5.1)
+- clear `K0` — the decision set is routed (persistent 0.15, terminable 0.35) and yields 5 construct(s) for the criteria below to read
+- clear `K1` — 5 constructs translate back to their own sequence
+- **TRIPPED** `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by the anti-tag route, whose binder is verified above); the criterion has nothing to pin on and reports that rather than clearing on an empty set
+- clear `K3` — domain boundaries partition all 5 constructs exactly
+- clear `K4` — every part of every construct names its source (10 parts in the first construct, 50 across all 5)
+- clear `K5` — part costs sum to the printed total for all 5 constructs
+- clear `K6` — all 5 buildable constructs carry the mandatory safety switch
+- clear `K7` — every owed construct was built and none was built without the binder its architecture needs; 24 targets have a binder but no recommendation (§5.1)
 - clear `K8` — 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 
 ### Stage 9 — Safety gate (7/7)
@@ -141,7 +142,7 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
 - clear `S1` — registry returns trials for both pins (MSLN=169, CLDN18=3)
 - clear `S2` — pinned names classify as expected (Amatuximab=chimeric, Zolbetuximab=chimeric)
 - clear `S3` — every target with a binder carries a Stage 3 risk
-- clear `S4` — no target over the ceiling escapes BLOCKED
+- clear `S4` — no target escapes the ceiling applied to it: 3 admitted against the persistent 0.15, 5 against the terminable 0.35, each on a route declaring the exposure stoppable
 - clear `S5` — epitope immunogenicity is NOT_CONNECTED on every row
 - clear `S6` — 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 - clear `S7` — every target with stopped trials is flagged or blocked
@@ -161,15 +162,15 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
 - clear `N2` — both non-dominated points are on the front
 - clear `N3` — attrition accounts for 200 of 200
 - clear `N4` — no weighted or summed score across objectives is emitted
-- clear `N5` — status NO_DESIGN_REACHES_THE_END matches the survivor count 0
+- clear `N5` — status RANKED matches the survivor count 5
 - clear `N6` — 200 rows against the 200 the Stage 4 manifest records
 
 ### Stage API — HTTP surface (10/10)
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job a8d95a291c0b rather than blocking
-- clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'ranking']
+- clear `A3` — a run returns 202 with job 75657f63035d rather than blocking
+- clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
 - clear `A7` — top target CEACAM5 with a 6-component breakdown
@@ -226,5 +227,5 @@ Derived artifacts reused; raw sources read from `data/` unchanged.
   - Accepted: Partner choice is unstable under pool halving (71.4%). The pairing stage is complete-with-limitations by decision.
 - Stage 4a `A6` — MSLN (risk 0.6366, lung) routes NO_ARCHITECTURE
   - Accepted: A positive pin written before the run. It expected MSLN to route to an adaptor because it matches that row's condition in words: serious normal-tissue expression. It does not, because its measured risk 0.6366 is nearly twice the declared terminable ceiling of 0.35. Admitting it needs a ceiling near 0.65, which also admits about 120 others - a clinical policy decision, not a code change. The ceiling stays where the spec pinned it and A9 reports the whole sweep so the trade is visible.
-- Stage 6 `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (0 of 200 rows assembled; routing is disabled here, so no adaptor exists to assemble either); the criterion has nothing to pin on and reports that rather than clearing on an empty set
+- Stage 6 `K2` — no dual carries a binder on both arms, so the two-arm join is not exercised anywhere in this decision set (5 of 200 rows assembled, 5 of them by the anti-tag route, whose binder is verified above); the criterion has nothing to pin on and reports that rather than clearing on an empty set
   - **Not on the accepted list. This is new.**
