@@ -19,13 +19,32 @@ For pancreatic ductal adenocarcinoma, from 20,431 reviewed human proteins:
 | **3,466** | pass the surface filter and are scored |
 | **200** | carry forward as the screened pool |
 | **19,900** | pairs evaluated for combinatorial designs |
-| **191** | blocked on normal-tissue risk |
-| **8** | designs fit the payload budget and reach the end |
+| **192** | blocked on normal-tissue risk |
+| **5** | designs fit the payload budget and reach the end |
 
-The eight are `BUILDABLE_AWAITING_BINDER`. They route to an adaptor receptor,
-which binds a tag rather than the antigen — and no anti-tag binder exists in the
-connected sources, so the platform declares each construct's size and refuses to
-invent its sequence.
+The five are `BUILDABLE`, and every one of them routes to an adaptor receptor:
+it binds a tag rather than the antigen, and a separately dosed adaptor molecule
+carries the specificity. That is *why* they are the survivors. An adaptor's
+exposure can be stopped, so it answers to a looser risk ceiling — 0.35 — than a
+receptor whose exposure cannot be withdrawn, which is held at 0.15. The two
+ceilings are never blended.
+
+**None of that makes them a clean result, and the platform says so on the same
+page.** The tag-binding sequence is a murine single-chain Fv taken from a
+deposited structure and used exactly as deposited, crystallisation artifacts
+included, because trimming them is a design decision this pipeline will not take
+silently. Its identification rests on an inference this pipeline drew, not on
+anything the source asserts. Nothing here has assessed its immunogenicity: no
+epitope source is connected, and the species check reads naming conventions that
+a structure-derived binder does not carry. The adaptor route also means two
+manufactured biologics rather than one, and the payload budget it saves is paid
+in the second one's own regulatory path.
+
+There is no conservative backup. Three single-antigen targets were recommended
+and none of them assembles, for want of a binder; no dual design assembles at
+all, because every dual recommendation names a partner that retrieves no binder.
+That gap is reported rather than filled by labelling something that does not
+qualify.
 
 **That is the result, served as HTTP 200 with reasons.** Never a 404, never an
 empty list. An empty list would read as "we looked and had nothing to say";
@@ -57,7 +76,7 @@ alternative produced a confident wrong answer at some point in the build.
 - **Parameters are fixed before output exists**, and criteria are written before
   the run that tests them.
 
-[specs/design-decisions.md](specs/design-decisions.md) records 503 of these
+[specs/design-decisions.md](specs/design-decisions.md) records 508 of these
 across 48 modules — what was chosen, and what breaks without it. The source
 itself carries one-line docstrings and no commentary, so that file is the only
 place the reasoning lives.

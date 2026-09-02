@@ -2,7 +2,7 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**127/135 criteria clear across 12 stages**, 24.0 minutes.
+**127/135 criteria clear across 12 stages**, 22.2 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,14 +10,14 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 18/19 | **TRIPPED** | 20s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 211s |
-| 5 | Binder discovery | 7/7 | clear | 224s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 273s |
+| 5 | Binder discovery | 7/7 | clear | 209s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 7/7 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
 | API | HTTP surface | 10/10 | clear | 11s |
-| MULTI | Multi-indication | 11/11 | clear | 956s |
+| MULTI | Multi-indication | 11/11 | clear | 803s |
 
 ## Every criterion
 
@@ -169,7 +169,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 75657f63035d rather than blocking
+- clear `A3` — a run returns 202 with job 82753d793ce9 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -200,7 +200,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       - The anti-tag binder is a murine anti-GCN4 single-chain Fv retrieved from PDB 1P4B entities 1+2 at revision 1.4. PDB does not record the identifier 52SR4 anywhere in that entry. The identification rests on an exact match between the deposited CDRs and those quoted for 52SR4 in the Calibr/Scripps patent family, together with the shared Zahnd 2004 primary citation. That is an inference drawn by this pipeline, not a fact taken from the source, and a reader is entitled to disagree with it.
       - The retrieved binder is murine. The clinical construct in this tag system is humanized and its sequence is not established, so what is built here is the crystallised murine scFv, not the clinical one. Non-human sequence content is an explicit Stage 9 immunogenicity question and that arm is empty: epitope-level immunogenicity reports NOT_CONNECTED on every row because no epitope source is connected, and the origin check reads INN name stems, which a structure-derived binder does not carry. Nothing in this pipeline has assessed the immunogenicity of this binder.
       - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.
-      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: the only single-antigen target, NPSR1, retrieves no binder, so no construct is assembled for it. The two dual designs that assemble are both over the payload budget. This is reported rather than filled by labelling something that does not qualify.
+      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
       - 5 advanced design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.
     GET /result     -> RANKED
       blocked on normal tissue risk      - 192     8 remain

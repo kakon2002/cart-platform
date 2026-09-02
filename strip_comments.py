@@ -62,19 +62,22 @@ def strip_comments(source: str) -> str:
     return "".join(result)
 
 
-def first_line(text: str) -> str:
-    """The first non-empty line of a docstring, trimmed."""
+def summary_line(text: str) -> str:
+    """The docstring's opening paragraph, joined into a single line."""
+    out: list[str] = []
     for line in text.strip().splitlines():
-        if line.strip():
-            return line.strip()
-    return ""
+        if not line.strip():
+            break
+        out.append(line.strip())
+    return " ".join(out)
 
 
-def shorten_docstrings(source: str) -> str:
-    """Reduce every module, class and function docstring to its first line."""
+def shorten_docstrings(source: str) -> tuple[str, list[str]]:
+    """Reduce every docstring to its opening paragraph, joined onto one line."""
     tree = ast.parse(source)
     lines = source.splitlines(keepends=True)
     edits: list[tuple[int, int, str]] = []
+    joined: dict[int, str] = {}
 
     def visit(node):
         """Record the docstring edit for this node and its nested definitions."""
@@ -84,7 +87,15 @@ def shorten_docstrings(source: str) -> str:
         if isinstance(body[0], ast.Expr) and isinstance(
                 body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
             expr = body[0]
-            summary = first_line(expr.value.value)
+            raw = expr.value.value.strip()
+            summary = summary_line(raw)
+            paragraph = []
+            for line in raw.splitlines():
+                if not line.strip():
+                    break
+                paragraph.append(line)
+            if len(paragraph) > 1:
+                joined[expr.lineno] = f"line {expr.lineno}: {summary}"
             indent = " " * expr.col_offset
             edits.append((expr.lineno, expr.end_lineno,
                           f'{indent}"""{summary}"""\n'))
@@ -104,17 +115,17 @@ def shorten_docstrings(source: str) -> str:
             continue
         seen.add(start)
         lines[start - 1:end] = [replacement]
-    return "".join(lines)
+    return "".join(lines), [joined[k] for k in sorted(joined)]
 
 
-def process(path: Path, write: bool) -> tuple[int, int]:
-    """Strip one file; return (comment lines removed, docstring lines removed)."""
+def process(path: Path, write: bool) -> tuple[int, int, list[str]]:
+    """Strip one file; return (comments removed, lines removed, summaries joined)."""
     original = path.read_text(encoding="utf-8")
     before_comments = sum(
         1 for tok in tokenize.generate_tokens(io.StringIO(original).readline)
         if tok.type == tokenize.COMMENT)
 
-    stripped = shorten_docstrings(original)
+    stripped, joined = shorten_docstrings(original)
     stripped = strip_comments(stripped)
 
     out_lines: list[str] = []
@@ -148,7 +159,7 @@ def process(path: Path, write: bool) -> tuple[int, int]:
     delta = len(original.splitlines()) - len(text.splitlines())
     if write:
         path.write_text(text, encoding="utf-8")
-    return before_comments, delta
+    return before_comments, delta, joined
 
 
 def _drop_docstrings(tree: ast.AST) -> ast.AST:
@@ -172,16 +183,24 @@ def main() -> int:
     args = parser.parse_args()
 
     total_comments = total_lines = 0
+    rewrapped: list[tuple[str, str]] = []
     for path in targets():
-        comments, delta = process(path, write=not args.check)
+        rel = path.relative_to(ROOT).as_posix()
+        comments, delta, joined = process(path, write=not args.check)
         total_comments += comments
         total_lines += delta
+        rewrapped.extend((rel, note) for note in joined)
         if comments or delta:
-            print(f"  {path.relative_to(ROOT).as_posix():44s} "
-                  f"{comments:4d} comments, {delta:4d} lines")
+            print(f"  {rel:44s} {comments:4d} comments, {delta:4d} lines")
     verb = "would remove" if args.check else "removed"
     print(f"\n{verb} {total_comments} comments and {total_lines} lines "
           f"across {len(targets())} files")
+
+    print(f"{len(rewrapped)} wrapped summaries joined onto one line; the "
+          "AST guard cannot see docstrings, so this list is the only report "
+          "of what was rewritten")
+    for rel, note in rewrapped:
+        print(f"  {rel} {note}")
     return 0
 
 

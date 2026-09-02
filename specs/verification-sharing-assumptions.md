@@ -1,10 +1,11 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found eight times in this
+Read this before writing a criterion. It has been found nine times in this
 repository. The fifth was found by suspecting the fourth, the sixth was
 introduced by a change made after the first five were written down, the seventh
-is the root cause of the third, found only when the third was fixed, and the
-eighth was found by reading a criterion's own output rather than its verdict.
+is the root cause of the third, found only when the third was fixed, the eighth
+was found by reading a criterion's own output rather than its verdict, and the
+ninth was found while fixing the eighth, in a verifier nobody was looking at.
 
 ## The pattern
 
@@ -19,7 +20,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The eight
+## The nine
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -167,6 +168,51 @@ of dead code. The second was instance 1's summary literal, under which a tenth
 criterion ran, passed, and was invisible in a total that said nine. **A criterion
 that does not execute the path it claims to cover is not a criterion**, and none
 of the three was found by the suite. All three were found by reading output.
+
+**9. The cache read that was checked against the wrong property.** Stage 11's
+verifier loaded its binder records with `stage5.read_binders()`, and stage 10's
+with the same call. That function validates the payload against its own recorded
+digest and against nothing else — not the Stage 4 hash, not the gene set, not
+the indication. Its four sibling verifiers all go through
+`load_or_retrieve(decisions, source, manifest["stage4_hash"])`, which refuses a
+cache belonging to another configuration.
+
+The binder cache is a single shared slot. The last thing to write it in a full
+run is the **deliberately degraded** run inside the multi-indication verifier —
+the one that screens with an unresolvable dependency lineage to prove the
+platform names its missing sources. Its pool differs from the real one by two
+genes and by an order swap at ranks 8 and 9.
+
+Run against that state, stage 11's verifier reported **6 of 6 criteria clear**
+and output identical to the logged run. Nothing in it could see that its binders
+came from a run whose entire purpose was that a source was missing. Only the
+order of the suite kept it from mattering, and `run_all.py` reuses derived
+artifacts unless `--fresh` is passed, so the next ordinary run reads it.
+
+*Broken-thing question:* if the binder set belonged to a different screen
+entirely, every criterion would report exactly what it reported.
+
+**This is the worse shape, and it is worth separating from instance 8.** An
+empty set at least prints its zero: K4 said *"0 parts in the first construct"*,
+and the number was visible to anyone who read the line. A wrong-but-populated
+set prints 107 scored sequences and a full attrition table. It produces
+confident, well-formed, plausible output with no number anywhere in it that a
+reader could challenge, because every number is internally consistent — they
+were all computed from the same wrong input.
+
+The digest check is what makes it feel safe, and it is a real check. It proves
+the file is not truncated or corrupt. It says nothing whatever about whether the
+file belongs to this run, and the two questions are easy to conflate because
+both are answered by the word "valid". **A check that passes on the wrong
+property reads exactly like a check that passed.** Stage 10's own D5 has the
+same shape from the other side: *"107 rows against 107 binders carrying a
+sequence"* compares the scored rows to the records they were scored from, which
+any binder set satisfies.
+
+The fix is not a better digest. It is that an artifact must be admitted by
+something that knows what run it belongs to — the configuration hash the
+producing stage recorded — and every reader of a shared slot must go through the
+same door.
 
 ## What to do instead
 
