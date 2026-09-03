@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from car_pipeline.configs.registry import resolve as resolve_indication
+from car_pipeline.data import availability
 from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.data.coverage import build_coverage
 from car_pipeline.data.depmap import DepMapSource, gene_index
@@ -14,14 +15,14 @@ from car_pipeline.data.tcga import PRIMARY_TUMOUR, TCGASource, match_surface as 
 from car_pipeline.data.trials import TrialSource
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import (
-    routing, stage3, stage4, stage5, stage6, stage9, stage10, stage11,
+    routing, stage3, stage4, stage5, stage6, stage9, stage10, stage11, stage12,
 )
 from car_pipeline.stages.stage1 import build_spec
 
 import numpy as np
 
 STAGES = ("sources", "screen", "pairing", "binders", "constructs",
-          "safety", "developability", "ranking")
+          "safety", "developability", "ranking", "package")
 
 
 USABLE = "USABLE"
@@ -128,6 +129,14 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
             "status": NOT_USABLE,
             "stage3_hash": s3_hash,
             "stage4_hash": None,
+            "packages": [],
+            "package_status": stage12.NO_CANDIDATE_REACHES_THE_END,
+            "provenance": {
+                "sources": availability.release_pins(indication),
+                "hashes": {"stage3": s3_hash},
+                "reasons": ["The chain stops at Stage 3: no ranking is served "
+                            "for this indication, so no later stage ran."],
+            },
             "reasons": [
                 "No single-cell atlas is connected for this indication, so "
                 "malignant_expression and malignant_vs_stroma are unmeasured.",
@@ -205,9 +214,16 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     final, attrition, status = stage11.rank(
         decisions, binders, by_construct, by_gate, liabilities, composites, ceiling)
 
+    s5_hash = stage5.configuration_hash(s4_hash, [r.gene for r in records])
+    s6_hash = stage6.configuration_hash(s5_hash, [c.gene for c in constructs])
+    s9_hash = stage9.configuration_hash(
+        s6_hash, [d["gene"] for d in decisions], ceiling)
+    s10_hash = stage10.configuration_hash(s5_hash, [r.gene for r in records])
+    s11_hash = stage11.configuration_hash(s9_hash, [r.gene for r in final])
+
     usability = NOT_USABLE if indication.atlas is None else USABLE
 
-    return {
+    result = {
         "indication": indication,
         "usability": usability,
         "unavailable": unavailable,
@@ -228,7 +244,25 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         "status": status,
         "stage3_hash": s3_hash,
         "stage4_hash": s4_hash,
+        "provenance": {
+            "sources": availability.release_pins(indication),
+            "hashes": {
+                "stage3": s3_hash, "stage4": s4_hash, "stage5": s5_hash,
+                "stage6": s6_hash, "stage9": s9_hash, "stage10": s10_hash,
+                "stage11": s11_hash,
+            },
+            "reasons": [
+                "Each hash covers the stage before it, so the chain identifies "
+                "the exact configuration a package was produced under.",
+                "A release pin is the version this run read, not the newest "
+                "the source offers.",
+            ],
+        },
     }
+
+    progress("package", "assembling candidate packages")
+    result["packages"], result["package_status"] = stage12.build(result)
+    return result
 
 
 UNKNOWN_TARGET = "UNKNOWN_TARGET"

@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from car_pipeline.api import pipeline
 from car_pipeline.data.source import CacheError
-from car_pipeline.stages import stage4, stage6, stage10, stage11, validation
+from car_pipeline.stages import stage4, stage6, stage10, stage11, validation, stage12
 
 _LOCK = threading.Lock()
 PROJECTS: dict[str, dict] = {}
@@ -493,6 +493,48 @@ def result_view(project_id: str) -> dict:
     }
 
 
+def package_view(project_id: str) -> dict:
+    """Every candidate package, or the status when nothing reached the end."""
+    r = _result(project_id)
+    packages = r.get("packages") or []
+    status = r.get("package_status", stage12.NO_CANDIDATE_REACHES_THE_END)
+    reasons = [
+        "Eight of the reference document's twelve deliverables have something "
+        "to carry. Each package carries those and names what the other four "
+        "are missing, per deliverable, in its gaps section.",
+    ]
+    if not packages:
+        reasons.append(
+            "No candidate reached the end, so no package was assembled. That "
+            "is a status, not an empty list: nothing arrived to be packaged.")
+    return {
+        "status": status,
+        **_evidence(r),
+        "candidates": len(packages),
+        "packages": packages,
+        "gaps": stage12.gap_payload(packages),
+        "provenance": r.get("provenance"),
+        "reasons": reasons,
+    }
+
+
+def package_for_view(project_id: str, gene: str) -> dict:
+    """One candidate's package, whole."""
+    r = _result(project_id)
+    symbol = gene.strip().upper()
+    found = next((p for p in (r.get("packages") or []) if p["gene"] == symbol),
+                 None)
+    if found is None:
+        raise NotFound(symbol)
+    return {
+        "status": r.get("package_status", stage12.PACKAGED),
+        **_evidence(r),
+        "package": found,
+        "gaps": stage12.gap_payload(r.get("packages") or []),
+        "provenance": r.get("provenance"),
+    }
+
+
 def evidence_view(project_id: str, gene: str) -> dict:
     """Everything the pipeline holds about one gene, stage by stage."""
     r = _result(project_id)
@@ -655,6 +697,7 @@ class Handler(BaseHTTPRequestHandler):
             for name, view, paged in (("targets", targets_view, True),
                                       ("pairs", pairs_view, True),
                                       ("constructs", constructs_view, False),
+                                      ("package", package_view, False),
                                       ("result", result_view, False)):
                 m = re.match(rf"^/projects/([0-9a-f]{{12}})/{name}$", path)
                 if m:
@@ -665,6 +708,10 @@ class Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/projects/([0-9a-f]{12})/plan/([A-Za-z0-9_.-]+)$", path)
             if m:
                 return self._send(200, plan_view(m.group(1), m.group(2)))
+
+            m = re.match(r"^/projects/([0-9a-f]{12})/package/([A-Za-z0-9_.-]+)$", path)
+            if m:
+                return self._send(200, package_for_view(m.group(1), m.group(2)))
 
             m = re.match(r"^/projects/([0-9a-f]{12})/evidence/([A-Za-z0-9_.-]+)$", path)
             if m:

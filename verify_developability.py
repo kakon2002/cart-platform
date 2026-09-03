@@ -15,6 +15,8 @@ def main() -> int:
 
     records = stage5.load_or_retrieve(
         decisions, AntibodySource(), manifest["stage4_hash"])
+    stage5_hash = stage5.configuration_hash(
+        manifest["stage4_hash"], [r.gene for r in records])
     binders = {r.gene: r for r in records}
     rows, status = stage10.assess(binders)
     with_sequence = sum(1 for r in records
@@ -127,7 +129,7 @@ def main() -> int:
 
     print()
     print(f"  configuration hash "
-          f"{stage10.configuration_hash(manifest['stage4_hash'], [r.gene for r in rows])}")
+          f"{stage10.configuration_hash(stage5_hash, [r.gene for r in records])}")
     return 0
 
 

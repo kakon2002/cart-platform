@@ -1,0 +1,779 @@
+{
+  "gene": "BTNL8",
+  "accession": "Q6UX41",
+  "ranking": {
+    "position": 5,
+    "of": 5,
+    "on_pareto_front": false,
+    "objectives": {
+      "attractiveness": 0.4059,
+      "safety_margin": -0.1747,
+      "binder_count": 0,
+      "cleanliness": 0
+    },
+    "binder_supplied": true,
+    "reasons": [
+      "No weighted total across objectives is emitted. Candidates are compared on a Pareto front, so a design better on one objective and worse on another is not silently averaged into a rank."
+    ]
+  },
+  "design_class": "ADVANCED",
+  "construct": {
+    "verdict": "BUILDABLE",
+    "architecture": "adaptor, anti-tag receptor, antigen on the adaptor",
+    "outcome": "ADAPTOR",
+    "partner": null,
+    "binder_name": "anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded)",
+    "partner_binder_name": null,
+    "amino_acid_sequence": "MALPVTALLLPLALLLHAARPMADYADAVVTQESALTTSPGETVTLTCRSSTGAVTTSNYASWVQEKPDHLFTGLIGGTNNRAPGVPARFSGSLIGDKAALTITGAQTEDEAIYFCALWYSNHWVFGGGTKLTVLGGGGGSGGGGSGGGGSGGGGSDVQLQQSGPGLVAPSQSLSITCTVSGFSLTDYGVNWVRQSPGKGLEWLGVIWGDGITDYNSALKSRLSVTKDNSKSQVFLKMNSLQSGDSARYYCVTGLFDYWGQGTTLTVSSASGADHHHHHHTTTPAPRPPTPAPTIASQPLSLRPEACRPAAGGAVHTRGLDFACDIYIWAPLAGTCGVLLLSLVITKRGRKKLLYIFKQPFMRPVQTTQEEDGCSCRFPEEEEGGCELRVKFSRSADAPAYQQGQNQLYNELNLGRREEYDVLDKRRGRDPEMGGKPQRRKNPQEGLYNELQKDKMAEAYSEIGMKGERRRGKGHDGLYQGLSTATKDTYDALHMQALPPREGRGSLLTCGDVEENPGPGVQVETISPGDGRTFPKRGQTCVVHYTGMLEDGKKFDSSRDRNKPFKFMLGKQEVIRGWEEGVAQMSVGQRAKLTISPDYAYGATGHPGIIPPHATLVFDVELLKLESGGGSRQAAKLSKPTLENLTPVVLRPEIRKPEVLRPETPRPVDIGSGGFGDVGALESLRGNADLAYILSMEPCGHCLIINNVNFCRESGLRTRTGSNIDCEKLRRRFSSLHFMVEVKGDLTAKKMVLALLELAQQDHGALDCCVVVILSHGCQASHLQFPGAVYGTDGCPVSVEKIVNIFNGTSCPSLGGKPKLFFIQACGGEQKDHGFEVASTSPEDESPGSNPEPDATPFQEGLRTFDQLDAISSLPTPSDIFVSYSTFPGFVSWRDPKSGSWYVETLDDIFEQWAHSEDLQSLLLRVANAVSVKGIYKQMPGCFNFLRKKLFFKTS",
+    "residues": 955,
+    "dna": "ATGGCCCTGCCCGTGACCGCCCTGCTGCTGCCCCTGGCCCTGCTGCTGCACGCCGCCCGGCCCATGGCCGACTACGCCGACGCCGTGGTGACCCAGGAGAGCGCCCTGACCACCAGCCCCGGCGAGACCGTGACCCTGACCTGCCGGAGCAGCACCGGCGCCGTGACCACCAGCAACTACGCCAGCTGGGTGCAGGAGAAGCCCGACCACCTGTTCACCGGCCTGATCGGCGGCACCAACAACCGGGCCCCCGGCGTGCCCGCCCGGTTCAGCGGCAGCCTGATCGGCGACAAGGCCGCCCTGACCATCACCGGCGCCCAGACCGAGGACGAGGCCATCTACTTCTGCGCCCTGTGGTACAGCAACCACTGGGTGTTCGGCGGCGGCACCAAGCTGACCGTGCTGGGCGGCGGCGGCGGCAGCGGCGGCGGCGGCAGCGGCGGCGGCGGCAGCGGCGGCGGCGGCAGCGACGTGCAGCTGCAGCAGAGCGGCCCCGGCCTGGTGGCCCCCAGCCAGAGCCTGAGCATCACCTGCACCGTGAGCGGCTTCAGCCTGACCGACTACGGCGTGAACTGGGTGCGGCAGAGCCCCGGCAAGGGCCTGGAGTGGCTGGGCGTGATCTGGGGCGACGGCATCACCGACTACAACAGCGCCCTGAAGAGCCGGCTGAGCGTGACCAAGGACAACAGCAAGAGCCAGGTGTTCCTGAAGATGAACAGCCTGCAGAGCGGCGACAGCGCCCGGTACTACTGCGTGACCGGCCTGTTCGACTACTGGGGCCAGGGCACCACCCTGACCGTGAGCAGCGCCAGCGGCGCCGACCACCACCACCACCACCACACCACCACCCCCGCCCCCCGGCCCCCCACCCCCGCCCCCACCATCGCCAGCCAGCCCCTGAGCCTGCGGCCCGAGGCCTGCCGGCCCGCCGCCGGCGGCGCCGTGCACACCCGGGGCCTGGACTTCGCCTGCGACATCTACATCTGGGCCCCCCTGGCCGGCACCTGCGGCGTGCTGCTGCTGAGCCTGGTGATCACCAAGCGGGGCCGGAAGAAGCTGCTGTACATCTTCAAGCAGCCCTTCATGCGGCCCGTGCAGACCACCCAGGAGGAGGACGGCTGCAGCTGCCGGTTCCCCGAGGAGGAGGAGGGCGGCTGCGAGCTGCGGGTGAAGTTCAGCCGGAGCGCCGACGCCCCCGCCTACCAGCAGGGCCAGAACCAGCTGTACAACGAGCTGAACCTGGGCCGGCGGGAGGAGTACGACGTGCTGGACAAGCGGCGGGGCCGGGACCCCGAGATGGGCGGCAAGCCCCAGCGGCGGAAGAACCCCCAGGAGGGCCTGTACAACGAGCTGCAGAAGGACAAGATGGCCGAGGCCTACAGCGAGATCGGCATGAAGGGCGAGCGGCGGCGGGGCAAGGGCCACGACGGCCTGTACCAGGGCCTGAGCACCGCCACCAAGGACACCTACGACGCCCTGCACATGCAGGCCCTGCCCCCCCGGGAGGGCCGGGGCAGCCTGCTGACCTGCGGCGACGTGGAGGAGAACCCCGGCCCCGGCGTGCAGGTGGAGACCATCAGCCCCGGCGACGGCCGGACCTTCCCCAAGCGGGGCCAGACCTGCGTGGTGCACTACACCGGCATGCTGGAGGACGGCAAGAAGTTCGACAGCAGCCGGGACCGGAACAAGCCCTTCAAGTTCATGCTGGGCAAGCAGGAGGTGATCCGGGGCTGGGAGGAGGGCGTGGCCCAGATGAGCGTGGGCCAGCGGGCCAAGCTGACCATCAGCCCCGACTACGCCTACGGCGCCACCGGCCACCCCGGCATCATCCCCCCCCACGCCACCCTGGTGTTCGACGTGGAGCTGCTGAAGCTGGAGAGCGGCGGCGGCAGCCGGCAGGCCGCCAAGCTGAGCAAGCCCACCCTGGAGAACCTGACCCCCGTGGTGCTGCGGCCCGAGATCCGGAAGCCCGAGGTGCTGCGGCCCGAGACCCCCCGGCCCGTGGACATCGGCAGCGGCGGCTTCGGCGACGTGGGCGCCCTGGAGAGCCTGCGGGGCAACGCCGACCTGGCCTACATCCTGAGCATGGAGCCCTGCGGCCACTGCCTGATCATCAACAACGTGAACTTCTGCCGGGAGAGCGGCCTGCGGACCCGGACCGGCAGCAACATCGACTGCGAGAAGCTGCGGCGGCGGTTCAGCAGCCTGCACTTCATGGTGGAGGTGAAGGGCGACCTGACCGCCAAGAAGATGGTGCTGGCCCTGCTGGAGCTGGCCCAGCAGGACCACGGCGCCCTGGACTGCTGCGTGGTGGTGATCCTGAGCCACGGCTGCCAGGCCAGCCACCTGCAGTTCCCCGGCGCCGTGTACGGCACCGACGGCTGCCCCGTGAGCGTGGAGAAGATCGTGAACATCTTCAACGGCACCAGCTGCCCCAGCCTGGGCGGCAAGCCCAAGCTGTTCTTCATCCAGGCCTGCGGCGGCGAGCAGAAGGACCACGGCTTCGAGGTGGCCAGCACCAGCCCCGAGGACGAGAGCCCCGGCAGCAACCCCGAGCCCGACGCCACCCCCTTCCAGGAGGGCCTGCGGACCTTCGACCAGCTGGACGCCATCAGCAGCCTGCCCACCCCCAGCGACATCTTCGTGAGCTACAGCACCTTCCCCGGCTTCGTGAGCTGGCGGGACCCCAAGAGCGGCAGCTGGTACGTGGAGACCCTGGACGACATCTTCGAGCAGTGGGCCCACAGCGAGGACCTGCAGAGCCTGCTGCTGCGGGTGGCCAACGCCGTGAGCGTGAAGGGCATCTACAAGCAGATGCCCGGCTGCTTCAACTTCCTGCGGAAGAAGCTGTTCTTCAAGACCAGCTAA",
+    "total_bp": 2868,
+    "budget_bp": 3500,
+    "headroom_bp": 632,
+    "safety_switch": true,
+    "domains": [
+      {
+        "name": "CD8A leader",
+        "provenance": "proteome",
+        "accession": "P01732",
+        "feature": "Signal",
+        "source_residues": "1-21",
+        "aa_start": 0,
+        "aa_end": 21,
+        "bp_start": 0,
+        "bp_end": 63,
+        "residues": 21
+      },
+      {
+        "name": "anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded)",
+        "provenance": "structure",
+        "accession": "1P4B_1+2",
+        "feature": "deposited revision 1.4",
+        "source_residues": null,
+        "aa_start": 21,
+        "aa_end": 280,
+        "bp_start": 63,
+        "bp_end": 840,
+        "residues": 259
+      },
+      {
+        "name": "CD8A hinge",
+        "provenance": "proteome",
+        "accession": "P01732",
+        "feature": "stalk before Transmembrane",
+        "source_residues": "138-182",
+        "aa_start": 280,
+        "aa_end": 325,
+        "bp_start": 840,
+        "bp_end": 975,
+        "residues": 45
+      },
+      {
+        "name": "CD8A transmembrane",
+        "provenance": "proteome",
+        "accession": "P01732",
+        "feature": "Transmembrane",
+        "source_residues": "183-203",
+        "aa_start": 325,
+        "aa_end": 346,
+        "bp_start": 975,
+        "bp_end": 1038,
+        "residues": 21
+      },
+      {
+        "name": "4-1BB cytoplasmic",
+        "provenance": "proteome",
+        "accession": "Q07011",
+        "feature": "Topological domain",
+        "source_residues": "214-255",
+        "aa_start": 346,
+        "aa_end": 388,
+        "bp_start": 1038,
+        "bp_end": 1164,
+        "residues": 42
+      },
+      {
+        "name": "CD3zeta cytoplasmic",
+        "provenance": "proteome",
+        "accession": "P20963",
+        "feature": "Topological domain",
+        "source_residues": "52-164",
+        "aa_start": 388,
+        "aa_end": 501,
+        "bp_start": 1164,
+        "bp_end": 1503,
+        "residues": 113
+      },
+      {
+        "name": "T2A skip peptide",
+        "provenance": "synthetic",
+        "accession": null,
+        "feature": null,
+        "source_residues": null,
+        "aa_start": 501,
+        "aa_end": 519,
+        "bp_start": 1503,
+        "bp_end": 1557,
+        "residues": 18
+      },
+      {
+        "name": "FKBP12",
+        "provenance": "proteome",
+        "accession": "P62942",
+        "feature": "Chain",
+        "source_residues": "2-108",
+        "aa_start": 519,
+        "aa_end": 626,
+        "bp_start": 1557,
+        "bp_end": 1878,
+        "residues": 107
+      },
+      {
+        "name": "SGGGS linker",
+        "provenance": "synthetic",
+        "accession": null,
+        "feature": null,
+        "source_residues": null,
+        "aa_start": 626,
+        "aa_end": 631,
+        "bp_start": 1878,
+        "bp_end": 1893,
+        "residues": 5
+      },
+      {
+        "name": "caspase-9 without CARD",
+        "provenance": "proteome",
+        "accession": "P55211",
+        "feature": "after Domain CARD",
+        "source_residues": "93-416",
+        "aa_start": 631,
+        "aa_end": 955,
+        "bp_start": 1893,
+        "bp_end": 2865,
+        "residues": 324
+      }
+    ],
+    "reason": "the anti-tag binder is retrieved from 1P4B_1+2, deposited revision 1.4, as deposited and unedited"
+  },
+  "target_evidence": {
+    "composite": 0.4059,
+    "composite_supported": 0.4059,
+    "measured_weight": 1.0,
+    "evidence_class": "PROTEIN_CONFIRMED",
+    "tier_rank": 203,
+    "confidence": 1.0,
+    "below_evidence_floor": false,
+    "sources_disagree": false,
+    "tumour_side_verdict": "TUMOUR_DOMINANT",
+    "protein_arm_measured": true,
+    "risk": 0.3247,
+    "risk_organ": "gi_tract",
+    "risk_basis": "staining and transcript",
+    "risk_is_lower_bound": false,
+    "cleared": false,
+    "components": {
+      "malignant_expression": 0.11286083416540825,
+      "malignant_vs_stroma": 0.5806934002039319,
+      "tumour_vs_normal": 0.6035355038832619,
+      "patient_prevalence": 0.2640449438202247,
+      "surface_accessibility": 0.7,
+      "escape_resistance": 0.020692497491836548
+    },
+    "risk_attribution": {
+      "risk": 0.3246700695302471,
+      "winning_organs": [
+        "gi_tract"
+      ],
+      "margin": 0.09751778656247609,
+      "organs_scored": 20,
+      "organs": [
+        {
+          "organ": "gi_tract",
+          "score": 0.5411167825504118,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.3246700695302471,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "small intestine",
+            "score": 0.4600653608986377,
+            "level": 3,
+            "level_name": "High"
+          },
+          "baseline": {
+            "label": "Colon_Transverse_Mixed_Cell",
+            "score": 0.5411167825504118,
+            "tpm": 41.032501220703125
+          }
+        },
+        {
+          "organ": "marrow_and_blood",
+          "score": 0.3785871382796183,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.22715228296777099,
+          "arm": "STAINING",
+          "staining": {
+            "label": "bone marrow",
+            "score": 0.3785871382796183,
+            "level": 2,
+            "level_name": "Medium"
+          },
+          "baseline": {
+            "label": "Whole_Blood",
+            "score": 0.3657134056634658,
+            "tpm": 11.511199951171875
+          }
+        },
+        {
+          "organ": "lung",
+          "score": 0.19568781015581402,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.19568781015581402,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "bronchus",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Lung",
+            "score": 0.19568781015581402,
+            "tpm": 2.864989995956421
+          }
+        },
+        {
+          "organ": "reproductive",
+          "score": 0.4600653608986377,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.1380196082695913,
+          "arm": "STAINING",
+          "staining": {
+            "label": "testis",
+            "score": 0.4600653608986377,
+            "level": 3,
+            "level_name": "High"
+          },
+          "baseline": {
+            "label": "Testis",
+            "score": 0.2993673244215121,
+            "tpm": 6.911009788513184
+          }
+        },
+        {
+          "organ": "endocrine",
+          "score": 0.13420237544409638,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.08052142526645782,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "adrenal gland",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Thyroid",
+            "score": 0.13420237544409638,
+            "tpm": 1.5273499488830566
+          }
+        },
+        {
+          "organ": "liver",
+          "score": 0.06029346138068296,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.06029346138068296,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "liver",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Liver_Portal_Tract",
+            "score": 0.06029346138068296,
+            "tpm": 0.5167239904403687
+          }
+        },
+        {
+          "organ": "kidney",
+          "score": 0.03540397246121044,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.03540397246121044,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "kidney",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Kidney_Cortex",
+            "score": 0.03540397246121044,
+            "tpm": 0.27710700035095215
+          }
+        },
+        {
+          "organ": "adipose",
+          "score": 0.10703756159968718,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.032111268479906155,
+          "arm": "BASELINE",
+          "staining": "NOT_MEASURED",
+          "baseline": {
+            "label": "Adipose_Visceral_Omentum",
+            "score": 0.10703756159968718,
+            "tpm": 1.0948799848556519
+          }
+        },
+        {
+          "organ": "pancreas",
+          "score": 0.044576225159944374,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.026745735095966623,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "pancreas",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Pancreas_Mixed_Cell",
+            "score": 0.044576225159944374,
+            "tpm": 0.3606550097465515
+          }
+        },
+        {
+          "organ": "heart",
+          "score": 0.017566464820332937,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.017566464820332937,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "heart muscle",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Heart_Atrial_Appendage",
+            "score": 0.017566464820332937,
+            "tpm": 0.12903399765491486
+          }
+        },
+        {
+          "organ": "brain",
+          "score": 0.012394926647705985,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.012394926647705985,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "caudate",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Brain_Substantia_nigra",
+            "score": 0.012394926647705985,
+            "tpm": 0.08940699696540833
+          }
+        },
+        {
+          "organ": "breast",
+          "score": 0.037925174713593884,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.011377552414078165,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "breast",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Breast_Mammary_Tissue",
+            "score": 0.037925174713593884,
+            "tpm": 0.2995469868183136
+          }
+        },
+        {
+          "organ": "vascular",
+          "score": 0.008057038741732025,
+          "tier": 1,
+          "weight": 1.0,
+          "weighted": 0.008057038741732025,
+          "arm": "BASELINE",
+          "staining": "NOT_MEASURED",
+          "baseline": {
+            "label": "Artery_Coronary",
+            "score": 0.008057038741732025,
+            "tpm": 0.057242501527071
+          }
+        },
+        {
+          "organ": "muscle",
+          "score": 0.012871061461815282,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.007722636877089168,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "skeletal muscle",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Muscle_Skeletal",
+            "score": 0.012871061461815282,
+            "tpm": 0.0929965004324913
+          }
+        },
+        {
+          "organ": "bladder",
+          "score": 0.010429459386915313,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.006257675632149187,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "urinary bladder",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Bladder",
+            "score": 0.010429459386915313,
+            "tpm": 0.07471399754285812
+          }
+        },
+        {
+          "organ": "salivary",
+          "score": 0.01580052871093526,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.004740158613280578,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "salivary gland",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Minor_Salivary_Gland",
+            "score": 0.01580052871093526,
+            "tpm": 0.11534299701452255
+          }
+        },
+        {
+          "organ": "nerve",
+          "score": 0.005466091157107864,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.0032796546942647185,
+          "arm": "BASELINE",
+          "staining": "NOT_MEASURED",
+          "baseline": {
+            "label": "Nerve_Tibial",
+            "score": 0.005466091157107864,
+            "tpm": 0.03848600015044212
+          }
+        },
+        {
+          "organ": "skin",
+          "score": 0.009345265075299092,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.0028035795225897276,
+          "arm": "BASELINE",
+          "staining": {
+            "label": "skin 1",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": {
+            "label": "Skin_Not_Sun_Exposed_Suprapubic",
+            "score": 0.009345265075299092,
+            "tpm": 0.0666939988732338
+          }
+        },
+        {
+          "organ": "connective",
+          "score": 0.0,
+          "tier": 3,
+          "weight": 0.3,
+          "weighted": 0.0,
+          "arm": "STAINING",
+          "staining": {
+            "label": "soft tissue 2",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": "NOT_MEASURED"
+        },
+        {
+          "organ": "mucosa",
+          "score": 0.0,
+          "tier": 2,
+          "weight": 0.6,
+          "weighted": 0.0,
+          "arm": "STAINING",
+          "staining": {
+            "label": "nasopharynx",
+            "score": 0.0,
+            "level": 0,
+            "level_name": "Not detected"
+          },
+          "baseline": "NOT_MEASURED"
+        }
+      ]
+    }
+  },
+  "binders": {
+    "verdict": "NO_BINDER",
+    "entries": 1,
+    "entries_without_antibody": 1,
+    "entries_excluded_as_model": 0,
+    "structure_route": [],
+    "sequence_route": [],
+    "reasons": [
+      "The two routes are reported apart and never summed. A target with a named therapeutic but no deposited structure is not a target without a binder.",
+      "This receptor binds a tag, not the antigen, so its binding domain is not a Stage 5 record: it is anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded), retrieved from 1P4B_1+2 and named in the construct section. A Stage 5 verdict of NO_BINDER for this target means no antigen-specific binder was retrieved, which is a different statement from the receptor having no binder."
+    ]
+  },
+  "safety": {
+    "verdict": "FLAGGED",
+    "risk": 0.3247,
+    "risk_organ": "gi_tract",
+    "ceiling_applied": 0.35,
+    "binder_name": "anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded)",
+    "binder_origin": "non-human",
+    "binder_origins": [
+      "non-human"
+    ],
+    "binder_source_organism": "Mus musculus",
+    "binder_structure_accession": "1P4B_1+2",
+    "epitope_immunogenicity": "NOT_CONNECTED",
+    "trials_total": 1,
+    "trials_stopped": 0,
+    "trials_stopped_ids": [],
+    "trials_truncated": false,
+    "reasons": [
+      "admitted against the terminable ceiling 0.35, not the persistent 0.15: activation requires a separately dosed adaptor, so the exposure is stoppable",
+      "the receptor carries a structure-derived binder, Mus musculus as deposited in 1P4B_1+2, treated as non-human because no humanised sequence is established for it. This is read from the deposition, not from a name stem, which a structure-derived binder does not carry",
+      "epitope-level immunogenicity remains NOT_CONNECTED for it: no epitope source is connected, so the species is known and the immunogenicity is not"
+    ]
+  },
+  "developability": {
+    "binders_scored": 0,
+    "rows": [],
+    "reasons": [
+      "Nothing was scored for this candidate. Stage 10 assesses Stage 5 sequence-route binders, and this design carries none: its binding domain is anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded), retrieved from 1P4B_1+2, which the stage does not read.",
+      "So no developability figure in this platform describes the binder this construct actually carries. That is an absence, not a clean result."
+    ]
+  },
+  "validation_plan": {
+    "status": "PLAN",
+    "gene": "BTNL8",
+    "accession": "Q6UX41",
+    "architecture": "adaptor, anti-tag receptor, antigen on the adaptor",
+    "binder": {
+      "name": "anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded)",
+      "provenance": "structure",
+      "accession": "1P4B_1+2",
+      "residues": "22-280"
+    },
+    "safety_module": {
+      "present": true,
+      "parts": [
+        "FKBP12",
+        "caspase-9 without CARD"
+      ],
+      "residues": "520-955"
+    },
+    "construct_bp": 2868,
+    "target": {
+      "gene": "BTNL8",
+      "risk": 0.3247,
+      "risk_organ": "gi_tract",
+      "evidence_class": "PROTEIN_CONFIRMED"
+    },
+    "before_any_bench_work": [
+      "The binder is retrieved from 1P4B_1+2 as deposited. Its crystallisation artifacts are still present and must be removed before synthesis; the construct as emitted is not the molecule to order.",
+      "The binder is Mus musculus and no humanised sequence is established for it. No immunogenicity assessment exists in this pipeline: the epitope-level arm is NOT_CONNECTED. Immunogenicity is an open question, not a low risk.",
+      "This is an adaptor design, so it is two products. The tagged adaptor antibody is a second biologic with its own CMC and regulatory path, and nothing below can be run without it."
+    ],
+    "in_vitro": [
+      {
+        "step": "expression and surface presentation",
+        "purpose": "confirm the receptor reaches the T-cell surface intact",
+        "material": "primary human T cells, donor number TO_BE_SET",
+        "readout": "flow cytometry for the receptor ectodomain",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "antigen binding",
+        "purpose": "confirm the receptor engages its intended tag",
+        "material": "the tagged adaptor bearing the targeting antibody",
+        "readout": "binding titration",
+        "measures": "apparent affinity, TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "antigen-dependent killing",
+        "purpose": "confirm killing requires both the adaptor and BTNL8",
+        "material": "BTNL8-positive and BTNL8-negative lines; for the adaptor design, a no-adaptor arm is the negative control",
+        "readout": "cytotoxicity and cytokine release",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "on-target off-tumour check against the declared risk organ",
+        "purpose": "the risk model puts this target's peak normal-tissue signal in gi_tract at 0.3247. That is a prediction from expression data and has not been tested on cells here.",
+        "material": "primary cells or organoids from gi_tract",
+        "readout": "cytotoxicity against the normal-tissue model",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "immunogenicity, currently unassessed",
+        "purpose": "the binder is non-human and this pipeline has no epitope source connected, so nothing upstream has assessed it",
+        "material": "donor PBMC panel, donor number TO_BE_SET",
+        "readout": "T-cell proliferation or an equivalent assay",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "safety switch function",
+        "purpose": "confirm the switch clears the product when triggered",
+        "material": "the transduced product from step 1",
+        "readout": "viability after dimeriser exposure",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      }
+    ],
+    "in_vivo": [
+      {
+        "step": "tumour control",
+        "purpose": "whether the design controls a BTNL8-positive tumour",
+        "model": "xenograft, line and strain TO_BE_SET",
+        "arms": "untransduced T cells; receptor without adaptor; receptor with adaptor",
+        "readout": "tumour burden over time",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "adaptor dose dependence",
+        "purpose": "the adaptor is what makes exposure terminable, which is the basis on which this design was admitted against the terminable ceiling rather than the persistent one",
+        "model": "as above",
+        "arms": "adaptor dose titration including withdrawal",
+        "readout": "tumour burden and receptor engagement over time",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      },
+      {
+        "step": "tolerability",
+        "purpose": "no normal-tissue toxicity has been measured anywhere in this pipeline; the risk figure is derived from expression data",
+        "model": "TO_BE_SET; a model expressing the human antigen is required for this to mean anything",
+        "arms": "as above",
+        "readout": "weight, histopathology of the declared risk organ",
+        "measures": "TO_BE_MEASURED",
+        "acceptance": "TO_BE_SET_BEFORE_THE_RUN"
+      }
+    ],
+    "reasons": [
+      "This is a plan, not a result. Every quantity a step would produce is marked TO_BE_MEASURED, and every acceptance threshold is marked TO_BE_SET_BEFORE_THE_RUN, because setting one after seeing the measurement is how a criterion stops being a test.",
+      "No step below has been run and no outcome is predicted here."
+    ]
+  },
+  "provenance": {
+    "sources": [
+      {
+        "source": "UniProt",
+        "role": "reviewed human proteome",
+        "release": "2026_02",
+        "per_indication": false
+      },
+      {
+        "source": "Human Protein Atlas",
+        "role": "normal-tissue and pathology atlas",
+        "release": "v23",
+        "per_indication": false
+      },
+      {
+        "source": "GTEx",
+        "role": "bulk normal-tissue baseline",
+        "release": "v10",
+        "per_indication": false
+      },
+      {
+        "source": "GENCODE",
+        "role": "gene span annotation",
+        "release": "47",
+        "per_indication": false
+      },
+      {
+        "source": "SAbDab",
+        "role": "antibody structures and named therapeutics",
+        "release": "2.0.10",
+        "per_indication": false
+      },
+      {
+        "source": "ClinicalTrials.gov",
+        "role": "trial registry",
+        "release": "v2",
+        "per_indication": false
+      },
+      {
+        "source": "GDC TCGA",
+        "role": "tumour cohort",
+        "release": "TCGA-PAAD",
+        "per_indication": true
+      },
+      {
+        "source": "DepMap",
+        "role": "dependency lineage",
+        "release": "24Q4 / Pancreas",
+        "per_indication": true
+      },
+      {
+        "source": "Single-cell tumour atlas",
+        "role": "single-cell tumour atlas",
+        "release": "GSE202051",
+        "per_indication": true
+      }
+    ],
+    "hashes": {
+      "stage3": "a91c696f2e1318f7",
+      "stage4": "5d097e05887e5b28",
+      "stage5": "6418657ed85a4dc6",
+      "stage6": "859cfd24c21ddd81",
+      "stage9": "7b703a7cc4a2d0d6",
+      "stage10": "518e1ef6953ee5fb",
+      "stage11": "7f2036bc6df78d1d"
+    },
+    "reasons": [
+      "Each hash covers the stage before it, so the chain identifies the exact configuration a package was produced under.",
+      "A release pin is the version this run read, not the newest the source offers."
+    ]
+  }
+}
