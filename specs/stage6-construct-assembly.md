@@ -233,6 +233,27 @@ instead of the *property* the criterion is for. The standing correction is
 unchanged and now has two instances behind it: pin the property, derive the
 subjects from the run.
 
+**Third stale pin, found by running the suite against the second indication.**
+A7 asserted that the top-ranked target returned by `/targets` is `CEACAM5`. That
+is true of pancreatic ductal adenocarcinoma and of nothing else; pointed at
+invasive breast carcinoma the criterion trips on `CD24`, which is the correct
+answer for that indication. A gene symbol written into a criterion can only pass
+for one indication on a platform whose whole claim is that it is
+cancer-agnostic, and it would also have failed the first time a scoring change
+moved the top entry for a good reason.
+
+The property A7 exists for is that the ranked view returns a top entry carrying
+a full component breakdown, and that holds for any indication. The gene clause
+is dropped and the breakdown assertion is strengthened: the criterion now
+derives the expected component set from `stage3.WEIGHTS` rather than counting
+six, so adding or removing a scoring component moves the criterion with it
+instead of leaving it asserting a stale arity.
+
+All three instances are one shape. **A criterion holding a result rather than
+the property it exists to test** fails whenever the result legitimately changes,
+and passes whenever it legitimately should not. Which of the two happens is an
+accident of sign, not a difference in kind.
+
 **What K2 does not cover, and now says so.** Because routing is disabled in the
 set it reads, K2 has never exercised an adaptor construct, and the adaptor is
 what the platform returns for every surviving design in the worked indication.

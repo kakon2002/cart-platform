@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 import threading
@@ -11,9 +12,14 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 
 from car_pipeline.api.server import Handler
+from car_pipeline.configs.registry import registered, resolve
+from car_pipeline.stages import stage3
 
 HOST, PORT = "127.0.0.1", 8137
 BASE = f"http://{HOST}:{PORT}"
+
+
+DEFAULT_INDICATION = "Pancreatic Ductal Adenocarcinoma"
 
 
 def call(method: str, path: str, body: dict | None = None):
@@ -31,6 +37,18 @@ def call(method: str, path: str, body: dict | None = None):
 
 def main() -> int:
     """Run the API criteria against a live server."""
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument(
+        "--indication", default=DEFAULT_INDICATION,
+        help="cancer type to exercise; resolved through the registry, so an "
+             "alias works. Configured: "
+             + "; ".join(row["cancer_type"] for row in registered()))
+    args = parser.parse_args()
+
+    indication, _project = resolve(args.indication)
+    cancer_type = indication.cancer_type
+    print(f"  indication {cancer_type}")
+
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     print(f"  server up on {BASE}")
@@ -51,7 +69,7 @@ def main() -> int:
     print("=" * 72)
 
     status, project = call("POST", "/projects",
-                           {"cancer_type": "Pancreatic Ductal Adenocarcinoma"})
+                           {"cancer_type": cancer_type})
     pid = project.get("project_id", "")
     criterion("A1", status != 201 or project.get("target_antigen") is not None,
               f"project created ({status}), target_antigen "
@@ -123,12 +141,18 @@ def main() -> int:
 
     status, targets = call("GET", f"/projects/{pid}/targets")
 
-    rows = targets.get("targets") or [{}]
-    top = rows[0]
+    rows = targets.get("targets") or []
+    top = rows[0] if rows else {}
+    breakdown = top.get("breakdown") or {}
+    components = set(stage3.WEIGHTS)
     criterion("A7",
-              status != 200 or not top.get("breakdown") or top.get("gene") != "CEACAM5",
-              f"top target {top.get('gene')} with a {len(top.get('breakdown', {}))}"
-              "-component breakdown")
+              status != 200 or not rows or not top.get("gene")
+              or set(breakdown) != components,
+              f"top target {top.get('gene')} ranked {top.get('rank')} carries "
+              f"all {len(components)} scoring components"
+              if rows and set(breakdown) == components else
+              "no ranked target returned" if not rows else
+              f"breakdown is {sorted(breakdown)}, expected {sorted(components)}")
 
     status, pairs = call("GET", f"/projects/{pid}/pairs")
     prows = pairs.get("pairs") or [{}]
@@ -141,7 +165,7 @@ def main() -> int:
 
     s_unknown, unknown = call("GET", "/projects/ffffffffffff/result")
     _s, fresh = call("POST", "/projects",
-                     {"cancer_type": "Pancreatic Ductal Adenocarcinoma"})
+                     {"cancer_type": cancer_type})
     s_unrun, unrun = call("GET", f"/projects/{fresh.get('project_id')}/result")
     criterion("A10",
               s_unknown != 404
