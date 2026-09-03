@@ -1,6 +1,6 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found eleven times in this
+Read this before writing a criterion. It has been found twelve times in this
 repository. The fifth was found by suspecting the fourth, the sixth was
 introduced by a change made after the first five were written down, the seventh
 is the root cause of the third, found only when the third was fixed, the eighth
@@ -8,7 +8,8 @@ was found by reading a criterion's own output rather than its verdict, the ninth
 was found while fixing the eighth in a verifier nobody was looking at, the tenth
 was found only because a new stage computed the same quantity a second way, and
 the eleventh appeared inside a change whose own specification is about criteria
-that cannot fail.
+that cannot fail, and the twelfth had been unreachable for so long that the
+variable its branch depended on was deleted without anything noticing.
 
 ## The pattern
 
@@ -23,7 +24,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The eleven
+## The twelve
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -291,6 +292,52 @@ So the standing rule, which costs a few minutes and has now caught three of
 these: **a criterion is not verified until it has been observed failing.** Not
 argued to be capable of failing — observed. Break the thing it watches, on
 purpose, and read the output.
+
+**12. The branch that lost its own variable, and nothing noticed for months.**
+`constructs_view` serves the construct endpoint. Its docstring is a promise:
+*"Zero buildable constructs is a result, with reasons, at HTTP 200."* Asked for
+exactly that, it raised `NameError` and the endpoint returned **500**.
+
+The branch guarded by `if not buildable:` reads a local called `assembled` six
+times. Nothing assigns it. Commit `ecab2d7` introduced
+`assembled = [c for c in constructs if c.amino_acid_sequence]` when the endpoint
+was written, and `48e5d5a` - *"The served surface catches up with routing, and
+eight designs get through"* - deleted that line. **The same commit that removed
+the binding is the commit that made the branch unreachable.** Once routing sent
+designs through, `buildable` was never empty again, the branch stopped running,
+and six orphaned references sat in the file as valid-looking Python.
+
+*Broken-thing question:* the branch could not report anything, and for every run
+anyone made it reported nothing, because it never ran.
+
+**Nothing in the repository could see it.** The tree parses, so the comment
+strip and its AST guard are satisfied. Every criterion in the API verifier
+exercised the other branch, because the only indication the verifier tested has
+buildable constructs. The strip, the type-free interpreter, the criteria and the
+suite all agree on a file with a guaranteed crash in it, and they agree because
+none of them ever reaches the line.
+
+It surfaced the first time the verifier was pointed at the second indication,
+where nothing is buildable and the branch ran for the first time since it was
+written. The criterion caught it immediately - A5 tripped on the 500 - so the
+criterion was sound. What was missing was any run that reached the state.
+
+This is the sharpest argument in this document for something the repository
+already half-does. **A second indication is not a portability feature. It is the
+only mechanism here that routinely reaches states the first one never enters.**
+Pancreatic ductal adenocarcinoma always has surviving designs, so every
+no-survivor path in the service is dead code under it: the refusal reasons, the
+attrition explanation, the conservative-backup counts. Breast reaches all of
+them. The bug lived exactly in the gap between what one indication exercises and
+what the code claims to handle, and it was found the day something entered that
+gap.
+
+The narrow lesson is about deletions: a variable removed while the only code
+using it is unreachable leaves no failing test and no parse error, so the
+deletion looks free. The broader one is that **a branch written for a state
+nothing in the suite produces is not covered by anything**, however carefully
+its criteria are written, and the fix is to produce the state rather than to
+write another criterion about it.
 
 ## What to do instead
 
