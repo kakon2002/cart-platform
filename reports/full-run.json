@@ -1,7 +1,7 @@
 {
   "clear": 144,
   "total": 152,
-  "minutes": 21.2,
+  "minutes": 22.5,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -51,7 +51,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.5,
+      "seconds": 0.7,
       "exit": 0,
       "criteria": [
         {
@@ -217,7 +217,7 @@
       "clear": 2,
       "total": 2,
       "ok": true,
-      "seconds": 0.5,
+      "seconds": 0.6,
       "exit": 0,
       "criteria": [
         {
@@ -238,7 +238,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 20.7,
+      "seconds": 21.2,
       "exit": 1,
       "criteria": [
         {
@@ -384,7 +384,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 8.7,
+      "seconds": 8.9,
       "exit": 2,
       "criteria": [
         {
@@ -470,7 +470,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 210.8,
+      "seconds": 278.9,
       "exit": 2,
       "criteria": [
         {
@@ -541,7 +541,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 203.6,
+      "seconds": 207.5,
       "exit": 0,
       "criteria": [
         {
@@ -730,7 +730,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 3.8,
+      "seconds": 3.9,
       "exit": 0,
       "criteria": [
         {
@@ -843,7 +843,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job de6419e5515f rather than blocking"
+          "detail": "a run returns 202 with job 69215abe99ab rather than blocking"
         },
         {
           "id": "A4",
@@ -888,7 +888,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 799.0,
+      "seconds": 805.4,
       "exit": 0,
       "criteria": [
         {
