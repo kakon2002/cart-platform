@@ -26,6 +26,7 @@ STAGES = [
     ("9", "Safety gate", "verify_safety.py"),
     ("10", "Developability", "verify_developability.py"),
     ("11", "Final ranking", "verify_ranking_final.py"),
+    ("12", "Candidate package", "verify_package.py"),
     ("API", "HTTP surface", "verify_api.py"),
     ("MULTI", "Multi-indication", "verify_indications.py"),
 ]

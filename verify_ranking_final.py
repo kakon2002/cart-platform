@@ -60,6 +60,13 @@ def main() -> int:
         decisions, binders, risks, trials, ceiling,
         constructs=list(constructs.values()))}
 
+    stage5_hash = stage5.configuration_hash(
+        manifest["stage4_hash"], [r.gene for r in records])
+    stage6_hash = stage6.configuration_hash(
+        stage5_hash, [c.gene for c in constructs.values()])
+    stage9_hash = stage9.configuration_hash(
+        stage6_hash, [d["gene"] for d in decisions], ceiling)
+
     dev_rows, _status = stage10.assess(binders)
     liabilities: dict[str, list] = {}
     for row in dev_rows:
@@ -150,7 +157,7 @@ def main() -> int:
 
     print()
     print(f"  configuration hash "
-          f"{stage11.configuration_hash(manifest['stage4_hash'], [r.gene for r in rows])}")
+          f"{stage11.configuration_hash(stage9_hash, [r.gene for r in rows])}")
     return 0
 
 

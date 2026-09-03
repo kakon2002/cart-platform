@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-from car_pipeline.data.depmap import DepMapSource
-from car_pipeline.data.gtex import GTExSource
-from car_pipeline.data.hpa import HPASource
+from car_pipeline.data.antibodies import (
+    AntibodySource, RELEASE_PIN as ANTIBODY_PIN)
+from car_pipeline.data.depmap import DepMapSource, RELEASE_PIN as DEPMAP_PIN
+from car_pipeline.data.genespan import GeneSpanSource, RELEASE_PIN as SPAN_PIN
+from car_pipeline.data.gtex import GTExSource, RELEASE_PIN as GTEX_PIN
+from car_pipeline.data.hpa import HPASource, RELEASE_PIN as HPA_PIN
 from car_pipeline.data.singlecell import SingleCellSource
 from car_pipeline.data.source import DataSource
 from car_pipeline.data.tcga import TCGASource
-from car_pipeline.data.uniprot import UniProtSource
+from car_pipeline.data.trials import TrialSource, RELEASE_PIN as TRIALS_PIN
+from car_pipeline.data.uniprot import UniProtSource, RELEASE_PIN as UNIPROT_PIN
 from car_pipeline.schemas.spec import DatasetStatus, RequiredDataset
 from car_pipeline.stages.stage1 import KNOWN_DATASET_NAMES
 
@@ -73,3 +77,31 @@ if __name__ == "__main__":
     )
     missing = [d.name for d in blocking if d.status is not DatasetStatus.AVAILABLE]
     print(f"  outstanding: {', '.join(missing) or 'none'}")
+
+
+def release_pins(indication) -> list[dict]:
+    """Every connected source with the release this run was pinned to."""
+    out = [
+        {"source": UniProtSource.name, "role": "reviewed human proteome",
+         "release": UNIPROT_PIN, "per_indication": False},
+        {"source": HPASource.name, "role": "normal-tissue and pathology atlas",
+         "release": HPA_PIN, "per_indication": False},
+        {"source": GTExSource.name, "role": "bulk normal-tissue baseline",
+         "release": GTEX_PIN, "per_indication": False},
+        {"source": GeneSpanSource.name, "role": "gene span annotation",
+         "release": SPAN_PIN, "per_indication": False},
+        {"source": AntibodySource.name,
+         "role": "antibody structures and named therapeutics",
+         "release": ANTIBODY_PIN, "per_indication": False},
+        {"source": TrialSource.name, "role": "trial registry",
+         "release": TRIALS_PIN, "per_indication": False},
+        {"source": TCGASource.name, "role": "tumour cohort",
+         "release": indication.tcga_project, "per_indication": True},
+        {"source": DepMapSource.name, "role": "dependency lineage",
+         "release": f"{DEPMAP_PIN} / {indication.depmap_lineage}",
+         "per_indication": True},
+        {"source": SingleCellSource.name, "role": "single-cell tumour atlas",
+         "release": indication.atlas.series if indication.atlas else None,
+         "per_indication": True},
+    ]
+    return out

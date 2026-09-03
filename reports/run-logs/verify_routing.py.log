@@ -1,15 +1,6 @@
   persistent ceiling 0.15   terminable ceiling 0.35
 
 loading the ranked pool
-  querying the trial registry for 200 antigens
-    25/200
-    50/200
-    75/200
-    100/200
-    125/200
-    150/200
-    175/200
-    200/200
   200 pool members
 
 ========================================================================

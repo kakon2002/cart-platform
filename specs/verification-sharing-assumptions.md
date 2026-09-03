@@ -1,11 +1,14 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found nine times in this
+Read this before writing a criterion. It has been found eleven times in this
 repository. The fifth was found by suspecting the fourth, the sixth was
 introduced by a change made after the first five were written down, the seventh
 is the root cause of the third, found only when the third was fixed, the eighth
-was found by reading a criterion's own output rather than its verdict, and the
-ninth was found while fixing the eighth, in a verifier nobody was looking at.
+was found by reading a criterion's own output rather than its verdict, the ninth
+was found while fixing the eighth in a verifier nobody was looking at, the tenth
+was found only because a new stage computed the same quantity a second way, and
+the eleventh appeared inside a change whose own specification is about criteria
+that cannot fail.
 
 ## The pattern
 
@@ -20,7 +23,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The nine
+## The eleven
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -213,6 +216,81 @@ The fix is not a better digest. It is that an artifact must be admitted by
 something that knows what run it belongs to — the configuration hash the
 producing stage recorded — and every reader of a shared slot must go through the
 same door.
+
+**10. The correct check wired to the wrong input.** Each stage's
+configuration hash takes the hash of the stage before it, so the chain
+identifies the exact configuration a result was produced under. The signatures
+say so: `stage10.configuration_hash(stage5_hash, genes)` and
+`stage11.configuration_hash(stage9_hash, genes)`. Both verifiers called them
+with `manifest["stage4_hash"]`.
+
+The hashing is correct. The genes are correct. The output is a sixteen-character
+hex string that is stable across processes, differs from every other stage's
+hash, and moves when the pool moves — every surface property a reader would
+check to satisfy themselves it is a real fingerprint. **A hash is a hash
+whatever fed it.**
+
+What it silently drops is the chain. Stages 5, 6 and 9 are skipped, so
+reconfiguring the binder retrieval, the construct assembly or the safety gate
+does not move the printed Stage 10 or Stage 11 hash. That is precisely the
+property the chain exists for, recorded as decision 13 against `routing.py`:
+*"a cached artifact from other policy reads as current"*.
+
+*Broken-thing question:* if stages 5 through 9 were reconfigured entirely, both
+printed hashes would be identical.
+
+**No criterion found this and none could have.** Every criterion in those two
+verifiers compares something to the stage that produced it, and the hash is
+compared to nothing — it is printed. It surfaced only when the candidate package
+computed the same chain a second way and put the two side by side, at which
+point stages 3 to 9 agreed and 10 and 11 did not. Two independent computations
+of one quantity is what exposed it; one computation, however carefully checked,
+could not.
+
+This is a different shape from everything above it. Instances 3 and 7 are checks
+sharing an assumption with their subject; 4 and 5 are bounds fitted to the data
+they bound; 8 is a criterion over an empty population; 9 is a reader admitting
+an artifact on the wrong property. Here **the check is right and its input is
+wrong**, and nothing in the value betrays it. Both arguments are `str`. The
+parameter is named `stage5_hash` and the caller passes `stage4_hash`, one
+keyword away from being impossible, and positional passing hid the distance.
+
+The rule that follows is narrow and worth keeping: **where a parameter names a
+specific upstream artifact, the call site should name it too.** Opaque
+same-typed values passed positionally is where this defect lives.
+
+**11. The probe that could not fail, inside the mechanism built to stop claims
+that cannot fail.** The candidate package declares what the platform does not
+produce, and because a declared gap is an assertion nobody recomputes, each one
+carries a probe the verifier executes. One probe asked whether a `publications`
+key had appeared in a `provenance` section of a package. Packages carried no
+`provenance` section, so the lookup fell to an empty dict, the key was always
+absent, and the gap read as open no matter what the platform did. It was counted
+among the seventeen the criterion reported as executed, so the tally overstated
+its own coverage.
+
+*Broken-thing question:* if every recommendation were linked to its literature
+tomorrow, the probe would still report the gap open.
+
+**This is the second time in one line of work.** The risk-attribution criterion
+T4 had three clauses, and all three were impossible given how the attribution
+assigned its `arm` field: it only recorded a staining reading where it found
+one, and only named an arm that supplied a value. That criterion sat in a change
+whose specification says, in its own words, that a criterion which cannot
+execute the path it covers is not a criterion. This probe sat in a change whose
+specification says the same thing about gap tables.
+
+Writing the rule into the spec did not prevent either. What distinguishes the
+ones that were sound from the ones that were not is simple and mechanical:
+**K0 was demonstrated failing** on an unrouted set and on an empty one, **T4 was
+demonstrated failing** by blinding the attribution to the protein arm, and both
+were correct. The probe was never demonstrated failing, and it was the one that
+was wrong.
+
+So the standing rule, which costs a few minutes and has now caught three of
+these: **a criterion is not verified until it has been observed failing.** Not
+argued to be capable of failing — observed. Break the thing it watches, on
+purpose, and read the output.
 
 ## What to do instead
 

@@ -158,7 +158,7 @@ to exist for the gap to be closed, in a form the verifier executes.
 | probe kind | closes when |
 | --- | --- |
 | `module` | the named module exists under `car_pipeline/stages/` |
-| `field` | the named dataclass gains the named field |
+| `field` | the named module or dataclass gains the named attribute |
 | `key` | the named key appears in a package section |
 
 A gap whose claim is a judgement rather than a presence — deliverable 5's
@@ -222,3 +222,79 @@ a lossy assembly, which is the only kind of defect an assembler can have.
 - A package carrying fewer than twelve deliverables' worth of content. Eight is
   what exists; claiming twelve would be the defect.
 - The gaps section being long. It is the honest length.
+
+
+---
+
+## 8. What the run reported
+
+**Nine of nine criteria clear on the first run.** Five packages, one per
+surviving candidate, in the ranking's order: FER1L6, GPR35, TMEM92, TNFSF9,
+BTNL8.
+
+| criterion | result |
+| --- | --- |
+| Q1 | 5 packages, one per survivor, ordered as Stage 11 ordered them |
+| Q2 | all 5 that reached the end are packaged, none of the 195 that did not |
+| Q3 | all 8 sections present on every package, each carrying what its stage produced |
+| Q4 | packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5 |
+| Q5 | every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3 |
+| Q6 | 17 declared gaps probed and all still open; 1 recomputed from the run, 9 judgements |
+| Q7 | no conservative design exists and the section says so with its counts |
+| Q8 | 9 sources each name a release; the hash chain is unbroken from Stage 3 to Stage 11 |
+| Q9 | no package emits a section or placeholder for Stage 7 or Stage 8 |
+
+### What the package cannot carry
+
+**27 elements across 8 deliverables.** 17 carry a probe the verifier executes,
+1 is recomputed from the run, and 9 are judgements that say so.
+
+| deliverable | state | elements |
+| --- | --- | --- |
+| 1 Top 3–5 constructs | partial | 2 |
+| 4 Sequence and domain map | partial | 4 |
+| 5 Target and binder evidence | partial | 8 |
+| 6 Safety-risk matrix | partial | 6 |
+| 7 Structural report | **absent** | 1 |
+| 8 Functional predictions | **absent** | 1 |
+| 9 Manufacturability | partial | 3 |
+| 12 Audit trail | partial | 2 |
+
+### The finding this exercise produced
+
+Assembling the package surfaced something none of the stage verifiers could
+see, because each one only ever looks at its own stage.
+
+**Stage 10 scores 107 binder sequences across 28 genes, and not one of them is
+a design that ships.** All five surviving candidates route to an adaptor
+architecture, so their binding domain is the anti-tag part retrieved from a
+deposited structure. Stage 10 reads Stage 5 *sequence-route* binders only. The
+stage runs, reports its 107 rows, clears all six of its criteria — and covers
+none of the designs a reader receives.
+
+Deliverable 9 is therefore not merely partial for these candidates. For the
+designs in this package it produces **nothing at all**, and the 107 rows
+describe targets that were every one of them blocked upstream.
+
+This is recorded as a **measured** gap rather than a declared one: it is
+recomputed from the run each time, and it disappears by itself the day one
+shipping design carries a sequence-route binder. A declared entry would have
+been a fact about today written into a table nobody recomputes, which is the
+defect this repository has now found three times.
+
+The same shape, less severely, affects deliverable 5: four of the five
+candidates have no Stage 5 record at all and the fifth has a single structure
+candidate, so a reader glancing at the binder section sees `NO_BINDER` beside a
+construct that plainly has a binding domain. The section now states which route
+supplied it, because `NO_BINDER` for the target and "no binder in the receptor"
+are different claims and only the first is true.
+
+### §5 held
+
+No existing stage changed. The additions outside `stage12.py` are the hash chain
+and release pins on the run dict, two views, two routes, and the renderer. No
+criterion count moved except this stage's own nine, and no configuration hash
+moved: the chain reported by the package is
+`a91c696f2e1318f7 → 5d097e05887e5b28 → 6418657ed85a4dc6 → 859cfd24c21ddd81 →
+7b703a7cc4a2d0d6 → 518e1ef6953ee5fb → 7f2036bc6df78d1d`, and its first two
+entries are the values Stage 3 and Stage 4 were already reporting.

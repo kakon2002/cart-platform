@@ -1,7 +1,7 @@
 {
-  "clear": 135,
-  "total": 143,
-  "minutes": 21.8,
+  "clear": 144,
+  "total": 152,
+  "minutes": 21.2,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -238,7 +238,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 20.3,
+      "seconds": 20.7,
       "exit": 1,
       "criteria": [
         {
@@ -384,7 +384,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 8.6,
+      "seconds": 8.7,
       "exit": 2,
       "criteria": [
         {
@@ -470,7 +470,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 265.4,
+      "seconds": 210.8,
       "exit": 2,
       "criteria": [
         {
@@ -541,7 +541,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 201.1,
+      "seconds": 203.6,
       "exit": 0,
       "criteria": [
         {
@@ -643,7 +643,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 3.6,
+      "seconds": 3.7,
       "exit": 0,
       "criteria": [
         {
@@ -730,7 +730,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 3.7,
+      "seconds": 3.8,
       "exit": 0,
       "criteria": [
         {
@@ -766,6 +766,62 @@
       ]
     },
     {
+      "number": "12",
+      "name": "Candidate package",
+      "clear": 9,
+      "total": 9,
+      "ok": true,
+      "seconds": 7.7,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "Q1",
+          "tripped": false,
+          "detail": "5 package(s), one per surviving candidate, in the ranking's order: FER1L6, GPR35, TMEM92, TNFSF9, BTNL8"
+        },
+        {
+          "id": "Q2",
+          "tripped": false,
+          "detail": "every one of 5 candidates that reached the end is packaged, and none of the 195 that did not"
+        },
+        {
+          "id": "Q3",
+          "tripped": false,
+          "detail": "all 9 sections present on every package, and each carries what its stage produced"
+        },
+        {
+          "id": "Q4",
+          "tripped": false,
+          "detail": "the packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5"
+        },
+        {
+          "id": "Q5",
+          "tripped": false,
+          "detail": "every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3"
+        },
+        {
+          "id": "Q6",
+          "tripped": false,
+          "detail": "17 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements"
+        },
+        {
+          "id": "Q7",
+          "tripped": false,
+          "detail": "no conservative design exists in this pool and the section says so with the counts behind it, rather than standing blank"
+        },
+        {
+          "id": "Q8",
+          "tripped": false,
+          "detail": "9 connected sources each name a release, and the hash chain is unbroken from Stage 3 to Stage 11"
+        },
+        {
+          "id": "Q9",
+          "tripped": false,
+          "detail": "no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)"
+        }
+      ]
+    },
+    {
       "number": "API",
       "name": "HTTP surface",
       "clear": 10,
@@ -787,7 +843,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 9472a39edb9c rather than blocking"
+          "detail": "a run returns 202 with job de6419e5515f rather than blocking"
         },
         {
           "id": "A4",
@@ -832,7 +888,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 793.7,
+      "seconds": 799.0,
       "exit": 0,
       "criteria": [
         {

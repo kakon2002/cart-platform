@@ -33,11 +33,11 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 - **The contract** (9) - `spec.py`, `project.py`
 - **Indications** (22) - `indication.py`, `pdac.py`, `breast.py`, `registry.py`
-- **Sources and the cache** (139) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
-- **Stages** (175) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `validation.py`
-- **The service** (39) - `pipeline.py`, `server.py`
-- **Running it** (60) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `make_brief.py`, `strip_comments.py`
-- **The criteria** (73) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_api.py`, `verify_indications.py`
+- **Sources and the cache** (140) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
+- **Stages** (181) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `stage12.py`, `validation.py`
+- **The service** (41) - `pipeline.py`, `server.py`
+- **Running it** (61) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `make_brief.py`, `make_package.py`, `strip_comments.py`
+- **The criteria** (76) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_package.py`, `verify_api.py`, `verify_indications.py`
 
 
 ---
@@ -787,11 +787,15 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **6. availability.py:88** - The merged binder dataset row was split into two rows even though it lowered the availability score from 0.857 to 0.750 (6 of 8 blocking datasets available).
 
 > *Without it:* Nothing became less available at the split — the merged row was never connected either — so counting two unconnected sources as one understated the gap and made 0.857 read as better coverage than exists. The numerator moves only when a connector is actually built.
+**7. availability.py:82** - The release pins live beside the connectors that hold them, and the per-indication ones are marked as such.
+
+> *Without it:* Six of the nine pins are module constants shared by every indication and three come from the indication config, so a flat list would read as though the cohort and the atlas were platform-wide facts. A package identifies the exact data a candidate was screened against, and half of that data is chosen per indication.
 
 
 ---
 
 # Stages
+
 
 ## `car_pipeline/stages/stage1.py`
 
@@ -1512,6 +1516,32 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* "Which outcomes count as a recommendation decides the whole attribution, so a run that admits ADAPTOR must not hash as one that does not" — otherwise the run that misattributed eight designs is hash-identical to the corrected one.
 
 
+## `car_pipeline/stages/stage12.py`
+
+**1. stage12.py:1** - The package assembles and never recomputes. Every number in it is carried from the stage that measured it.
+
+> *Without it:* An assembler that re-derives anything becomes a second opinion on a number the platform already has, and the two can disagree without either being wrong. Carrying means the only defect the stage can have is a lossy copy, which is what criteria Q4 and Q5 exist to catch: they re-assert the round trip and the risk reconstruction on the packaged copy rather than trusting the source.
+
+**2. stage12.py:51** - Every gap the package declares carries a probe the verifier executes, and a gap whose claim is a judgement carries none and says so.
+
+> *Without it:* The gaps section is the one place the package asserts something of its own, and an assertion nobody recomputes is exactly how the construct narrative came to say three single-antigen targets were one. A probe makes the claim falsifiable: build Stage 7 and forget the table, and Q6 trips. Marking the nine judgements as unprobed keeps the split between verified and asserted visible instead of implying the whole table was checked.
+
+**3. stage12.py:236** - A gap that is a property of this run rather than of the code is recomputed from the run, not declared in the table.
+
+> *Without it:* Stage 10 covering none of the shipping designs is true today because all five survivors are adaptors. Writing that into a static table would make it a fact about one run that nobody recomputes, and it would survive the day it stopped being true. Recomputed, it disappears by itself the moment one shipping design carries a sequence-route binder.
+
+**4. stage12.py:257** - No section, key or placeholder is emitted for Stage 7 or Stage 8; their absence lives only in the gaps section.
+
+> *Without it:* A `structural_report: null` reads as computed-and-found-nothing, which is the strongest available claim about a stage that does not exist. Absence stated once with its reason is a different sentence from a null field, and Q9 enforces the difference.
+
+**5. stage12.py:394** - Where Stage 5 retrieved nothing but the construct carries a binding domain, the binder section names the route that supplied it.
+
+> *Without it:* Every surviving design in the worked indication is an adaptor, so its binder section reads `NO_BINDER` beside a construct that plainly has a binding domain. The two are consistent - no antigen-specific binder was retrieved, and the receptor binds a tag instead - but a reader seeing only the verdict would conclude the construct has no binder, which is false.
+
+**6. stage12.py:449** - Where Stage 10 scored nothing for a candidate, the developability section says why rather than showing an empty table.
+
+> *Without it:* Stage 10 reads Stage 5 sequence-route binders. An adaptor's binding domain comes from a deposited structure, so no shipping design is scored, and an empty table reads as a clean sheet. It is the opposite: no developability figure in this platform describes the binder these constructs carry.
+
 ---
 
 # The service
@@ -1567,6 +1597,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* Collapsing it into UNSUITABLE told a caller reading only the status that the platform had assessed and rejected a target it never assessed at all. "No architecture was routed" means "it was not among the candidates considered", which is a different statement from "no architecture fits".
 
 
+
+**13. pipeline.py:264** - The packages are built after the run dict exists and are folded into it, rather than being assembled from arguments.
+
+> *Without it:* The package's input is the whole run, so passing its parts as arguments means listing eleven of them and keeping that list correct. Building the dict first and adding the packages to it makes the stage's dependency exactly what it is: everything the run produced.
 ## `car_pipeline/api/server.py`
 
 **0. server.py:210** - The pair view's docstring names the set it actually returns, which is every measured pair, not the admissible ones.
@@ -1677,11 +1711,15 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 **26. server.py:517** - Risk attribution hangs off the existing evidence trail instead of becoming its own endpoint.
 
 > *Without it:* Two endpoints would report the same risk from different code, and the number they disagreed about would be the one under dispute. The evidence trail already answers per gene and already carries `risk` and `risk_organ`; the attribution belongs beside them, where a reader sees the verdict and its grounds in one response.
+**27. server.py:496** - The package is served whole at one endpoint and per candidate at another, and both carry the gaps section.
+
+> *Without it:* A per-candidate endpoint that omitted the gaps would serve eight sections that read as twelve, which is the failure the whole stage exists to avoid.
 
 
 ---
 
 # Running it
+
 
 ## `run_all.py`
 
@@ -1904,6 +1942,12 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* The attribution facility has to stay target-agnostic - that is the platform's first rule and T8 enforces it on the code path. But a brief with no worked example explains nothing, and the example has to be some particular target. Putting the selection in the generator keeps both true: the pipeline knows no gene, and the report names two.
 
+## `make_package.py`
+
+**1. make_package.py:265** - One document per candidate, and the gaps section is repeated in full in each rather than referenced.
+
+> *Without it:* A reader receives one candidate's package, not the set. A pointer to a shared appendix is a pointer they may not follow, and the whole purpose of the section is that what the package cannot tell them travels with what it can.
+
 ## `strip_comments.py`
 
 **1. strip_comments.py:41** - The strip works from a token stream, not a regular expression over lines.
@@ -1942,7 +1986,7 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* The tree guard is structurally incapable of reporting docstring changes, so a rewrite that shortens prose leaves no trace anywhere. Printing what was joined is the only signal that the tool touched a summary, and it is what makes decision 8's behaviour reviewable rather than merely better.
 
-**8. strip_comments.py:16** - The skipped trees are matched as resolved paths under the project root, not by directory name anywhere in the path.
+**10. strip_comments.py:16** - The skipped trees are matched as resolved paths under the project root, not by directory name anywhere in the path.
 
 > *Without it:* The skip list names `data` for the cache at `data/`. Matching the name against every path component also matched the source package `car_pipeline/data/`, so thirteen modules and three hundred comments were never visited, and the check that confirmed the sweep reused the same predicate and confirmed its own blind spot. The two entries look interchangeable and are not: `reports` is safe under either rule and `data` is not, so the next person shortening this back to a name test sees no failure until a package happens to share a label with a cache. The general form of the error is written up in `specs/verification-sharing-assumptions.md`, instance 7.
 
@@ -2240,6 +2284,20 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 > *Without it:* Re-querying two hundred accessions for every downstream stage is slow and loses the whole run to one dropped connection.
 
+
+## `verify_package.py`
+
+**1. verify_package.py:65** - Q1 fails on an empty package set rather than clearing on it, and a run with no survivors must report a status instead.
+
+> *Without it:* Every criterion below Q1 reads the package list. On an empty list they all clear, which is the defect this suite has already found in the construct stage, where five criteria reported success over nothing. An empty package set is a real state - no candidate reached the end - and it is reported the way Stage 11 reports it, as a named status.
+
+**2. verify_package.py:163** - Q6 trips when no probe executed, not only when a probe fails.
+
+> *Without it:* A gaps table whose entries all lack probes would pass a criterion that only checks the probes it finds. The positive pin makes a table of unverified assertions fail, which is the difference between a criterion and a formality.
+
+**3. verify_package.py:185** - Q7 requires the conservative-backup refusal to carry counts, not merely to exist.
+
+> *Without it:* "No conservative design exists" with nothing behind it is the same sentence a blank section would produce if someone wrote one. The counts are what make it a measurement: three single-antigen targets recommended and none assembling, no dual assembling because every partner retrieves no binder.
 
 ## `verify_api.py`
 

@@ -1,0 +1,58 @@
+running the pipeline
+  5 package(s), status PACKAGED, 5 survivor(s)
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    Q1: 5 package(s), one per surviving candidate, in the ranking's order: FER1L6, GPR35, TMEM92, TNFSF9, BTNL8
+  clear    Q2: every one of 5 candidates that reached the end is packaged, and none of the 195 that did not
+  clear    Q3: all 9 sections present on every package, and each carries what its stage produced
+  clear    Q4: the packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5
+  clear    Q5: every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3
+  clear    Q6: 17 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
+  clear    Q7: no conservative design exists in this pool and the section says so with the counts behind it, rather than standing blank
+  clear    Q8: 9 connected sources each name a release, and the hash chain is unbroken from Stage 3 to Stage 11
+  clear    Q9: no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)
+========================================================================
+  9/9 criteria clear
+
+========================================================================
+WHAT A READER RECEIVES
+========================================================================
+    5 candidate package(s), status PACKAGED
+      FER1L6     rank 1/5  front=yes  ADVANCED    2868 bp  FLAGGED
+      GPR35      rank 2/5  front=yes  ADVANCED    2868 bp  FLAGGED
+      TMEM92     rank 3/5  front=no   ADVANCED    2868 bp  FLAGGED
+      TNFSF9     rank 4/5  front=no   ADVANCED    2868 bp  FLAGGED
+      BTNL8      rank 5/5  front=no   ADVANCED    2868 bp  FLAGGED
+
+  WHAT THE PACKAGE CANNOT CARRY
+  --------------------------------------------------------------------
+    27 element(s) missing across 8 deliverable(s)
+    17 probed, 1 measured from the run, 9 judgements
+      deliverable  1 PARTIAL  2 element(s)  Top 3-5 CAR-T constructs
+      deliverable  4 PARTIAL  4 element(s)  Complete sequence and domain map
+      deliverable  5 PARTIAL  8 element(s)  Target and binder evidence report
+      deliverable  6 PARTIAL  6 element(s)  Safety-risk matrix
+      deliverable  7 ABSENT   1 element(s)  Structural report
+      deliverable  8 ABSENT   1 element(s)  Functional predictions
+      deliverable  9 PARTIAL  3 element(s)  Manufacturability assessment
+      deliverable 12 PARTIAL  2 element(s)  Full evidence and decision audit trail
+
+  THE TWO ABSENT STAGES
+  --------------------------------------------------------------------
+    Stage 7: Buildable. It needs structure prediction over sequences Stage 6 already emits, and no data source that is missing. Two of its scores have sequence-level proxies in Stage 10's aggregation-prone regions, which is not the structural claim.
+    Stage 8: Not buildable from what is connected. The reference document names partner-generated experimental data among the required training inputs, and no such data is connected. This is the one gap on the list that a decision alone cannot close.
+
+  PROVENANCE
+  --------------------------------------------------------------------
+    UniProt                    2026_02                reviewed human proteome
+    Human Protein Atlas        v23                    normal-tissue and pathology atlas
+    GTEx                       v10                    bulk normal-tissue baseline
+    GENCODE                    47                     gene span annotation
+    SAbDab                     2.0.10                 antibody structures and named therapeutics
+    ClinicalTrials.gov         v2                     trial registry
+    GDC TCGA                   TCGA-PAAD              tumour cohort
+    DepMap                     24Q4 / Pancreas        dependency lineage
+    Single-cell tumour atlas   GSE202051              single-cell tumour atlas
+    hash chain  a91c696f2e1318f7 -> 5d097e05887e5b28 -> 6418657ed85a4dc6 -> 859cfd24c21ddd81 -> 7b703a7cc4a2d0d6 -> 518e1ef6953ee5fb -> 7f2036bc6df78d1d
