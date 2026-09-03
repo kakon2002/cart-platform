@@ -258,6 +258,7 @@ def constructs_view(project_id: str) -> dict:
     complete = [c for c in buildable if c.amino_acid_sequence]
     awaiting = [c for c in buildable if not c.amino_acid_sequence]
     over_budget = [c for c in constructs if c.verdict == stage6.BUDGET_EXCEEDED]
+    assembled = [c for c in constructs if c.amino_acid_sequence]
 
     def state(c):
         """How far a construct got: complete, awaiting a binder, or over budget."""
