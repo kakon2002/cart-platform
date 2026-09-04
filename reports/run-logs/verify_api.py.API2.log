@@ -6,7 +6,7 @@ REJECTION CRITERIA
 ========================================================================
   clear    A1: project created (201), target_antigen None and discovery mode B
   clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-  clear    A3: a run returns 202 with job bfa304b2f3ff rather than blocking
+  clear    A3: a run returns 202 with job 9a3d0dd959cf rather than blocking
 
   polling
     running   sources  loading cached sources

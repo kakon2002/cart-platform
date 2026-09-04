@@ -91,13 +91,14 @@ def repeated_peptides(protein: str) -> list[Finding]:
     for peptide, at in positions.items():
         if len(at) < 2:
             continue
-        if any(b - a < PEPTIDE_REPEAT_MIN for a, b in zip(at, at[1:])):
+        spaced = _spaced(at, PEPTIDE_REPEAT_MIN)
+        if len(spaced) < 2:
             continue
         out.append(Finding(
             "repeated_peptide", CODON_INVARIANT,
-            ", ".join(str(p + 1) for p in at),
-            f"{peptide} occurs {len(at)} times"))
-    return _merge_adjacent(out)
+            ", ".join(str(p + 1) for p in spaced),
+            f"{peptide} occurs {len(spaced)} times without overlapping"))
+    return out
 
 
 def internal_methionines(protein: str) -> list[Finding]:
@@ -112,9 +113,13 @@ def internal_methionines(protein: str) -> list[Finding]:
         f"internal initiation site in the coding frame under any encoding")]
 
 
-def _merge_adjacent(findings: list[Finding]) -> list[Finding]:
-    """Collapse findings that describe one overlapping run."""
-    return findings[:LISTED] if len(findings) > LISTED else findings
+def _spaced(at: list[int], size: int) -> list[int]:
+    """Occurrences that do not overlap the one kept before them."""
+    kept = [at[0]]
+    for position in at[1:]:
+        if position - kept[-1] >= size:
+            kept.append(position)
+    return kept
 
 
 def _kmers(dna: str, size: int) -> dict[str, list[int]]:
@@ -131,12 +136,14 @@ def direct_repeats(dna: str) -> list[Finding]:
     for kmer, at in _kmers(dna, NT_REPEAT_MIN).items():
         if len(at) < 2:
             continue
-        if any(b - a < NT_REPEAT_MIN for a, b in zip(at, at[1:])):
+        spaced = _spaced(at, NT_REPEAT_MIN)
+        if len(spaced) < 2:
             continue
         out.append(Finding(
             "direct_repeat", MAP_SPECIFIC,
-            ", ".join(str(p + 1) for p in at),
-            f"{NT_REPEAT_MIN} bp repeated {len(at)} times"))
+            ", ".join(str(p + 1) for p in spaced),
+            f"{NT_REPEAT_MIN} bp repeated {len(spaced)} times without "
+            f"overlapping"))
     return out
 
 
@@ -148,11 +155,14 @@ def inverted_repeats(dna: str) -> list[Finding]:
         mirror = reverse_complement(kmer)
         if mirror not in table or kmer in seen:
             continue
+        elsewhere = [q for q in table[mirror] if q != at[0]]
+        if not elsewhere:
+            continue
         seen.add(kmer)
         seen.add(mirror)
         out.append(Finding(
             "inverted_repeat", MAP_SPECIFIC,
-            f"{at[0] + 1} and {table[mirror][0] + 1}",
+            f"{at[0] + 1} and {elsewhere[0] + 1}",
             f"{NT_REPEAT_MIN} bp and its reverse complement both occur"))
     return out
 
@@ -166,7 +176,7 @@ def splice_sites(dna: str) -> list[Finding]:
             "splice_donor", MAP_SPECIFIC,
             ", ".join(str(p) for p in donors[:LISTED]),
             f"{len(donors)} match(es) to the GT[AG]AGT donor consensus"))
-    acceptors = [m.end() + 1 for m in ACCEPTOR.finditer(dna)]
+    acceptors = [m.end() - 1 for m in ACCEPTOR.finditer(dna)]
     if acceptors:
         out.append(Finding(
             "splice_acceptor", MAP_SPECIFIC,
@@ -178,6 +188,8 @@ def splice_sites(dna: str) -> list[Finding]:
 
 def _orfs(dna: str, frames: tuple[int, ...], kind: str) -> list[Finding]:
     """Reading frames other than the annotated one, ATG to stop."""
+    where = (", numbered along the reverse strand"
+             if kind == "reverse_orf" else "")
     out = []
     for frame in frames:
         i = frame
@@ -185,14 +197,19 @@ def _orfs(dna: str, frames: tuple[int, ...], kind: str) -> list[Finding]:
             if dna[i:i + 3] != "ATG":
                 i += 3
                 continue
-            j = i + 3
-            while j < len(dna) - 2 and dna[j:j + 3] not in STOPS:
+            j, stopped = i + 3, False
+            while j < len(dna) - 2:
+                if dna[j:j + 3] in STOPS:
+                    stopped = True
+                    break
                 j += 3
+            if not stopped:
+                break
             codons = (j - i) // 3
             if codons >= ORF_MIN:
                 out.append(Finding(
                     kind, MAP_SPECIFIC, f"{i + 1}-{j + 3}",
-                    f"{codons} codons in frame {frame + 1}"))
+                    f"{codons} codons in frame {frame + 1}{where}"))
             i = j + 3
     return out
 
@@ -244,7 +261,8 @@ def analyse(protein: str, dna: str, segments) -> dict:
         "analysed": True,
         "thresholds": dict(THRESHOLDS),
         "counts": counts,
-        "codon_invariant": [f.as_payload() for f in invariant],
+        "codon_invariant": [f.as_payload() for f in invariant[:LISTED * 2]],
+        "codon_invariant_total": len(invariant),
         "map_specific": [f.as_payload() for f in specific[:LISTED * 2]],
         "map_specific_total": len(specific),
         "reasons": [
