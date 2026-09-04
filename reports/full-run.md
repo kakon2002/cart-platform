@@ -2,7 +2,7 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**161/169 criteria clear across 14 stages**, 22.3 minutes.
+**161/169 criteria clear across 14 stages**, 22.4 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,16 +10,16 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 26/27 | **TRIPPED** | 22s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 219s |
-| 5 | Binder discovery | 7/7 | clear | 234s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 224s |
+| 5 | Binder discovery | 7/7 | clear | 215s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
 | 12 | Candidate package | 9/9 | clear | 8s |
 | API | HTTP surface, pancreatic | 10/10 | clear | 11s |
-| API2 | HTTP surface, breast | 10/10 | clear | 242s |
-| MULTI | Multi-indication | 11/11 | clear | 586s |
+| API2 | HTTP surface, breast | 10/10 | clear | 252s |
+| MULTI | Multi-indication | 11/11 | clear | 591s |
 
 ## Every criterion
 
@@ -160,7 +160,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `S9` — planted donor and acceptor are both found (['splice_acceptor', 'splice_donor']), and a control with neither reports 0
 - clear `S10` — a 39-codon reading frame planted out of frame is reported (1), and the same frame planted as the coding frame is not (0)
 - clear `S11` — re-encoded under a synonymous codon table, all 5 constructs keep every CODON_INVARIANT finding and every one of them moves at least one MAP_SPECIFIC finding; no finding is unlabelled
-- clear `S12` — a domain map repeating one part reports it once, a map repeating none reports nothing, and 5 shipping design(s) repeat no part: none
+- clear `S12` — a domain map repeating one part reports it once and a map repeating none reports nothing; across 5 shipping design(s) the detector reports a repeated part on none, which is reported rather than required either way - a dual design repeats the leader, hinge and transmembrane by construction, and this arm gates nothing
 - clear `S13` — the arm changed no sequence, no domain map and no verdict across all 200 constructs
 - clear `S14` — 5 safety record(s) carry a construct-safety report, exactly the 5 construct(s) that assembled
 
@@ -198,7 +198,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job e059f618fef1 rather than blocking
+- clear `A3` — a run returns 202 with job a4387fa9e708 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -211,7 +211,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job bfa304b2f3ff rather than blocking
+- clear `A3` — a run returns 202 with job 9a3d0dd959cf rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
 - clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 5 reasons
 - clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
@@ -237,6 +237,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 ## What the platform returns for this indication
 
 ```
+--- HTTP surface, pancreatic ---
     GET /constructs -> BUILDABLE
       - Every surviving design routes to an adaptor architecture. That is two manufactured biologics, not one: the receptor and, separately, the tagged adaptor antibody that gives it its specificity. The second carries its own CMC package and its own regulatory path, and the payload budget the adaptor route saves is paid there instead.
       - The anti-tag binder is a murine anti-GCN4 single-chain Fv retrieved from PDB 1P4B entities 1+2 at revision 1.4. PDB does not record the identifier 52SR4 anywhere in that entry. The identification rests on an exact match between the deposited CDRs and those quoted for 52SR4 in the Calibr/Scripps patent family, together with the shared Zahnd 2004 primary citation. That is an inference drawn by this pipeline, not a fact taken from the source, and a reader is entitled to disagree with it.
@@ -250,6 +251,20 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       no binder retrieved                -   3     5 remain
       no construct assembled             -   0     5 remain
       construct over budget              -   0     5 remain
+
+--- HTTP surface, breast ---
+    GET /constructs -> NO_BUILDABLE_CONSTRUCT
+      - Conservative safety tolerance mandates a safety switch.
+      - No design assembled at all.
+      - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.
+      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
+      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
+    GET /result     -> NO_DESIGN_REACHES_THE_END
+      blocked on normal tissue risk      - 196     4 remain
+      no design recommended              -   0     4 remain
+      no binder retrieved                -   3     1 remain
+      no construct assembled             -   1     0 remain
+      construct over budget              -   0     0 remain
 ```
 
 ## Tripped

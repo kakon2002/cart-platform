@@ -1,7 +1,7 @@
 {
   "clear": 161,
   "total": 169,
-  "minutes": 22.3,
+  "minutes": 22.4,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -30,6 +30,7 @@
   ],
   "stale": [],
   "api": [
+    "--- HTTP surface, pancreatic ---",
     "    GET /constructs -> BUILDABLE",
     "      - Every surviving design routes to an adaptor architecture. That is two manufactured biologics, not one: the receptor and, separately, the tagged adaptor antibody that gives it its specificity. The second carries its own CMC package and its own regulatory path, and the payload budget the adaptor route saves is paid there instead.",
     "      - The anti-tag binder is a murine anti-GCN4 single-chain Fv retrieved from PDB 1P4B entities 1+2 at revision 1.4. PDB does not record the identifier 52SR4 anywhere in that entry. The identification rests on an exact match between the deposited CDRs and those quoted for 52SR4 in the Calibr/Scripps patent family, together with the shared Zahnd 2004 primary citation. That is an inference drawn by this pipeline, not a fact taken from the source, and a reader is entitled to disagree with it.",
@@ -42,7 +43,21 @@
     "      no design recommended              -   0     8 remain",
     "      no binder retrieved                -   3     5 remain",
     "      no construct assembled             -   0     5 remain",
-    "      construct over budget              -   0     5 remain"
+    "      construct over budget              -   0     5 remain",
+    "",
+    "--- HTTP surface, breast ---",
+    "    GET /constructs -> NO_BUILDABLE_CONSTRUCT",
+    "      - Conservative safety tolerance mandates a safety switch.",
+    "      - No design assembled at all.",
+    "      - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.",
+    "      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.",
+    "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.",
+    "    GET /result     -> NO_DESIGN_REACHES_THE_END",
+    "      blocked on normal tissue risk      - 196     4 remain",
+    "      no design recommended              -   0     4 remain",
+    "      no binder retrieved                -   3     1 remain",
+    "      no construct assembled             -   1     0 remain",
+    "      construct over budget              -   0     0 remain"
   ],
   "stages": [
     {
@@ -51,7 +66,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -238,7 +253,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 21.5,
+      "seconds": 21.6,
       "exit": 1,
       "criteria": [
         {
@@ -470,7 +485,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 219.3,
+      "seconds": 224.2,
       "exit": 2,
       "criteria": [
         {
@@ -541,7 +556,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 233.9,
+      "seconds": 215.4,
       "exit": 0,
       "criteria": [
         {
@@ -704,7 +719,7 @@
         {
           "id": "S12",
           "tripped": false,
-          "detail": "a domain map repeating one part reports it once, a map repeating none reports nothing, and 5 shipping design(s) repeat no part: none"
+          "detail": "a domain map repeating one part reports it once and a map repeating none reports nothing; across 5 shipping design(s) the detector reports a repeated part on none, which is reported rather than required either way - a dual design repeats the leader, hinge and transmembrane by construction, and this arm gates nothing"
         },
         {
           "id": "S13",
@@ -806,7 +821,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 7.9,
+      "seconds": 8.0,
       "exit": 0,
       "criteria": [
         {
@@ -878,7 +893,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job e059f618fef1 rather than blocking"
+          "detail": "a run returns 202 with job a4387fa9e708 rather than blocking"
         },
         {
           "id": "A4",
@@ -923,7 +938,7 @@
       "clear": 10,
       "total": 10,
       "ok": true,
-      "seconds": 241.8,
+      "seconds": 251.6,
       "exit": 0,
       "criteria": [
         {
@@ -939,7 +954,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job bfa304b2f3ff rather than blocking"
+          "detail": "a run returns 202 with job 9a3d0dd959cf rather than blocking"
         },
         {
           "id": "A4",
@@ -984,7 +999,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 585.5,
+      "seconds": 590.8,
       "exit": 0,
       "criteria": [
         {

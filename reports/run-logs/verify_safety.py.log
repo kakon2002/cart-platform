@@ -14,7 +14,7 @@ REJECTION CRITERIA
   clear    S9: planted donor and acceptor are both found (['splice_acceptor', 'splice_donor']), and a control with neither reports 0
   clear    S10: a 39-codon reading frame planted out of frame is reported (1), and the same frame planted as the coding frame is not (0)
   clear    S11: re-encoded under a synonymous codon table, all 5 constructs keep every CODON_INVARIANT finding and every one of them moves at least one MAP_SPECIFIC finding; no finding is unlabelled
-  clear    S12: a domain map repeating one part reports it once, a map repeating none reports nothing, and 5 shipping design(s) repeat no part: none
+  clear    S12: a domain map repeating one part reports it once and a map repeating none reports nothing; across 5 shipping design(s) the detector reports a repeated part on none, which is reported rather than required either way - a dual design repeats the leader, hinge and transmembrane by construction, and this arm gates nothing
   clear    S13: the arm changed no sequence, no domain map and no verdict across all 200 constructs
   clear    S14: 5 safety record(s) carry a construct-safety report, exactly the 5 construct(s) that assembled
 ========================================================================

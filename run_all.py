@@ -186,6 +186,22 @@ def api_result(output: str) -> list[str]:
     return []
 
 
+def api_results(stages: list["Stage"]) -> list[str]:
+    """Every API pass's closing block, each under the indication it ran."""
+    out: list[str] = []
+    for stage in stages:
+        if not stage.number.startswith("API"):
+            continue
+        block = api_result(stage.output)
+        if not block:
+            continue
+        if out:
+            out.append("")
+        out.append(f"--- {stage.name} ---")
+        out.extend(block)
+    return out
+
+
 def render(stages: list[Stage], elapsed: float, fresh: bool) -> str:
     """Render the run as markdown."""
     total = sum(s.total for s in stages)
@@ -221,8 +237,7 @@ def render(stages: list[Stage], elapsed: float, fresh: bool) -> str:
             lines.append(f"- {mark} `{cid}` — {detail}")
         lines.append("")
 
-    api = next((s for s in stages if s.number == "API"), None)
-    block = api_result(api.output) if api else []
+    block = api_results(stages)
     if block:
         lines += ["## What the platform returns for this indication", "", "```"]
         lines += block
@@ -377,8 +392,7 @@ def main() -> int:
         "unexpected": [{"stage": n, "id": c, "detail": d}
                        for n, c, d in unexpected(stages)],
         "stale": [{"stage": n, "id": c} for n, c in stale_exemptions(stages)],
-        "api": api_result(next((s.output for s in stages
-                                if s.number == "API"), "")),
+        "api": api_results(stages),
         "stages": [{
             "number": s.number, "name": s.name, "clear": s.clear,
             "total": s.total, "ok": s.ok, "seconds": round(s.seconds, 1),
