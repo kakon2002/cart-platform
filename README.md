@@ -76,8 +76,8 @@ alternative produced a confident wrong answer at some point in the build.
 - **Parameters are fixed before output exists**, and criteria are written before
   the run that tests them.
 
-[specs/design-decisions.md](specs/design-decisions.md) records 530 of these
-across 52 modules — what was chosen, and what breaks without it. The source
+[specs/design-decisions.md](specs/design-decisions.md) records 538 of these
+across 53 modules — what was chosen, and what breaks without it. The source
 itself carries one-line docstrings and no commentary, so that file is the only
 place the reasoning lives.
 

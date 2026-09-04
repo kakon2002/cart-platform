@@ -1,7 +1,7 @@
 {
-  "clear": 144,
-  "total": 152,
-  "minutes": 22.5,
+  "clear": 161,
+  "total": 169,
+  "minutes": 22.3,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -51,7 +51,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.7,
+      "seconds": 0.6,
       "exit": 0,
       "criteria": [
         {
@@ -217,7 +217,7 @@
       "clear": 2,
       "total": 2,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -238,7 +238,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 21.2,
+      "seconds": 21.5,
       "exit": 1,
       "criteria": [
         {
@@ -384,7 +384,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 8.9,
+      "seconds": 9.0,
       "exit": 2,
       "criteria": [
         {
@@ -470,7 +470,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 278.9,
+      "seconds": 219.3,
       "exit": 2,
       "criteria": [
         {
@@ -541,7 +541,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 207.5,
+      "seconds": 233.9,
       "exit": 0,
       "criteria": [
         {
@@ -587,7 +587,7 @@
       "clear": 8,
       "total": 9,
       "ok": false,
-      "seconds": 0.4,
+      "seconds": 0.5,
       "exit": 2,
       "criteria": [
         {
@@ -640,10 +640,10 @@
     {
       "number": "9",
       "name": "Safety gate",
-      "clear": 7,
-      "total": 7,
+      "clear": 14,
+      "total": 14,
       "ok": true,
-      "seconds": 3.7,
+      "seconds": 3.9,
       "exit": 0,
       "criteria": [
         {
@@ -680,6 +680,41 @@
           "id": "S7",
           "tripped": false,
           "detail": "every target with stopped trials is flagged or blocked"
+        },
+        {
+          "id": "S8",
+          "tripped": false,
+          "detail": "a planted 24 bp repeat is reported at 5, 49, and a control with none reports 0"
+        },
+        {
+          "id": "S9",
+          "tripped": false,
+          "detail": "planted donor and acceptor are both found (['splice_acceptor', 'splice_donor']), and a control with neither reports 0"
+        },
+        {
+          "id": "S10",
+          "tripped": false,
+          "detail": "a 39-codon reading frame planted out of frame is reported (1), and the same frame planted as the coding frame is not (0)"
+        },
+        {
+          "id": "S11",
+          "tripped": false,
+          "detail": "re-encoded under a synonymous codon table, all 5 constructs keep every CODON_INVARIANT finding and every one of them moves at least one MAP_SPECIFIC finding; no finding is unlabelled"
+        },
+        {
+          "id": "S12",
+          "tripped": false,
+          "detail": "a domain map repeating one part reports it once, a map repeating none reports nothing, and 5 shipping design(s) repeat no part: none"
+        },
+        {
+          "id": "S13",
+          "tripped": false,
+          "detail": "the arm changed no sequence, no domain map and no verdict across all 200 constructs"
+        },
+        {
+          "id": "S14",
+          "tripped": false,
+          "detail": "5 safety record(s) carry a construct-safety report, exactly the 5 construct(s) that assembled"
         }
       ]
     },
@@ -730,7 +765,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 3.9,
+      "seconds": 4.0,
       "exit": 0,
       "criteria": [
         {
@@ -771,7 +806,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 7.7,
+      "seconds": 7.9,
       "exit": 0,
       "criteria": [
         {
@@ -802,7 +837,7 @@
         {
           "id": "Q6",
           "tripped": false,
-          "detail": "17 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements"
+          "detail": "16 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements"
         },
         {
           "id": "Q7",
@@ -823,7 +858,7 @@
     },
     {
       "number": "API",
-      "name": "HTTP surface",
+      "name": "HTTP surface, pancreatic",
       "clear": 10,
       "total": 10,
       "ok": true,
@@ -843,7 +878,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 69215abe99ab rather than blocking"
+          "detail": "a run returns 202 with job e059f618fef1 rather than blocking"
         },
         {
           "id": "A4",
@@ -863,7 +898,7 @@
         {
           "id": "A7",
           "tripped": false,
-          "detail": "top target CEACAM5 with a 6-component breakdown"
+          "detail": "top target CEACAM5 ranked 1 carries all 6 scoring components"
         },
         {
           "id": "A8",
@@ -883,12 +918,73 @@
       ]
     },
     {
+      "number": "API2",
+      "name": "HTTP surface, breast",
+      "clear": 10,
+      "total": 10,
+      "ok": true,
+      "seconds": 241.8,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "A1",
+          "tripped": false,
+          "detail": "project created (201), target_antigen None and discovery mode B"
+        },
+        {
+          "id": "A2",
+          "tripped": false,
+          "detail": "a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list"
+        },
+        {
+          "id": "A3",
+          "tripped": false,
+          "detail": "a run returns 202 with job bfa304b2f3ff rather than blocking"
+        },
+        {
+          "id": "A4",
+          "tripped": false,
+          "detail": "job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']"
+        },
+        {
+          "id": "A5",
+          "tripped": false,
+          "detail": "200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 5 reasons"
+        },
+        {
+          "id": "A6",
+          "tripped": false,
+          "detail": "end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting"
+        },
+        {
+          "id": "A7",
+          "tripped": false,
+          "detail": "top target CD24 ranked 1 carries all 6 scoring components"
+        },
+        {
+          "id": "A8",
+          "tripped": false,
+          "detail": "pairs carry the span percentile beside the raw fraction (0.012740414063457063 at percentile 0.1942)"
+        },
+        {
+          "id": "A10",
+          "tripped": false,
+          "detail": "an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress"
+        },
+        {
+          "id": "A9",
+          "tripped": false,
+          "detail": "evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11"
+        }
+      ]
+    },
+    {
       "number": "MULTI",
       "name": "Multi-indication",
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 805.4,
+      "seconds": 585.5,
       "exit": 0,
       "criteria": [
         {

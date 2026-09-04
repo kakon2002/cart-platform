@@ -27,7 +27,9 @@ STAGES = [
     ("10", "Developability", "verify_developability.py"),
     ("11", "Final ranking", "verify_ranking_final.py"),
     ("12", "Candidate package", "verify_package.py"),
-    ("API", "HTTP surface", "verify_api.py"),
+    ("API", "HTTP surface, pancreatic", "verify_api.py"),
+    ("API2", "HTTP surface, breast", "verify_api.py",
+     ["--indication", "Invasive Breast Carcinoma"]),
     ("MULTI", "Multi-indication", "verify_indications.py"),
 ]
 
@@ -92,15 +94,24 @@ _DRIFT = re.compile(r"^filter decisions within .*: (yes|NO)", re.M)
 
 
 class Stage:
-    def __init__(self, number: str, name: str, script: str):
+    def __init__(self, number: str, name: str, script: str,
+                 args: list[str] | None = None):
         """Hold one stage's script, criteria and outcome."""
         self.number, self.name, self.script = number, name, script
+        self.args = list(args or [])
         self.criteria: list[tuple[str, bool, str]] = []
         self.clear = 0
         self.total = 0
         self.code: int | None = None
         self.seconds = 0.0
         self.output = ""
+
+    @property
+    def log_name(self) -> str:
+        """One log per stage. Two stages can share a script, so the number breaks the tie."""
+        if not self.args:
+            return f"{self.script}.log"
+        return f"{self.script}.{self.number}.log"
 
     @property
     def ok(self) -> bool:
@@ -149,7 +160,7 @@ class Stage:
         started = time.monotonic()
         try:
             proc = subprocess.run(
-                [sys.executable, str(ROOT / self.script)],
+                [sys.executable, str(ROOT / self.script), *self.args],
                 cwd=ROOT, capture_output=True, text=True,
                 encoding="utf-8", errors="replace", timeout=timeout,
             )
@@ -163,7 +174,7 @@ class Stage:
         self.seconds = time.monotonic() - started
         self.parse()
 
-        (logs / f"{self.script}.log").write_text(self.output, encoding="utf-8")
+        (logs / self.log_name).write_text(self.output, encoding="utf-8")
 
 
 def api_result(output: str) -> list[str]:

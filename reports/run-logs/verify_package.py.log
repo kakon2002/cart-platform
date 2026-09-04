@@ -9,7 +9,7 @@ REJECTION CRITERIA
   clear    Q3: all 9 sections present on every package, and each carries what its stage produced
   clear    Q4: the packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5
   clear    Q5: every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3
-  clear    Q6: 17 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
+  clear    Q6: 16 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
   clear    Q7: no conservative design exists in this pool and the section says so with the counts behind it, rather than standing blank
   clear    Q8: 9 connected sources each name a release, and the hash chain is unbroken from Stage 3 to Stage 11
   clear    Q9: no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)
@@ -28,12 +28,12 @@ WHAT A READER RECEIVES
 
   WHAT THE PACKAGE CANNOT CARRY
   --------------------------------------------------------------------
-    27 element(s) missing across 8 deliverable(s)
-    17 probed, 1 measured from the run, 9 judgements
+    26 element(s) missing across 8 deliverable(s)
+    16 probed, 1 measured from the run, 9 judgements
       deliverable  1 PARTIAL  2 element(s)  Top 3-5 CAR-T constructs
       deliverable  4 PARTIAL  4 element(s)  Complete sequence and domain map
       deliverable  5 PARTIAL  8 element(s)  Target and binder evidence report
-      deliverable  6 PARTIAL  6 element(s)  Safety-risk matrix
+      deliverable  6 PARTIAL  5 element(s)  Safety-risk matrix
       deliverable  7 ABSENT   1 element(s)  Structural report
       deliverable  8 ABSENT   1 element(s)  Functional predictions
       deliverable  9 PARTIAL  3 element(s)  Manufacturability assessment
