@@ -34,10 +34,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 - **The contract** (9) - `spec.py`, `project.py`
 - **Indications** (22) - `indication.py`, `pdac.py`, `breast.py`, `registry.py`
 - **Sources and the cache** (140) - `source.py`, `uniprot.py`, `hpa.py`, `gtex.py`, `tcga.py`, `singlecell.py`, `depmap.py`, `genespan.py`, `antibodies.py`, `structures.py`, `domains.py`, `trials.py`, `coverage.py`, `availability.py`
-- **Stages** (181) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `stage12.py`, `validation.py`
+- **Stages** (185) - `stage1.py`, `stage3.py`, `stage4.py`, `routing.py`, `stage5.py`, `stage6.py`, `stage9.py`, `stage10.py`, `stage11.py`, `stage12.py`, `validation.py`, `construct_safety.py`
 - **The service** (41) - `pipeline.py`, `server.py`
-- **Running it** (61) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `make_brief.py`, `make_package.py`, `strip_comments.py`
-- **The criteria** (76) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_package.py`, `verify_api.py`, `verify_indications.py`
+- **Running it** (62) - `run_all.py`, `bootstrap.py`, `make_artifact.py`, `make_brief.py`, `make_package.py`, `strip_comments.py`
+- **The criteria** (79) - `verify_schema.py`, `verify_surface.py`, `verify_ranking.py`, `verify_ranking_final.py`, `verify_pairing.py`, `verify_routing.py`, `verify_binders.py`, `verify_construct.py`, `verify_safety.py`, `verify_developability.py`, `verify_package.py`, `verify_api.py`, `verify_indications.py`
 
 
 ---
@@ -1375,6 +1375,24 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* Passing the upstream-of-upstream hash leaves a Stage 5 change invisible to this stage's identity, which is the whole reason the hash is carried — a stale construct set would pass as current. Re-deriving the budget locally lets it drift from Stage 1's without anything reporting a conflict.
 
 
+## `car_pipeline/stages/construct_safety.py`
+
+**1. construct_safety.py:1** - Every finding carries a basis, CODON_INVARIANT or MAP_SPECIFIC, and the two are reported side by side rather than merged.
+
+> *Without it:* Stage 6's DNA is a reverse translation under one fixed codon per residue, so every leucine is CTG and every serine AGC. A nucleotide finding on that map is a property of the encoding and not of anything anyone would order: repeats are inflated because identical peptides produce identical nucleotides, and whether GT falls at a position is decided by the codon table. Reporting the four flat would state properties of an arbitrary encoding as properties of a therapeutic, and every number would look like real sequence analysis.
+
+**2. construct_safety.py:66** - The repeated-part detector reads the domain map, not the sequence.
+
+> *Without it:* The dominant recombination hazard in these constructs is architectural: a dual design carries the CD8A leader, hinge and transmembrane segment twice by construction. Read from the segments it is exact and survives any encoding; read from nucleotides it would be one more map-specific string match, and a codon-optimised sequence would hide it by diversifying the copies.
+
+**3. construct_safety.py:243** - The arm gates nothing and mutates nothing.
+
+> *Without it:* Turning a count of splice motifs into a block sets a tolerance, and this platform has no outcome data to set one from. Rewriting a codon to remove a site would make Stage 6 emit a sequence that is no longer the map its own specification says it is.
+
+**4. construct_safety.py:20** - Every threshold is a named constant fixed in the specification before the run, and stated as conventional rather than measured.
+
+> *Without it:* A threshold chosen after seeing the counts is the defect this repository has recorded twice, and there is nothing here to calibrate against. The criteria test the detector against planted known answers in both directions; none of them tests a threshold.
+
 ## `car_pipeline/stages/stage9.py`
 
 **1. stage9.py:5** - Off-tumour risk is carried verbatim from Stage 3 and never recomputed here, even though the gate is the place that consumes it.
@@ -1722,6 +1740,10 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 
 
 ## `run_all.py`
+
+**0. run_all.py:29** - The HTTP surface runs once per indication, and a stage carries its own arguments.
+
+> *Without it:* Every no-survivor path in the service is dead code under the pancreatic indication, which always has surviving designs. The refusal reasons, the attrition explanation and the conservative-backup counts are reached only by an indication that returns nothing, and one of them held a NameError that answered HTTP 500 for months. Testing the surface against the indication that never enters those states is the gap that let it live. Two stages then share one script, so the log filename takes the stage number to break the tie rather than the second silently overwriting the first.
 
 **1. run_all.py:4** - Each stage's verifier runs as its own subprocess rather than being imported and called in-process.
 
@@ -2274,6 +2296,18 @@ path. That is not hypothetical here - it is how a stage returned nothing for all
 > *Without it:* `structure_binders` returns nothing without them, and an adaptor row falls through to NO_GATE with the reason "no binder, so there is nothing to gate" - on a receptor carrying a murine binder. That is a recorded defect, fixed in the service and never in this verifier, and it stayed invisible only because no adaptor row existed in the set this verifier read.
 
 
+
+**7. verify_safety.py:214** - S11 re-encodes each construct under a genuinely synonymous codon table and requires the invariant findings to be identical and the map-specific ones to move.
+
+> *Without it:* The basis label is the whole design, and a label nobody can falsify is decoration. Requiring the invariant half to survive re-encoding catches a finding marked invariant but computed from the DNA; requiring the map-specific half to change catches one marked encoding-dependent that is not. The alternate table is synonymous rather than an arbitrary permutation, so the second sequence encodes the same protein and the comparison means what it says.
+
+**8. verify_safety.py:178** - Each detector is tested against a planted known answer and against a control containing none of it.
+
+> *Without it:* A detector that finds everything and one that finds nothing both pass a single-sided check. There is no labelled sequence data here to score against, so a planted answer in both directions is the only test available.
+
+**9. verify_safety.py:262** - S12's positive half is a synthetic domain map, because no shipping design repeats a part.
+
+> *Without it:* All five surviving designs are adaptors and none duplicates a domain, so a criterion phrased only over them would clear on an empty population - the defect recorded as instance 8. The synthetic map supplies the case the pool does not.
 ## `verify_developability.py`
 
 **0. verify_developability.py:16** - The binder read is gated on the Stage 4 hash, like its siblings, rather than taking whatever the cache slot holds.

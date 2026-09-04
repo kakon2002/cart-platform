@@ -14,13 +14,37 @@ from car_pipeline.data.singlecell import SingleCellSource, match_surface as cell
 from car_pipeline.data.tcga import TCGASource, match_surface as tcga_match
 from car_pipeline.data.trials import TrialSource
 from car_pipeline.data.uniprot import load_surface
-from car_pipeline.stages import stage3, stage4, stage5, stage6, stage9
+from car_pipeline.stages import (
+    construct_safety, stage3, stage4, stage5, stage6, stage9)
 from car_pipeline.stages.stage1 import build_spec
 
 
 PINNED_TRIALS = ["MSLN", "CLDN18"]
 
 PINNED_ORIGIN = {"Amatuximab": "chimeric", "Zolbetuximab": "chimeric"}
+
+
+ALT_CODON = {
+    "A": "GCT", "R": "CGT", "N": "AAT", "D": "GAT", "C": "TGT", "Q": "CAA",
+    "E": "GAA", "G": "GGT", "H": "CAT", "I": "ATT", "L": "CTA", "K": "AAA",
+    "M": "ATG", "F": "TTT", "P": "CCT", "S": "TCT", "T": "ACT", "W": "TGG",
+    "Y": "TAT", "V": "GTA",
+}
+
+
+def re_encode(protein: str) -> str:
+    """The same protein under a second, genuinely synonymous codon assignment."""
+    return "".join(ALT_CODON[r] for r in protein) + stage6.STOP
+
+
+class FakeSegment:
+    def __init__(self, name, accession, start, end, residues):
+        """A domain map entry, for the controls that need one."""
+        self.name, self.accession = name, accession
+        self.start_residue, self.end_residue = start, end
+        self.residues = residues
+        self.bp_start, self.bp_end = 0, residues * 3
+        self.provenance = "proteome"
 
 
 def main() -> int:
@@ -148,6 +172,107 @@ def main() -> int:
     criterion("S7", bool(unflagged),
               "every target with stopped trials is flagged or blocked"
               if not unflagged else f"{unflagged[:5]} passed with stopped trials")
+
+    planted = "ATGC" * 6
+    with_repeat = "GGCA" + planted + ("TTAC" * 5) + planted + "CCTA"
+    clean = "".join("ACGT"[(i * 7 + i // 4) % 4] for i in range(400))
+    found = construct_safety.direct_repeats(with_repeat)
+    at = [f.at for f in found]
+    criterion(
+        "S8", len(found) != 1 or "5" not in at[0]
+        or bool(construct_safety.direct_repeats(clean)),
+        f"a planted {len(planted)} bp repeat is reported at {at[0] if at else 'nothing'}, "
+        f"and a control with none reports "
+        f"{len(construct_safety.direct_repeats(clean))}")
+
+    donor = construct_safety.splice_sites("AAAAAA" + "GTAAGT" + "CCCCCC")
+    acceptor = construct_safety.splice_sites("AAA" + "CTCTCTCTCT" + "CAG" + "GGG")
+    quiet = construct_safety.splice_sites("AAAAAAAAAAAAAAAA")
+    kinds = {f.kind for f in donor} | {f.kind for f in acceptor}
+    criterion(
+        "S9",
+        "splice_donor" not in {f.kind for f in donor}
+        or "splice_acceptor" not in {f.kind for f in acceptor}
+        or bool(quiet),
+        f"planted donor and acceptor are both found ({sorted(kinds)}), and a "
+        f"control with neither reports {len(quiet)}")
+
+    body = "ATG" + "GCC" * (construct_safety.ORF_MIN + 8) + "TAA"
+    in_frame_two = "GG" + body
+    in_frame_zero = body
+    two = construct_safety.alternate_orfs(in_frame_two)
+    zero = construct_safety.alternate_orfs(in_frame_zero)
+    criterion(
+        "S10", not two or bool(zero),
+        f"a {construct_safety.ORF_MIN + 9}-codon reading frame planted out of "
+        f"frame is reported ({len(two)}), and the same frame planted as the "
+        f"coding frame is not ({len(zero)})")
+
+    built = [c for c in constructs if c.amino_acid_sequence]
+    drifted, unmoved = [], []
+    for c in built:
+        first = construct_safety.findings(c.amino_acid_sequence, c.dna, c.segments)
+        second = construct_safety.findings(
+            c.amino_acid_sequence, re_encode(c.amino_acid_sequence), c.segments)
+
+        def key(items, basis):
+            """The findings of one basis, as comparable tuples."""
+            return sorted((f.kind, f.at, f.detail)
+                          for f in items if f.basis == basis)
+
+        if key(first, construct_safety.CODON_INVARIANT) != key(
+                second, construct_safety.CODON_INVARIANT):
+            drifted.append(c.gene)
+        if key(first, construct_safety.MAP_SPECIFIC) == key(
+                second, construct_safety.MAP_SPECIFIC):
+            unmoved.append(c.gene)
+    unlabelled = [f.kind for c in built
+                  for f in construct_safety.findings(
+                      c.amino_acid_sequence, c.dna, c.segments)
+                  if f.basis not in (construct_safety.CODON_INVARIANT,
+                                     construct_safety.MAP_SPECIFIC)]
+    criterion(
+        "S11", bool(drifted) or bool(unmoved) or bool(unlabelled) or not built,
+        f"re-encoded under a synonymous codon table, all {len(built)} "
+        f"constructs keep every CODON_INVARIANT finding and every one of them "
+        f"moves at least one MAP_SPECIFIC finding; no finding is unlabelled"
+        if built and not (drifted or unmoved or unlabelled) else
+        f"invariant drifted on {drifted[:3]}; map-specific unmoved on "
+        f"{unmoved[:3]}; unlabelled {unlabelled[:3]}"
+        if built else "no construct assembled, so the labels were not exercised")
+
+    twice = [FakeSegment("CD8A leader", "P01732", 1, 21, 21),
+             FakeSegment("binder", "", None, None, 100),
+             FakeSegment("CD8A leader", "P01732", 1, 21, 21)]
+    once = [FakeSegment("CD8A leader", "P01732", 1, 21, 21),
+            FakeSegment("CD8A hinge", "P01732", 138, 182, 45)]
+    duplicated = construct_safety.repeated_parts(twice)
+    shipped = [c.gene for c in built
+               if construct_safety.repeated_parts(c.segments)]
+    criterion(
+        "S12",
+        len(duplicated) != 1 or bool(construct_safety.repeated_parts(once))
+        or bool(shipped),
+        f"a domain map repeating one part reports it once, a map repeating "
+        f"none reports nothing, and {len(built)} shipping design(s) repeat no "
+        f"part: {shipped or 'none'}")
+
+    before = [(c.gene, c.amino_acid_sequence, c.dna, len(c.segments), c.verdict)
+              for c in constructs]
+    for c in built:
+        construct_safety.analyse(c.amino_acid_sequence, c.dna, c.segments)
+    after = [(c.gene, c.amino_acid_sequence, c.dna, len(c.segments), c.verdict)
+             for c in constructs]
+    criterion("S13", before != after,
+              f"the arm changed no sequence, no domain map and no verdict "
+              f"across all {len(constructs)} constructs")
+
+    assembled = {c.gene for c in built}
+    carried = {g.gene for g in gated if g.construct_safety is not None}
+    criterion("S14", carried != assembled,
+              f"{len(carried)} safety record(s) carry a construct-safety "
+              f"report, exactly the {len(assembled)} construct(s) that "
+              f"assembled")
 
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")

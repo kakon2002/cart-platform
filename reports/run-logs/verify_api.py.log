@@ -1,3 +1,4 @@
+  indication Pancreatic Ductal Adenocarcinoma
   server up on http://127.0.0.1:8137
 
 ========================================================================
@@ -5,7 +6,7 @@ REJECTION CRITERIA
 ========================================================================
   clear    A1: project created (201), target_antigen None and discovery mode B
   clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-  clear    A3: a run returns 202 with job 69215abe99ab rather than blocking
+  clear    A3: a run returns 202 with job e059f618fef1 rather than blocking
 
   polling
     running   sources  loading cached sources
@@ -14,7 +15,7 @@ REJECTION CRITERIA
   clear    A4: job finished complete after stages ['sources', 'pairing', 'ranking']
   clear    A5: 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
   clear    A6: end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
-  clear    A7: top target CEACAM5 with a 6-component breakdown
+  clear    A7: top target CEACAM5 ranked 1 carries all 6 scoring components
   clear    A8: pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.037)
   clear    A10: an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
   clear    A9: evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11

@@ -2,23 +2,24 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**144/152 criteria clear across 13 stages**, 22.5 minutes.
+**161/169 criteria clear across 14 stages**, 22.3 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Design spec | 31/31 | clear | 1s |
 | 2 | Surface proteome | 2/2 | clear | 1s |
-| 3 | Target discovery | 26/27 | **TRIPPED** | 21s |
+| 3 | Target discovery | 26/27 | **TRIPPED** | 22s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 279s |
-| 5 | Binder discovery | 7/7 | clear | 208s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 219s |
+| 5 | Binder discovery | 7/7 | clear | 234s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
-| 9 | Safety gate | 7/7 | clear | 4s |
+| 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 6/6 | clear | 4s |
 | 12 | Candidate package | 9/9 | clear | 8s |
-| API | HTTP surface | 10/10 | clear | 11s |
-| MULTI | Multi-indication | 11/11 | clear | 805s |
+| API | HTTP surface, pancreatic | 10/10 | clear | 11s |
+| API2 | HTTP surface, breast | 10/10 | clear | 242s |
+| MULTI | Multi-indication | 11/11 | clear | 586s |
 
 ## Every criterion
 
@@ -146,7 +147,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `K7` — every owed construct was built and none was built without the binder its architecture needs; 24 targets have a binder but no recommendation (§5.1)
 - clear `K8` — 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 
-### Stage 9 — Safety gate (7/7)
+### Stage 9 — Safety gate (14/14)
 
 - clear `S1` — registry returns trials for both pins (MSLN=169, CLDN18=3)
 - clear `S2` — pinned names classify as expected (Amatuximab=chimeric, Zolbetuximab=chimeric)
@@ -155,6 +156,13 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `S5` — epitope immunogenicity is NOT_CONNECTED on every row
 - clear `S6` — 200 rows and 200 distinct genes against the 200 the Stage 4 manifest records
 - clear `S7` — every target with stopped trials is flagged or blocked
+- clear `S8` — a planted 24 bp repeat is reported at 5, 49, and a control with none reports 0
+- clear `S9` — planted donor and acceptor are both found (['splice_acceptor', 'splice_donor']), and a control with neither reports 0
+- clear `S10` — a 39-codon reading frame planted out of frame is reported (1), and the same frame planted as the coding frame is not (0)
+- clear `S11` — re-encoded under a synonymous codon table, all 5 constructs keep every CODON_INVARIANT finding and every one of them moves at least one MAP_SPECIFIC finding; no finding is unlabelled
+- clear `S12` — a domain map repeating one part reports it once, a map repeating none reports nothing, and 5 shipping design(s) repeat no part: none
+- clear `S13` — the arm changed no sequence, no domain map and no verdict across all 200 constructs
+- clear `S14` — 5 safety record(s) carry a construct-safety report, exactly the 5 construct(s) that assembled
 
 ### Stage 10 — Developability (6/6)
 
@@ -181,21 +189,34 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `Q3` — all 9 sections present on every package, and each carries what its stage produced
 - clear `Q4` — the packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5
 - clear `Q5` — every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3
-- clear `Q6` — 17 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
+- clear `Q6` — 16 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
 - clear `Q7` — no conservative design exists in this pool and the section says so with the counts behind it, rather than standing blank
 - clear `Q8` — 9 connected sources each name a release, and the hash chain is unbroken from Stage 3 to Stage 11
 - clear `Q9` — no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)
 
-### Stage API — HTTP surface (10/10)
+### Stage API — HTTP surface, pancreatic (10/10)
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 69215abe99ab rather than blocking
+- clear `A3` — a run returns 202 with job e059f618fef1 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
-- clear `A7` — top target CEACAM5 with a 6-component breakdown
+- clear `A7` — top target CEACAM5 ranked 1 carries all 6 scoring components
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.037)
+- clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
+- clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
+
+### Stage API2 — HTTP surface, breast (10/10)
+
+- clear `A1` — project created (201), target_antigen None and discovery mode B
+- clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
+- clear `A3` — a run returns 202 with job bfa304b2f3ff rather than blocking
+- clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
+- clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 5 reasons
+- clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
+- clear `A7` — top target CD24 ranked 1 carries all 6 scoring components
+- clear `A8` — pairs carry the span percentile beside the raw fraction (0.012740414063457063 at percentile 0.1942)
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
 

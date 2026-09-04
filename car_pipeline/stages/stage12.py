@@ -145,17 +145,6 @@ GAPS: tuple[Gap, ...] = (
         probe=(PROBE_FIELD, "car_pipeline.stages.stage9.SafetyRecord",
                "cytokine_risk")),
     Gap(6, "Safety-risk matrix", PARTIAL,
-        "genomic and construct safety: recombination-prone regions, cryptic "
-        "splice sites, unwanted open reading frames, sequence repeats",
-        "none of it is computed.",
-        blocking_stage="none",
-        probe=(PROBE_KEY, "safety", "construct_safety"),
-        note="This is the cheapest closable gap on the whole list. All four are "
-             "sequence analysis over the DNA map Stage 6 already emits, with "
-             "its nucleotide sequence, domain boundaries and per-part "
-             "provenance in hand. No new data source, no model, no external "
-             "call, and no stage that does not exist."),
-    Gap(6, "Safety-risk matrix", PARTIAL,
         "editing-related risks for allogeneic products",
         "no gene-editing package is assembled, so there is nothing to assess.",
         blocking_stage="Stage 6's optional editing module, not built"),
@@ -442,6 +431,7 @@ def _safety_payload(record) -> dict:
         "trials_stopped": record.trials_stopped,
         "trials_stopped_ids": record.trials_stopped_ids,
         "trials_truncated": record.trials_truncated,
+        "construct_safety": record.construct_safety,
         "reasons": record.reasons,
     }
 

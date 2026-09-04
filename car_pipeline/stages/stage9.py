@@ -67,6 +67,8 @@ class SafetyRecord:
     trials_truncated: bool = False
     reasons: list[str] = field(default_factory=list)
 
+    construct_safety: dict | None = None
+
 
 def structure_binders(constructs) -> dict[str, tuple[str, str, str]]:
     """Per gene, the structure-derived binder a construct carries, if any."""
@@ -97,8 +99,11 @@ def gate(
     constructs=None,
 ) -> list[SafetyRecord]:
     """One record per pool member, in the order Stage 4 emitted them."""
+    from car_pipeline.stages import construct_safety as cs
+
     out: list[SafetyRecord] = []
     from_structure = structure_binders(constructs)
+    assembled = {c.gene: c for c in (constructs or []) if c.amino_acid_sequence}
     for row in decisions:
         gene = row["gene"]
         risk, organ = risks.get(gene, (None, None))
@@ -122,6 +127,11 @@ def gate(
             trials_stopped_ids=list(summary.stopped_ids) if summary else [],
             trials_truncated=bool(summary.truncated) if summary else False,
         )
+
+        built = assembled.get(gene)
+        if built is not None:
+            entry.construct_safety = cs.analyse(
+                built.amino_acid_sequence, built.dna, built.segments)
 
         origins = sorted({binder_origin(c.name) for c in named})
         entry.binder_origins = origins
