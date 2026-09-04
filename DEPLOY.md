@@ -14,16 +14,23 @@ targets, pairs them, routes each to a receptor architecture, retrieves antibody
 binders, assembles CAR constructs, and ranks what survives.
 
 Two indications are configured — pancreatic ductal adenocarcinoma and invasive
-breast carcinoma — and the deployment holds both without rebuilding. For PDAC,
-191 of 200 candidates are blocked on normal-tissue risk and one more has no
-retrievable binder; **eight designs reach the end**, all of them
-`BUILDABLE_AWAITING_BINDER`. They route to an adaptor receptor, which binds a
-tag rather than the antigen, and no anti-tag binder exists in the connected
-sources — so the platform declares each construct's size and refuses to invent
-its sequence.
+breast carcinoma — and the deployment holds both without rebuilding. **They do
+not return the same shape of answer, and both are correct.**
 
-The API reports that as a result with reasons, not as an error or an empty
-list. If you see `RANKED_AWAITING_BINDER`, it is working.
+For PDAC, 192 of 200 candidates are blocked on normal-tissue risk and 3 more
+have no retrievable binder; **five designs reach the end**, all `BUILDABLE` and
+all carrying a full sequence. Every one routes to an adaptor receptor, which
+binds a tag rather than the antigen, with a separately dosed adaptor molecule
+carrying the specificity. That is what admits them: an adaptor's exposure can be
+stopped, so it answers to a looser risk ceiling than a receptor whose exposure
+cannot be withdrawn.
+
+For breast, **no design reaches the end**. The constructs endpoint answers
+`NO_BUILDABLE_CONSTRUCT` at HTTP 200 with the reasons behind it, and the end
+state is `NO_DESIGN_REACHES_THE_END`.
+
+The API reports both as results with reasons, not as errors and not as empty
+lists. `RANKED` and `NO_DESIGN_REACHES_THE_END` are both the platform working.
 
 ---
 
@@ -276,7 +283,7 @@ curl -s -X POST "$BASE/projects" \
 
 ```json
 {
-  "project_id": "e8fbcc74b537",
+  "project_id": "705e8ee1eced",
   "cancer_type": "Pancreatic Ductal Adenocarcinoma",
   "target_antigen": null,
   "discovery_mode": "B"
@@ -294,7 +301,7 @@ need not reproduce the full oncological name.
 ### 2 — Start the screen
 
 ```bash
-PID=e8fbcc74b537
+PID=705e8ee1eced
 curl -s -X POST "$BASE/projects/$PID/runs"
 ```
 
@@ -306,7 +313,7 @@ single-cell summaries, not the 8.3 GB matrix they came from.
 ### 3 — Poll
 
 ```bash
-JID=78e64bc46ba3
+JID=2dbd755425cb
 until curl -s "$BASE/jobs/$JID" | grep -qE '"status": "(complete|failed)"'; do
   sleep 5
 done
@@ -317,8 +324,8 @@ Match **both** terminal states. Waiting only for `complete` spins forever on a
 failed job while discarding the body that explains it.
 
 Progresses through `sources → screen → pairing → binders → constructs → safety
-→ developability → ranking`, ending at
-`"status": "complete", "note": "RANKED_AWAITING_BINDER"`.
+→ developability → ranking → package`, ending at
+`"status": "complete", "note": "RANKED"`.
 
 ### 4 — Ranked targets
 
@@ -352,47 +359,60 @@ curl -s "$BASE/projects/$PID/constructs"
 
 ```json
 {
-  "status": "BUILDABLE_AWAITING_BINDER",
+  "status": "BUILDABLE",
   "usability": "USABLE",
   "unavailable": [],
   "indication": "Pancreatic Ductal Adenocarcinoma",
-  "counts": {"NO_CONSTRUCT": 190, "BUILDABLE": 8, "BUDGET_EXCEEDED": 2},
-  "buildable": 8,
-  "complete": 0,
-  "awaiting_binder": 8,
-  "over_budget": 2,
+  "counts": {
+    "NO_CONSTRUCT": 195,
+    "BUILDABLE": 5
+  },
+  "buildable": 5,
+  "complete": 5,
+  "awaiting_binder": 0,
+  "over_budget": 0,
   "constructs": [
     {
-      "gene": "CD207",
+      "gene": "FER1L6",
       "verdict": "BUILDABLE",
-      "state": "AWAITING_BINDER",
+      "state": "COMPLETE",
+      "design_class": "ADVANCED",
       "architecture": "adaptor, anti-tag receptor, antigen on the adaptor",
-      "binder_supplied": false,
-      "total_bp": 2811,
+      "binder_supplied": true,
+      "binder": "anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded)",
+      "total_bp": 2868,
       "budget_bp": 3500,
-      "headroom_bp": 689,
-      "amino_acid_sequence": null,
-      "dna": null
+      "headroom_bp": 632,
+      "amino_acid_sequence": "<955 residues, elided here>",
+      "dna": "<2868 bases, elided here>"
     }
   ]
 }
 ```
 
-> ### This is HTTP 200. It is a result, not an error.
+The two sequence fields are elided above for length only; the response carries
+them in full.
+
+> ### This is HTTP 200, and so is the empty case.
 >
-> Eight designs fit the budget and none can be ordered. They route to an
-> adaptor receptor, which binds a tag rather than the antigen, and no anti-tag
-> binder exists in the connected sources — so the platform declares each
-> construct's length and domain map and **refuses to invent its sequence**.
-> `amino_acid_sequence` and `dna` are null, and that null is the point.
+> Five designs fit the budget and every one carries a sequence. They route to
+> an adaptor receptor, which binds a tag rather than the antigen.
+> **The tag-binding sequence is a murine antibody fragment taken from a public
+> structure and used exactly as deposited, crystallisation artifacts included.**
+> It is not the molecule to order, nothing here has assessed its immunogenicity,
+> and no developability figure in the platform describes it. Each design is also
+> two manufactured biologics, not one.
 >
-> `AWAITING_BINDER` is a third state, deliberately not merged with either
-> neighbour: it is not a design that failed to fit, and it is not a finished
-> one.
+> `AWAITING_BINDER` remains a third state the API can return, deliberately not
+> merged with either neighbour: a design that fits the budget and has no
+> residues is neither one that failed to fit nor a finished one. This pool
+> returns none of them.
 >
-> **Never a 404, never a 500, never a bare `[]`.** An empty list would read as
-> "we looked and had nothing to say." Something specific and measured stopped
-> each design, and that is the answer.
+> **Run the same calls against breast and the answer is
+> `NO_BUILDABLE_CONSTRUCT` with none buildable — still HTTP 200, still with
+> reasons.** Never a 404, never a 500, never a bare `[]`. An empty list would
+> read as "we looked and had nothing to say." Something specific and measured
+> stopped each design, and naming it is the answer.
 
 ### 7 — The end state
 
@@ -402,26 +422,89 @@ curl -s "$BASE/projects/$PID/result"
 
 ```json
 {
-  "status": "RANKED_AWAITING_BINDER",
+  "status": "RANKED",
   "usability": "USABLE",
   "unavailable": [],
   "indication": "Pancreatic Ductal Adenocarcinoma",
   "pool_size": 200,
-  "reached_the_end": 8,
-  "complete": 0,
-  "awaiting_binder": 8,
+  "reached_the_end": 5,
+  "complete": 5,
+  "awaiting_binder": 0,
   "attrition": [
-    {"gate": "blocked on normal tissue risk", "dropped": 191, "remaining": 9},
-    {"gate": "no design recommended",         "dropped": 0,   "remaining": 9},
-    {"gate": "no binder retrieved",           "dropped": 1,   "remaining": 8},
-    {"gate": "no construct assembled",        "dropped": 0,   "remaining": 8},
-    {"gate": "construct over budget",         "dropped": 0,   "remaining": 8}
+    {
+      "gate": "blocked on normal tissue risk",
+      "dropped": 192,
+      "remaining": 8
+    },
+    {
+      "gate": "no design recommended",
+      "dropped": 0,
+      "remaining": 8
+    },
+    {
+      "gate": "no binder retrieved",
+      "dropped": 3,
+      "remaining": 5
+    },
+    {
+      "gate": "no construct assembled",
+      "dropped": 0,
+      "remaining": 5
+    },
+    {
+      "gate": "construct over budget",
+      "dropped": 0,
+      "remaining": 5
+    }
   ]
 }
 ```
 
 Every one of the 200 candidates is attributed to the **first** gate it failed,
 so the drops sum to the pool rather than overlapping.
+
+Breast returns the same shape with different numbers and a different end state:
+
+```json
+{
+  "status": "NO_DESIGN_REACHES_THE_END",
+  "indication": "Invasive Breast Carcinoma",
+  "pool_size": 200,
+  "reached_the_end": 0,
+  "attrition": [
+    {
+      "gate": "blocked on normal tissue risk",
+      "dropped": 196,
+      "remaining": 4
+    },
+    {
+      "gate": "no design recommended",
+      "dropped": 0,
+      "remaining": 4
+    },
+    {
+      "gate": "no binder retrieved",
+      "dropped": 3,
+      "remaining": 1
+    },
+    {
+      "gate": "no construct assembled",
+      "dropped": 1,
+      "remaining": 0
+    },
+    {
+      "gate": "construct over budget",
+      "dropped": 0,
+      "remaining": 0
+    }
+  ]
+}
+```
+
+**A deployment that only ever screens PDAC never sees this path.** The
+no-survivor branch of the service — the refusal reasons, the attrition
+explanation, the conservative-backup counts — is reached only by an indication
+that returns nothing, and it is worth exercising once after deploying.
 
 `usability`, `unavailable` and `indication` ride on every collection response,
 not just this one — so a caller reading `/targets` never has to know to ask
@@ -436,6 +519,32 @@ curl -s "$BASE/projects/$PID/evidence/MSLN"
 
 Every stage's view of a single target — screen, pairing, binders, construct,
 safety, developability, ranking — with the provenance behind each.
+
+---
+
+### 9 — The candidate package · **what a reader actually receives**
+
+```bash
+curl -s "$BASE/projects/$PID/package"
+```
+
+One package per surviving design, assembled from the stages that produced it
+and computing nothing new. For PDAC that is `PACKAGED` with five packages; for
+breast no candidate reaches the end, so the endpoint says so rather than
+returning an empty list.
+
+Each package carries eight sections — ranking, design class, construct with its
+full sequence and domain map, target evidence with the per-organ risk
+attribution, binders by route, safety, developability, and an experimental
+validation plan — plus the release pin of every data source and the
+configuration-hash chain that identifies the run.
+
+**It also carries what it cannot tell you.** The reference specification asks
+for twelve deliverables; eight have something to carry, and the other four are
+named per deliverable rather than omitted — 26 elements across eight, of which
+16 are checked mechanically on every run so the list cannot quietly go stale.
+
+`GET /projects/$PID/package/FER1L6` returns one package whole.
 
 ---
 
@@ -460,6 +569,15 @@ missing evidence undermines the ranking it refuses to present one at all —
 collection endpoint carries that judgement, so a caller reading `/targets`
 never has to know to ask somewhere else whether the ranking beneath it is
 supported.
+
+**Two of the twelve deliverables do not exist**, and the difference between
+them matters for planning. The **structural report** (Stage 7) was never built,
+but it is buildable from what is already connected — it needs only sequences the
+platform emits. **Functional predictions** (Stage 8) are not buildable here at
+all: the reference specification names partner-generated experimental data among
+the required inputs, and no such data is connected. That is the one gap a
+decision alone cannot close. Neither stage is stubbed; the numbering shows the
+gap rather than renumbering around it, and each package names both.
 
 **One run at a time**, globally, and jobs do not survive a restart. Both follow
 from the same in-memory job table.
