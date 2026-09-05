@@ -34,6 +34,20 @@ def _table(lines: list[str], header: list[str], rows: list[list[str]]) -> None:
     _p(lines)
 
 
+def _score_cell(package: dict) -> str:
+    """The overall score, or why there is none. Never a blank cell."""
+    card = package.get("scorecard")
+    if not card:
+        return "not scored"
+    return "null" if card["overall"] is None else f"{card['overall']:.4f}"
+
+
+def _fraction_cell(package: dict) -> str:
+    """How much of the applicable frame the score rests on."""
+    card = package.get("scorecard")
+    return "\u2014" if not card else f"{card['scored_fraction']:.3f}"
+
+
 def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
     """One candidate's package as a document."""
     gene = package["gene"]
@@ -75,7 +89,47 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
         _p(lines, f"> {reason}")
         _p(lines)
 
-    _p(lines, "## 2 — Construct")
+    card = package.get("scorecard")
+    if card:
+        _p(lines, "## 2 \u2014 Scorecard")
+        _p(lines)
+        _table(lines, ["component", "weight", "state", "value", "source"],
+               [[c["component"], c["weight"], c["state"],
+                 "\u2014" if c["value"] is None else round(c["value"], 4),
+                 c["source"]] for c in card["components"]])
+        _p(lines)
+        _table(lines, ["", ""], [
+            ["weight version", card["weight_version"]],
+            ["applicable weight", card["applicable_weight"]],
+            ["measured weight", card["measured_weight"]],
+            ["scored fraction", card["scored_fraction"]],
+            ["floor", card["minimum_scored_fraction"]],
+            ["evidence confidence", card["evidence_confidence"]],
+            ["prediction uncertainty",
+             "UNKNOWN" if card["prediction_uncertainty"] is None
+             else card["prediction_uncertainty"]],
+            ["confidence adjustment", card["confidence_adjustment"]],
+            ["overall score",
+             "not emitted" if card["overall"] is None else card["overall"]],
+        ])
+        _p(lines)
+        if card["unknown_components"]:
+            _p(lines, "**UNKNOWN on this candidate:** "
+                      + ", ".join(card["unknown_components"])
+                      + ". Each is named above with the reason it is missing. "
+                        "None is imputed.")
+            _p(lines)
+        if card["not_applicable_components"]:
+            _p(lines, "**NOT_APPLICABLE on this candidate:** "
+                      + ", ".join(card["not_applicable_components"])
+                      + ". This is a question that does not arise for this "
+                        "design, not a gap in the evidence.")
+            _p(lines)
+        for reason in card["reasons"]:
+            _p(lines, f"> {reason}")
+            _p(lines)
+
+    _p(lines, "## 3 — Construct")
     _p(lines)
     _table(lines, ["", ""], [
         ["architecture", construct["architecture"]],
@@ -105,7 +159,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
               "is not a codon-optimised ordering sequence.")
     _p(lines)
 
-    _p(lines, "## 3 — Target evidence")
+    _p(lines, "## 4 — Target evidence")
     _p(lines)
     _table(lines, ["", ""], [
         ["composite", target["composite"]],
@@ -141,7 +195,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
               "third state: it is not a zero and not a clean result.")
     _p(lines)
 
-    _p(lines, "## 4 — Binders")
+    _p(lines, "## 5 — Binders")
     _p(lines)
     binders = package["binders"]
     _p(lines, f"Stage 5 verdict: **{binders['verdict'] or 'no record'}** · "
@@ -155,7 +209,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
         _p(lines, f"> {reason}")
         _p(lines)
 
-    _p(lines, "## 5 — Safety")
+    _p(lines, "## 6 — Safety")
     _p(lines)
     safety = package["safety"]
     _table(lines, ["", ""], [
@@ -173,7 +227,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
         _p(lines, f"- {reason}")
     _p(lines)
 
-    _p(lines, "## 6 — Developability")
+    _p(lines, "## 7 — Developability")
     _p(lines)
     dev = package["developability"]
     _p(lines, f"{dev['binders_scored']} binder sequence(s) scored.")
@@ -189,7 +243,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
         _p(lines, f"> {reason}")
         _p(lines)
 
-    _p(lines, "## 7 — Experimental validation plan")
+    _p(lines, "## 8 — Experimental validation plan")
     _p(lines)
     plan = package["validation_plan"]
     _p(lines, "### Before any bench work")
@@ -211,7 +265,7 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
         _p(lines, f"> {reason}")
         _p(lines)
 
-    _p(lines, "## 8 — Provenance")
+    _p(lines, "## 9 — Provenance")
     _p(lines)
     _table(lines, ["source", "release", "role"],
            [[s["source"], s["release"], s["role"]]
@@ -282,12 +336,13 @@ def main() -> int:
     index = OUT / "README.md"
     lines = ["# Candidate packages", "",
              f"{len(packages)} candidate(s), status {status}.", "",
-             "| candidate | id | decision | class | construct | safety |",
-             "| --- | --- | --- | --- | --- | --- |"]
+             "| candidate | id | decision | score | fraction | class | construct | safety |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- |"]
     for p in packages:
         lines.append(
             f"| [{p['gene']}]({p['gene']}.md) | {p['ranking']['candidate_id']} "
-            f"| {p['ranking']['decision']} | {p['design_class']} | "
+            f"| {p['ranking']['decision']} "
+            f"| {_score_cell(p)} | {_fraction_cell(p)} | {p['design_class']} | "
             f"{p['construct']['total_bp']} bp | {p['safety']['verdict']} |")
     lines += ["", f"Each package names what it cannot tell you: "
                   f"{gaps['elements_missing']} elements across "

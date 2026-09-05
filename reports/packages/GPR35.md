@@ -29,7 +29,43 @@ This package carries what the pipeline produced. Eight of the reference document
 
 > Position is a display index carried from Stage 4's composite order. It is not a ranking Stage 11 computed, and nothing decisional reads it: the decision column reads front membership, which is the comparison this stage actually performs.
 
-## 2 — Construct
+## 2 — Scorecard
+
+| component | weight | state | value | source |
+| --- | --- | --- | --- | --- |
+| tumour_coverage | 0.18 | MEASURED | 0.7079 | stage3.patient_prevalence |
+| malignant_specificity | 0.16 | MEASURED | 0.6406 | stage3.malignant_vs_stroma |
+| normal_tissue_safety | 0.16 | MEASURED | 0.1066 | stage9 residual margin below the applied ceiling 0.35 |
+| binder_quality | 0.12 | UNKNOWN | — | this is an adaptor design: the receptor binds a tag, no anti-tag binder is retrieved, and there is no binder to score |
+| manufacturability | 0.1 | MEASURED | 0.1806 | stage6 headroom against the 3500 bp payload budget |
+| developability | 0.1 | UNKNOWN | — | Stage 10 counts sequence liabilities and refuses to sum them into a score, because one flag fires on every binder in the pool and a sum would hide it. That decision stands; this specification does not overturn it, so the component has no value to carry |
+| structural_feasibility | 0.08 | UNKNOWN | — | Stage 7 does not exist. It is buildable and unbuilt |
+| functional_prediction | 0.06 | UNKNOWN | — | Stage 8 does not exist and is not buildable from what is connected: the required training inputs are not available |
+| pairing_robustness | 0.04 | NOT_APPLICABLE | — | an ADAPTOR design names no partner, so pairing robustness is a question that does not arise. This is not missing evidence |
+
+
+|  |  |
+| --- | --- |
+| weight version | wm-scoring-1 |
+| applicable weight | 0.96 |
+| measured weight | 0.6 |
+| scored fraction | 0.625 |
+| floor | 0.5 |
+| evidence confidence | 0.85 |
+| prediction uncertainty | UNKNOWN |
+| confidence adjustment | 0.85 |
+| overall score | 0.375437 |
+
+
+**UNKNOWN on this candidate:** binder_quality, developability, structural_feasibility, functional_prediction. Each is named above with the reason it is missing. None is imputed.
+
+**NOT_APPLICABLE on this candidate:** pairing_robustness. This is a question that does not arise for this design, not a gap in the evidence.
+
+> evidence confidence applied at exponent 1.0; the prediction-uncertainty penalty is NOT applied because no uncertainty is measured. It is not treated as zero uncertainty, which would flatter an unmeasured candidate.
+
+> Scored on 0.6000 of 0.9600 applicable weight (0.6250). The remaining components are named, not imputed, and the score is normalised over what was measured.
+
+## 3 — Construct
 
 |  |  |
 | --- | --- |
@@ -59,7 +95,7 @@ This package carries what the pipeline produced. Eight of the reference document
 
 The amino-acid sequence and the nucleotide map are in `GPR35.json` beside this file. The DNA is a map under one fixed codon per residue, so the boundaries above are exact. It is not a codon-optimised ordering sequence.
 
-## 3 — Target evidence
+## 4 — Target evidence
 
 |  |  |
 | --- | --- |
@@ -99,7 +135,7 @@ Risk 0.3127024551083093 on gi_tract, ahead of the next organ by 0.00410821287067
 
 Every score above recomputes from the measurement beside it, and the largest weighted value is the risk. `NOT_MEASURED` is a third state: it is not a zero and not a clean result.
 
-## 4 — Binders
+## 5 — Binders
 
 Stage 5 verdict: **BINDER_STRUCTURE_ONLY** · 1 structural entries examined
 
@@ -111,7 +147,7 @@ Stage 5 verdict: **BINDER_STRUCTURE_ONLY** · 1 structural entries examined
 
 > This receptor binds a tag, not the antigen, so its binding domain is not a Stage 5 record: it is anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded), retrieved from 1P4B_1+2 and named in the construct section. A Stage 5 verdict of NO_BINDER for this target means no antigen-specific binder was retrieved, which is a different statement from the receptor having no binder.
 
-## 5 — Safety
+## 6 — Safety
 
 |  |  |
 | --- | --- |
@@ -127,7 +163,7 @@ Stage 5 verdict: **BINDER_STRUCTURE_ONLY** · 1 structural entries examined
 - the receptor carries a structure-derived binder, Mus musculus as deposited in 1P4B_1+2, treated as non-human because no humanised sequence is established for it. This is read from the deposition, not from a name stem, which a structure-derived binder does not carry
 - epitope-level immunogenicity remains NOT_CONNECTED for it: no epitope source is connected, so the species is known and the immunogenicity is not
 
-## 6 — Developability
+## 7 — Developability
 
 0 binder sequence(s) scored.
 
@@ -137,7 +173,7 @@ None.
 
 > So no developability figure in this platform describes the binder this construct actually carries. That is an absence, not a clean result.
 
-## 7 — Experimental validation plan
+## 8 — Experimental validation plan
 
 ### Before any bench work
 
@@ -168,7 +204,7 @@ None.
 
 > No step below has been run and no outcome is predicted here.
 
-## 8 — Provenance
+## 9 — Provenance
 
 | source | release | role |
 | --- | --- | --- |
@@ -192,7 +228,7 @@ Configuration hash chain, each covering the stage before it:
 | stage6 | `859cfd24c21ddd81` |
 | stage9 | `7b703a7cc4a2d0d6` |
 | stage10 | `518e1ef6953ee5fb` |
-| stage11 | `f03b275dbb285e02` |
+| stage11 | `2591188b434f185d` |
 
 ---
 

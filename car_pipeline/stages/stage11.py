@@ -6,6 +6,8 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
+from car_pipeline.stages import scoring
+
 NO_DESIGN_REACHES_THE_END = "NO_DESIGN_REACHES_THE_END"
 RANKED = "RANKED"
 
@@ -84,6 +86,11 @@ class Ranked:
     gate_status: str = ""
     decision: str = ""
 
+    # Level B. None on every candidate that failed a gate, because scoring is
+    # only ever reached by survivors -- criterion W4.
+    scorecard: object | None = None
+    overall: float | None = None
+
     @property
     def objectives(self) -> tuple[float, float, float, float] | None:
         """The objectives this candidate is compared on, or None if it did not survive."""
@@ -142,7 +149,8 @@ def rank(
     ceiling: float,
     *,
     indication_key: str,
-    scored: dict[str, bool] | None = None,
+    stage3_rows: dict,
+    budget_bp: int,
 ) -> tuple[list[Ranked], dict[str, int], str]:
     """Attribute every pool member to its first failed gate, then rank survivors."""
     rows: list[Ranked] = []
@@ -193,17 +201,31 @@ def rank(
             entry.position = position
             entry.candidate_id = candidate_id(indication_key, position)
 
+        # Level B, survivors only. A candidate that failed a gate never reaches
+        # this loop, which is what makes the weighted sum safe: no weight can
+        # rescue a gate failure because no gate failure is scored.
+        for entry in survivors:
+            entry.scorecard = scoring.score(
+                entry,
+                stage3_rows.get(entry.gene),
+                gated.get(entry.gene),
+                constructs.get(entry.gene),
+                binders.get(entry.gene),
+                budget_bp,
+            )
+            entry.overall = entry.scorecard.overall
+
         status = (RANKED if any(r.binder_supplied for r in survivors)
                   else RANKED_AWAITING_BINDER)
     else:
         status = NO_DESIGN_REACHES_THE_END
 
-    # After the front, because the decision reads it.
+    # After the front and the scoring, because the decision reads both.
     for entry in rows:
         entry.gate_status = (PASSED_ALL_GATES if entry.survived
                              else GATE_STATUS[entry.failed_at])
         entry.decision = decision_for(
-            entry, (scored or {}).get(entry.gene) if scored is not None else None)
+            entry, entry.scorecard.scored if entry.scorecard else None)
 
     return rows, attrition, status
 
@@ -213,6 +235,7 @@ def configuration_hash(stage9_hash: str, genes: list[str]) -> str:
     payload = {"stage9": stage9_hash, "genes": genes, "gates": list(GATES),
                "recommended": list(RECOMMENDED),
                "decisions": list(DECISIONS),
-               "gate_status": [GATE_STATUS[g] for g in GATES]}
+               "gate_status": [GATE_STATUS[g] for g in GATES],
+               "scoring": scoring.configuration_hash()}
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
