@@ -44,10 +44,11 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
 
     _p(lines, f"# {gene} — candidate package")
     _p(lines)
-    _p(lines, f"`{package['accession']}` · rank {ranking['position']} of "
-              f"{ranking['of']} · {package['design_class']} · "
+    _p(lines, f"**{ranking['candidate_id']}** · `{package['accession']}` · "
+              f"decision **{ranking['decision']}** · {ranking['gate_status']} · "
+              f"{package['design_class']} · "
               f"{'on the Pareto front' if ranking['on_pareto_front'] else 'dominated'}"
-              f" · {status}")
+              f" · position {ranking['position']} of {ranking['of']} · {status}")
     _p(lines)
     _p(lines, "This package carries what the pipeline produced. Eight of the "
               "reference document's twelve deliverables have something to "
@@ -58,6 +59,15 @@ def render(package: dict, gaps: dict, provenance: dict, status: str) -> str:
     _p(lines)
 
     _p(lines, "## 1 — Ranking")
+    _p(lines)
+    _table(lines, ["field", "value"], [
+        ["candidate_id", ranking["candidate_id"]],
+        ["gate_status", ranking["gate_status"]],
+        ["decision", ranking["decision"]],
+        ["on Pareto front", "yes" if ranking["on_pareto_front"] else "no"],
+        ["position", f"{ranking['position']} of {ranking['of']}"],
+        ["position basis", ranking["position_basis"]],
+    ])
     _p(lines)
     _table(lines, ["objective", "value"],
            [[k, v] for k, v in ranking["objectives"].items()])
@@ -272,12 +282,12 @@ def main() -> int:
     index = OUT / "README.md"
     lines = ["# Candidate packages", "",
              f"{len(packages)} candidate(s), status {status}.", "",
-             "| candidate | rank | class | construct | safety |",
-             "| --- | --- | --- | --- | --- |"]
+             "| candidate | id | decision | class | construct | safety |",
+             "| --- | --- | --- | --- | --- | --- |"]
     for p in packages:
         lines.append(
-            f"| [{p['gene']}]({p['gene']}.md) | {p['ranking']['position']} of "
-            f"{p['ranking']['of']} | {p['design_class']} | "
+            f"| [{p['gene']}]({p['gene']}.md) | {p['ranking']['candidate_id']} "
+            f"| {p['ranking']['decision']} | {p['design_class']} | "
             f"{p['construct']['total_bp']} bp | {p['safety']['verdict']} |")
     lines += ["", f"Each package names what it cannot tell you: "
                   f"{gaps['elements_missing']} elements across "

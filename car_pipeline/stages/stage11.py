@@ -25,6 +25,44 @@ GATES = (
 RECOMMENDED = ("SINGLE", "DUAL", "ADAPTOR")
 
 
+PASSED_ALL_GATES = "PASSED_ALL_GATES"
+
+# A machine token per gate, because the GATES strings are prose written to be
+# read in an attrition table and a column a frontend renders should not be one.
+GATE_STATUS = {
+    GATES[0]: "BLOCKED_ON_NORMAL_TISSUE_RISK",
+    GATES[1]: "NO_DESIGN_RECOMMENDED",
+    GATES[2]: "NO_BINDER_RETRIEVED",
+    GATES[3]: "NO_CONSTRUCT_ASSEMBLED",
+    GATES[4]: "OVER_PAYLOAD_BUDGET",
+}
+
+ADVANCE = "ADVANCE"
+BACKUP = "BACKUP"
+VALIDATE = "VALIDATE"
+REQUIRES_EVIDENCE = "REQUIRES_EVIDENCE"
+EXCLUDED = "EXCLUDED"
+
+DECISIONS = (ADVANCE, BACKUP, VALIDATE, REQUIRES_EVIDENCE, EXCLUDED)
+
+# Which failures a measurement could later clear, and which it could not. A
+# target over the safety ceiling is not waiting on evidence; a target with no
+# binder retrieved is waiting on exactly that.
+GATE_DECISION = {
+    GATES[0]: EXCLUDED,
+    GATES[1]: EXCLUDED,
+    GATES[2]: REQUIRES_EVIDENCE,
+    GATES[3]: REQUIRES_EVIDENCE,
+    GATES[4]: EXCLUDED,
+}
+
+# Position is Stage 4's composite ordering, inherited and carried through
+# unchanged. It is recorded here so a reader is told where the order came from
+# rather than inferring that Stage 11 produced it. Nothing decisional hangs off
+# it: the decision column reads front membership, which Stage 11 does compute.
+POSITION_BASIS = "stage4 composite order, inherited; not a ranking Stage 11 computed"
+
+
 @dataclass
 class Ranked:
     gene: str
@@ -40,6 +78,11 @@ class Ranked:
 
     cleanliness: int = 0
     on_front: bool = False
+
+    position: int | None = None
+    candidate_id: str | None = None
+    gate_status: str = ""
+    decision: str = ""
 
     @property
     def objectives(self) -> tuple[float, float, float, float] | None:
@@ -68,6 +111,27 @@ def pareto_front(points: list[tuple]) -> list[int]:
     return front
 
 
+def decision_for(entry: Ranked, scored: bool | None) -> str:
+    """What should happen to this candidate, from its gate status and the front.
+
+    `scored` is tri-state on purpose. True means a score was emitted, False
+    means the candidate cleared every gate but too little of it was measured to
+    score, and None means no scoring stage has run at all. Only False produces
+    VALIDATE, so that branch is unreachable from the pipeline until scoring
+    exists; it is exercised directly rather than left untested until then.
+    """
+    if not entry.survived:
+        return GATE_DECISION[entry.failed_at]
+    if scored is False:
+        return VALIDATE
+    return ADVANCE if entry.on_front else BACKUP
+
+
+def candidate_id(indication_key: str, position: int) -> str:
+    """A within-run label. The durable identity is the gene and the hash chain."""
+    return f"CAR-{indication_key.upper()}-{position:03d}"
+
+
 def rank(
     decisions: list[dict],
     binders: dict,
@@ -76,6 +140,9 @@ def rank(
     liabilities: dict,
     composites: dict,
     ceiling: float,
+    *,
+    indication_key: str,
+    scored: dict[str, bool] | None = None,
 ) -> tuple[list[Ranked], dict[str, int], str]:
     """Attribute every pool member to its first failed gate, then rank survivors."""
     rows: list[Ranked] = []
@@ -122,16 +189,30 @@ def rank(
         for i in pareto_front(points):
             survivors[i].on_front = True
 
+        for position, entry in enumerate(survivors, 1):
+            entry.position = position
+            entry.candidate_id = candidate_id(indication_key, position)
+
         status = (RANKED if any(r.binder_supplied for r in survivors)
                   else RANKED_AWAITING_BINDER)
     else:
         status = NO_DESIGN_REACHES_THE_END
+
+    # After the front, because the decision reads it.
+    for entry in rows:
+        entry.gate_status = (PASSED_ALL_GATES if entry.survived
+                             else GATE_STATUS[entry.failed_at])
+        entry.decision = decision_for(
+            entry, (scored or {}).get(entry.gene) if scored is not None else None)
+
     return rows, attrition, status
 
 
 def configuration_hash(stage9_hash: str, genes: list[str]) -> str:
     """Fingerprint the ranking configuration, gates and recommendations included."""
     payload = {"stage9": stage9_hash, "genes": genes, "gates": list(GATES),
-               "recommended": list(RECOMMENDED)}
+               "recommended": list(RECOMMENDED),
+               "decisions": list(DECISIONS),
+               "gate_status": [GATE_STATUS[g] for g in GATES]}
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]

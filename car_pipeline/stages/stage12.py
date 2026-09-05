@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from car_pipeline.data import domains
-from car_pipeline.stages import stage6, validation
+from car_pipeline.stages import stage6, stage11, validation
 
 PACKAGED = "PACKAGED"
 NO_CANDIDATE_REACHES_THE_END = "NO_CANDIDATE_REACHES_THE_END"
@@ -487,9 +487,13 @@ def _developability_payload(rows, construct) -> dict:
 def _ranking_payload(entry, position, total) -> dict:
     """Deliverable 1, carried from the ranking with no re-ordering."""
     return {
+        "candidate_id": entry.candidate_id,
         "position": position,
         "of": total,
+        "position_basis": stage11.POSITION_BASIS,
         "on_pareto_front": entry.on_front,
+        "gate_status": entry.gate_status,
+        "decision": entry.decision,
         "objectives": {
             "attractiveness": entry.attractiveness,
             "safety_margin": entry.safety_margin,
@@ -501,6 +505,10 @@ def _ranking_payload(entry, position, total) -> dict:
             "No weighted total across objectives is emitted. Candidates are "
             "compared on a Pareto front, so a design better on one objective "
             "and worse on another is not silently averaged into a rank.",
+            "Position is a display index carried from Stage 4's composite "
+            "order. It is not a ranking Stage 11 computed, and nothing "
+            "decisional reads it: the decision column reads front membership, "
+            "which is the comparison this stage actually performs.",
         ],
     }
 
@@ -522,6 +530,11 @@ def build(run: dict) -> tuple[list[dict], str]:
 
     packages = []
     for position, entry in enumerate(survivors, 1):
+        if entry.position != position:
+            raise ValueError(
+                f"survivor order disagrees with the ranking: {entry.gene} is "
+                f"at {position} here and {entry.position} in Stage 11. The "
+                "package would report a position the ranking never assigned.")
         gene = entry.gene
         construct = by_construct.get(gene)
         ranked = by_ranked.get(gene)

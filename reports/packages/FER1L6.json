@@ -2,9 +2,13 @@
   "gene": "FER1L6",
   "accession": "Q2WGJ9",
   "ranking": {
+    "candidate_id": "CAR-PDAC-001",
     "position": 1,
     "of": 5,
+    "position_basis": "stage4 composite order, inherited; not a ranking Stage 11 computed",
     "on_pareto_front": true,
+    "gate_status": "PASSED_ALL_GATES",
+    "decision": "ADVANCE",
     "objectives": {
       "attractiveness": 0.5023,
       "safety_margin": -0.1381,
@@ -13,10 +17,11 @@
     },
     "binder_supplied": true,
     "reasons": [
-      "No weighted total across objectives is emitted. Candidates are compared on a Pareto front, so a design better on one objective and worse on another is not silently averaged into a rank."
+      "No weighted total across objectives is emitted. Candidates are compared on a Pareto front, so a design better on one objective and worse on another is not silently averaged into a rank.",
+      "Position is a display index carried from Stage 4's composite order. It is not a ranking Stage 11 computed, and nothing decisional reads it: the decision column reads front membership, which is the comparison this stage actually performs."
     ]
   },
-  "design_class": "ADVANCED",
+  "design_class": "INNOVATIVE_DESIGN",
   "construct": {
     "verdict": "BUILDABLE",
     "architecture": "adaptor, anti-tag receptor, antigen on the adaptor",
@@ -581,6 +586,131 @@
     "trials_stopped": 0,
     "trials_stopped_ids": [],
     "trials_truncated": false,
+    "construct_safety": {
+      "analysed": true,
+      "thresholds": {
+        "peptide_repeat_min_residues": 8,
+        "nucleotide_repeat_min_bp": 24,
+        "pyrimidine_tract_min": 8,
+        "orf_min_codons": 30,
+        "homopolymer_min_bp": 8
+      },
+      "counts": {
+        "repeated_peptide": 3,
+        "internal_methionine": 1,
+        "direct_repeat": 10,
+        "splice_acceptor": 1,
+        "reverse_orf": 9,
+        "homopolymer": 1
+      },
+      "codon_invariant": [
+        {
+          "kind": "repeated_peptide",
+          "basis": "CODON_INVARIANT",
+          "at": "137, 147",
+          "detail": "GGGGSGGG occurs 2 times without overlapping"
+        },
+        {
+          "kind": "repeated_peptide",
+          "basis": "CODON_INVARIANT",
+          "at": "138, 148",
+          "detail": "GGGSGGGG occurs 2 times without overlapping"
+        },
+        {
+          "kind": "repeated_peptide",
+          "basis": "CODON_INVARIANT",
+          "at": "139, 149",
+          "detail": "GGSGGGGS occurs 2 times without overlapping"
+        },
+        {
+          "kind": "internal_methionine",
+          "basis": "CODON_INVARIANT",
+          "at": "22, 238, 362, 433, 456, 465",
+          "detail": "14 methionine(s) after the initiator. Each is a possible internal initiation site in the coding frame under any encoding"
+        }
+      ],
+      "codon_invariant_total": 4,
+      "map_specific": [
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "407, 437",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "408, 438",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "409, 439",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "410, 440",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "411, 441",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "412, 442",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "413, 443",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "414, 444",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "415, 445",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "direct_repeat",
+          "basis": "MAP_SPECIFIC",
+          "at": "416, 446",
+          "detail": "24 bp repeated 2 times without overlapping"
+        },
+        {
+          "kind": "splice_acceptor",
+          "basis": "MAP_SPECIFIC",
+          "at": "1607, 2576",
+          "detail": "2 AG preceded by a pyrimidine tract of 8 or more"
+        },
+        {
+          "kind": "reverse_orf",
+          "basis": "MAP_SPECIFIC",
+          "at": "65-220",
+          "detail": "51 codons in frame 2, numbered along the reverse strand"
+        }
+      ],
+      "map_specific_total": 21,
+      "reasons": [
+        "This is read from Stage 6's DNA map, which is a reverse translation under one fixed codon per residue and not an ordering sequence. Findings marked MAP_SPECIFIC are properties of that encoding: a different codon table moves them, and the sequence anyone would order has different ones.",
+        "Findings marked CODON_INVARIANT survive any encoding, because they are properties of the protein or of the domain layout. Those are the ones a reader can act on.",
+        "Nothing here gates. No construct is blocked and no verdict changes; setting a tolerance on these counts would need outcome data this platform does not have."
+      ]
+    },
     "reasons": [
       "admitted against the terminable ceiling 0.35, not the persistent 0.15: activation requires a separately dosed adaptor, so the exposure is stoppable",
       "the receptor carries a structure-derived binder, Mus musculus as deposited in 1P4B_1+2, treated as non-human because no humanised sequence is established for it. This is read from the deposition, not from a name stem, which a structure-derived binder does not carry",
@@ -774,7 +904,7 @@
       "stage6": "859cfd24c21ddd81",
       "stage9": "7b703a7cc4a2d0d6",
       "stage10": "518e1ef6953ee5fb",
-      "stage11": "7f2036bc6df78d1d"
+      "stage11": "f03b275dbb285e02"
     },
     "reasons": [
       "Each hash covers the stage before it, so the chain identifies the exact configuration a package was produced under.",

@@ -455,7 +455,10 @@ def result_view(project_id: str) -> dict:
     for gate in stage11.GATES:
         n = r["attrition"][gate]
         running -= n
-        chain.append({"gate": gate, "dropped": n, "remaining": running})
+        chain.append({"gate": gate,
+                      "gate_status": stage11.GATE_STATUS[gate],
+                      "decision": stage11.GATE_DECISION[gate],
+                      "dropped": n, "remaining": running})
     survivors = [x for x in r["final"] if x.survived]
     complete = [x for x in survivors if x.binder_supplied]
     awaiting = [x for x in survivors if not x.binder_supplied]
@@ -489,6 +492,32 @@ def result_view(project_id: str) -> dict:
         "complete": len(complete),
         "awaiting_binder": len(awaiting),
         "attrition": chain,
+        "candidates": [
+            {
+                "candidate_id": x.candidate_id,
+                "gene": x.gene,
+                "accession": x.accession,
+                "gate_status": x.gate_status,
+                "decision": x.decision,
+                "on_pareto_front": x.on_front,
+                "position": x.position,
+                "overall_score": None,
+            }
+            for x in survivors
+        ],
+        "candidate_table_notes": [
+            "candidate_id is a within-run label. The durable identity of a "
+            "candidate is its gene together with the configuration-hash chain, "
+            "because the label renumbers whenever the surviving set changes.",
+            "decision is derived from gate status and Pareto-front membership "
+            "only. It is not derived from design class, which answers a "
+            "different question and is computed independently.",
+            "position is a display index carried from Stage 4's composite "
+            "order. Nothing decisional reads it.",
+            "overall_score is null on every candidate: no scoring stage has "
+            "run. It is null rather than absent so a reader is told the field "
+            "exists and is unmeasured, which is not the same as zero.",
+        ],
         "reasons": reasons + adaptor_notices(r["constructs"]),
         "developability_status": r["developability_status"],
     }
