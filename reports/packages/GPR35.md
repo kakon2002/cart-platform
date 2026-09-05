@@ -234,7 +234,7 @@ Configuration hash chain, each covering the stage before it:
 
 ## What this package cannot tell you
 
-26 elements the reference document asks for are not produced, across 8 deliverables. 16 are checked mechanically by the verifier, 1 recomputed from this run, and 9 are judgements that say so.
+27 elements the reference document asks for are not produced, across 8 deliverables. 16 are checked mechanically by the verifier, 2 recomputed from this run, and 9 are judgements that say so.
 
 ### Deliverable 1 — Top 3-5 CAR-T constructs (PARTIAL)
 
@@ -350,7 +350,15 @@ there is no module, no dataclass, no field and no stub. The project handoff desc
 
 *Blocked by:* 7
 
-*Note:* Buildable. It needs structure prediction over sequences Stage 6 already emits, and no data source that is missing. Two of its scores have sequence-level proxies in Stage 10's aggregation-prone regions, which is not the structural claim.
+*Note:* Partly buildable: retrieval yes, prediction no. What is connected returns entry identifiers, chain labels and experimental methods -- never atoms. No coordinate file exists anywhere in the cache, and the cached anti-tag binder records its antigen entity as excluded, so the platform holds an antibody with no antigen. Retrieved geometry over deposited complexes is buildable from one further endpoint and needs no model; predicted geometry for a designed receptor is not, and no folding model runs on the available hardware. One of its scores has a sequence-level proxy in Stage 10's aggregation-prone regions, not two, and that proxy is a hydropathy window rather than the structural claim. Building this stage moves nothing for the pool that currently ships: see the measured gap on own-target binders.
+
+**a binder and an antigen to compute geometry over, on the designs that actually ship**
+
+4 of 5 candidate(s) carry no own-target binder by either route (FER1L6, TMEM92, TNFSF9, BTNL8). The remaining 1 carries 1 structure-route entry: GPR35 8H8J:H1H2 records its antigen as Guanine nucleotide-binding protein subunit alpha-13|Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. Whether that antibody binds the target or another chain of the same deposited entry cannot be settled from what is connected, because the entry was found by searching on the target's accession and only coordinates would show what the heavy and light chains contact. The receptor these designs ship binds a peptide tag, and the molecule that would bind the target is the adaptor antibody, which this platform never names. So there is no binder-antigen pair to model, predicted or retrieved.
+
+*Blocked by:* 5, not 7
+
+*Note:* Stage 7 is blocked on Stage 5, not on structure prediction. Funding a structural stage against this pool would buy geometry for pool members that failed the safety gate and nothing for any design that reaches the end. The constraint to relieve first is binder discovery. Measured from this run, so it disappears the moment a shipping design carries a target-specific binder.
 
 ### Deliverable 8 — Functional predictions (ABSENT)
 
