@@ -349,6 +349,50 @@ that changes nothing.
 the two verifiers and DEPLOY.md send only `cancer_type` — and it is stated here
 rather than discovered.
 
+## 10b. How `architecture_mode` is honoured, decided at implementation
+
+The spec said `architecture_mode` maps onto `CARFormat` and left what the
+mapping *does* unstated. `CARFormat` is a field on the design spec that nothing
+downstream of Stage 1 reads, so mapping to it and stopping would have been
+exactly the accept-and-drop this section exists to prevent.
+
+The document says the field **controls the architecture search space**. What the
+platform can honour today is which routed outcomes are eligible for the final
+ranking:
+
+| `architecture_mode` | admits routed outcome | in this run |
+| --- | --- | --- |
+| `AUTO` | any | 5 of 5 |
+| `SINGLE` | `SINGLE` | 0 of 5 |
+| `AND` | `DUAL` | 0 of 5 |
+| `ADAPTOR` | `ADAPTOR` | 5 of 5 |
+| `OR`, `AND-NOT` | rejected by name | — |
+
+**The filter can only reduce.** It never relabels a design to satisfy the
+request, and when it empties the list the response says so with counts: *no
+candidate matches the requested architecture; five designs passed every gate
+under a different one, and relabelling one of them would be a silent
+substitution*. Both zero paths are exercised, which matters because under
+pancreatic they are the only way to reach them.
+
+### The §16 output shape
+
+Served at `GET /projects/{id}/contract`, in the document's own field names.
+Two departures, both deliberate:
+
+- **`next_best_experiments` is `null`, not `[]`.** An empty list says no
+  experiment is recommended. The true statement is that nothing computed one,
+  because Stage 13 does not exist, and a companion field says exactly that.
+- **Every unmeasured component is `null`, never `0.00`.** The document's example
+  shows `0.00` throughout, which is placeholder formatting rather than an
+  instruction; reporting an unmeasured component as zero would be the
+  favourable imputation §14.2 forbids, and would rank a candidate as though
+  measured badly rather than not measured.
+
+`audit_id` is the last link of the configuration-hash chain, so it changes if
+any earlier stage's configuration changes, and the whole chain is served beside
+it.
+
 ## 11. Rejection criteria — fixed before the run
 
 | id | trips when |
@@ -364,6 +408,7 @@ rather than discovered.
 | **W9** | any candidate's decision does not recompute from its gate status and front membership alone, or the survivors split on front membership yet all carry the same decision |
 | **W10** | `POST /projects` accepts a field the platform does not honour, or rejects one it does, or fails to name the offending field in the refusal |
 | **W11** | the Stage 11 configuration hash does not change when a weight changes — a run under different weights must not compare equal to this one |
+| **W12** | the §16 output omits any field the document names; or `next_best_experiments` is emitted as an empty list rather than named absent; or any unmeasured component is reported as `0.00` rather than `null` |
 
 ### Amendment — W9 tested the rank rule, not the property
 

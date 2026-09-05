@@ -185,6 +185,90 @@ def main() -> int:
               f"evidence trail for MSLN spans {len(stages)} stages: "
               f"{', '.join(s.split('_')[0] for s in stages)}")
 
+    # W10: every field the document names is either honoured or refused by
+    # name. Both directions are exercised -- a field wrongly refused fails this
+    # as surely as one wrongly accepted.
+    must_refuse = [
+        ("objective", {"cancer_type": cancer_type, "objective": "rank safely"}),
+        ("delivery_mode", {"cancer_type": cancer_type, "delivery_mode": "AUTO"}),
+        ("architecture_mode", {"cancer_type": cancer_type,
+                               "architecture_mode": "OR"}),
+        ("architecture_mode", {"cancer_type": cancer_type,
+                               "architecture_mode": "AND-NOT"}),
+        ("max_final_candidates", {"cancer_type": cancer_type,
+                                  "max_final_candidates": 0}),
+    ]
+    must_accept = [
+        {"cancer_type": cancer_type, "max_final_candidates": 3},
+        {"cancer_type": cancer_type, "architecture_mode": "AUTO"},
+        {"cancer_type": cancer_type, "architecture_mode": "ADAPTOR"},
+        {"cancer_type": cancer_type, "target_mode": "DISCOVER"},
+        {"cancer_type": cancer_type, "project_id": "WM-CART-001"},
+    ]
+    w10_bad = []
+    for field, payload in must_refuse:
+        st, b = call("POST", "/projects", payload)
+        if st != 400:
+            w10_bad.append(f"{field} accepted with {st}, not refused")
+        elif b.get("field") != field:
+            w10_bad.append(f"{field} refused but the body names "
+                           f"{b.get('field')!r}")
+        elif not b.get("error"):
+            w10_bad.append(f"{field} refused with no message")
+    for payload in must_accept:
+        st, b = call("POST", "/projects", payload)
+        if st != 201:
+            sent = [k for k in payload if k != "cancer_type"]
+            w10_bad.append(f"{sent} refused with {st}: {b.get('error', '')[:60]}")
+    # And the document's own example, which must refuse on a named field
+    # rather than on a bare 400.
+    st, b = call("POST", "/projects", {
+        "project_id": "WM-CART-PDAC-001", "indication": cancer_type,
+        "objective": "discover and rank safe CAR-T candidates",
+        "target_mode": "DISCOVER", "architecture_mode": "AUTO",
+        "delivery_mode": "AUTO", "max_final_candidates": 5})
+    if st != 400 or not b.get("field") or not b.get("remove"):
+        w10_bad.append("the document's example JSON is not refused by name")
+    criterion("W10", bool(w10_bad),
+              f"{len(must_refuse)} unhonoured field(s) refused by name and "
+              f"{len(must_accept)} honoured field(s) accepted; the document's "
+              f"own example is refused naming {b.get('field')!r} and saying "
+              f"to remove {b.get('remove')}"
+              if not w10_bad else "; ".join(w10_bad[:3]))
+
+    # W12: the output contract carries every field section 16 names, and the
+    # ones the platform cannot fill are named absent rather than emitted empty.
+    st, contract = call("GET", f"/projects/{pid}/contract")
+    required = ("run_status", "eligible_candidate_count", "candidates",
+                "excluded_candidates", "next_best_experiments", "audit_id")
+    w12_bad = [k for k in required if k not in contract] if st == 200 else \
+        [f"GET /contract returned {st}"]
+    if st == 200:
+        if contract.get("next_best_experiments") == []:
+            w12_bad.append("next_best_experiments is an empty list, which says "
+                           "no experiment is recommended rather than that none "
+                           "was computed")
+        if not contract.get("next_best_experiments_state"):
+            w12_bad.append("next_best_experiments is absent without saying why")
+        if not contract.get("audit_id"):
+            w12_bad.append("audit_id is empty")
+        for c in contract.get("candidates", []):
+            missing = [k for k in ("candidate_id", "gate_status", "scores",
+                                   "uncertainty", "decision") if k not in c]
+            if missing:
+                w12_bad.append(f"{c.get('candidate_id')} lacks {missing}")
+            zeroed = [k for k, v in (c.get("scores") or {}).items() if v == 0.0]
+            if zeroed:
+                w12_bad.append(f"{c.get('candidate_id')} reports {zeroed} as "
+                               "0.00; an unmeasured component must be null")
+    criterion("W12", bool(w12_bad),
+              f"the contract carries all {len(required)} named fields for "
+              f"{len(contract.get('candidates', []))} candidate(s) and "
+              f"{contract.get('excluded_candidate_count')} excluded; "
+              f"next_best_experiments is null with a stated reason and "
+              f"audit_id is {contract.get('audit_id')}"
+              if not w12_bad else "; ".join(w12_bad[:3]))
+
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
     if tripped:
