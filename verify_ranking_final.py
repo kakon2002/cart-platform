@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sys
 
-from car_pipeline.configs.pdac import PDAC_PROJECT
+from car_pipeline.configs.pdac import PDAC, PDAC_PROJECT
 from car_pipeline.data.antibodies import AntibodySource
 from car_pipeline.data.coverage import build_coverage
 from car_pipeline.data.depmap import DepMapSource, gene_index
@@ -15,7 +15,7 @@ from car_pipeline.data.tcga import TCGASource, match_surface as tcga_match
 from car_pipeline.data.trials import TrialSource
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import (
-    stage3, stage4, stage5, stage6, stage9, stage10, stage11,
+    stage3, stage4, stage5, stage6, stage9, stage10, stage11, validation,
 )
 from car_pipeline.stages.stage1 import build_spec
 
@@ -73,7 +73,8 @@ def main() -> int:
         liabilities.setdefault(row.gene, []).append(row)
 
     rows, attrition, status = stage11.rank(
-        decisions, binders, constructs, gated, liabilities, composites, ceiling)
+        decisions, binders, constructs, gated, liabilities, composites,
+        ceiling, indication_key=PDAC.key)
 
     print()
     print("=" * 72)
@@ -114,6 +115,56 @@ def main() -> int:
     criterion("N6", len(rows) != manifest["pool_size"],
               f"{len(rows)} rows against the {manifest['pool_size']} the Stage 4 "
               "manifest records")
+
+    # W8 and W9 land with the decision column rather than at step 6, because
+    # they are that column's criteria and it ships now.
+    classes = [validation.CONSERVATIVE, validation.INNOVATIVE]
+    undeclared = sorted({r.decision for r in rows} - set(stage11.DECISIONS))
+    overlap = [f"{d} <-> {k}" for d in stage11.DECISIONS for k in classes
+               if d in k or k in d]
+    criterion("W8", bool(undeclared or overlap),
+              f"{len(set(r.decision for r in rows))} decision value(s) all "
+              f"declared, and none overlaps either design class by substring"
+              if not (undeclared or overlap) else
+              f"undeclared {undeclared}; overlapping {overlap}")
+
+    # Recomputed from gate status and the front alone. Design class is not read,
+    # which is the independence W9 exists to assert.
+    #
+    # The mapping is written out here rather than read from stage11.GATE_DECISION
+    # or recomputed by stage11.decision_for. Calling either would compare the
+    # subject against itself and clear whatever it produced -- the shape this
+    # repository has now recorded thirteen times. These literals are the pin: a
+    # change to either the gate tokens or the gate-to-decision mapping trips
+    # this, which is the point.
+    RECOVERABLE = {"NO_BINDER_RETRIEVED", "NO_CONSTRUCT_ASSEMBLED"}
+    TERMINAL = {"BLOCKED_ON_NORMAL_TISSUE_RISK", "NO_DESIGN_RECOMMENDED",
+                "OVER_PAYLOAD_BUDGET"}
+
+    def expected(r) -> str:
+        """The decision this row must carry, derived without stage11's mapping."""
+        if not r.survived:
+            if r.gate_status in TERMINAL:
+                return "EXCLUDED"
+            if r.gate_status in RECOVERABLE:
+                return "REQUIRES_EVIDENCE"
+            return f"UNMAPPED_GATE:{r.gate_status}"
+        return "ADVANCE" if r.on_front else "BACKUP"
+
+    mismatched = [f"{r.gene} carries {r.decision}, expected {expected(r)}"
+                  for r in rows if r.decision != expected(r)]
+    survivors_ = [r for r in rows if r.survived]
+    splits = len({r.on_front for r in survivors_}) > 1
+    undistinguished = splits and len({r.decision for r in survivors_}) == 1
+    criterion("W9", bool(mismatched or undistinguished),
+              f"every decision recomputes from gate status and the front alone; "
+              f"{sum(1 for r in survivors_ if r.on_front)} of {len(survivors_)} "
+              f"survivors are on the front and the decisions distinguish them"
+              if not (mismatched or undistinguished) else
+              f"{len(mismatched)} decision(s) do not recompute: "
+              + "; ".join(mismatched[:3])
+              if mismatched else
+              "the survivors split on the front but all carry one decision")
 
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")

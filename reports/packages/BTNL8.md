@@ -1,12 +1,22 @@
 # BTNL8 — candidate package
 
-`Q6UX41` · rank 5 of 5 · ADVANCED · dominated · PACKAGED
+**CAR-PDAC-005** · `Q6UX41` · decision **BACKUP** · PASSED_ALL_GATES · INNOVATIVE_DESIGN · dominated · position 5 of 5 · PACKAGED
 
 This package carries what the pipeline produced. Eight of the reference document's twelve deliverables have something to carry; what the other four are missing is named in **What this package cannot tell you**, at the end, rather than left out.
 
 ---
 
 ## 1 — Ranking
+
+| field | value |
+| --- | --- |
+| candidate_id | CAR-PDAC-005 |
+| gate_status | PASSED_ALL_GATES |
+| decision | BACKUP |
+| on Pareto front | no |
+| position | 5 of 5 |
+| position basis | stage4 composite order, inherited; not a ranking Stage 11 computed |
+
 
 | objective | value |
 | --- | --- |
@@ -16,6 +26,8 @@ This package carries what the pipeline produced. Eight of the reference document
 | cleanliness | 0 |
 
 > No weighted total across objectives is emitted. Candidates are compared on a Pareto front, so a design better on one objective and worse on another is not silently averaged into a rank.
+
+> Position is a display index carried from Stage 4's composite order. It is not a ranking Stage 11 computed, and nothing decisional reads it: the decision column reads front membership, which is the comparison this stage actually performs.
 
 ## 2 — Construct
 
@@ -180,13 +192,13 @@ Configuration hash chain, each covering the stage before it:
 | stage6 | `859cfd24c21ddd81` |
 | stage9 | `7b703a7cc4a2d0d6` |
 | stage10 | `518e1ef6953ee5fb` |
-| stage11 | `7f2036bc6df78d1d` |
+| stage11 | `f03b275dbb285e02` |
 
 ---
 
 ## What this package cannot tell you
 
-27 elements the reference document asks for are not produced, across 8 deliverables. 17 are checked mechanically by the verifier, 1 recomputed from this run, and 9 are judgements that say so.
+26 elements the reference document asks for are not produced, across 8 deliverables. 16 are checked mechanically by the verifier, 1 recomputed from this run, and 9 are judgements that say so.
 
 ### Deliverable 1 — Top 3-5 CAR-T constructs (PARTIAL)
 
@@ -279,14 +291,6 @@ the gate emits a verdict and a measured risk with its peak organ. There is no sc
 expected activation intensity, costimulatory contribution, cytokine profile and expansion kinetics are all unmeasured.
 
 *Blocked by:* 8
-
-**genomic and construct safety: recombination-prone regions, cryptic splice sites, unwanted open reading frames, sequence repeats**
-
-none of it is computed.
-
-*Blocked by:* none
-
-*Note:* This is the cheapest closable gap on the whole list. All four are sequence analysis over the DNA map Stage 6 already emits, with its nucleotide sequence, domain boundaries and per-part provenance in hand. No new data source, no model, no external call, and no stage that does not exist.
 
 **editing-related risks for allogeneic products**
 

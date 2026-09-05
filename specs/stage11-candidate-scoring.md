@@ -236,8 +236,8 @@ Decision assignment, declared here:
 
 | decision | when |
 | --- | --- |
-| `ADVANCE` | passed every gate, scored, and ranked first among scored candidates |
-| `BACKUP` | passed every gate and scored, ranked below first |
+| `ADVANCE` | passed every gate and is **not dominated** — on the Pareto front |
+| `BACKUP` | passed every gate and is dominated by some other survivor |
 | `VALIDATE` | passed every gate but the measured fraction is below the floor, so no score was emitted |
 | `REQUIRES_EVIDENCE` | failed a gate that a measurement could later clear — no binder, no construct |
 | `EXCLUDED` | failed a gate that evidence will not change — over the safety ceiling, over the payload budget |
@@ -246,6 +246,46 @@ Decision assignment, declared here:
 `CAR-PDAC-001`. **It is a within-run label, not a durable identity**; the durable
 identity of a candidate is its gene plus the configuration-hash chain, and the
 spec says so rather than letting a sequential id be mistaken for a key.
+
+### Amendment — ADVANCE is front membership, not rank position
+
+The first draft defined `ADVANCE` as *ranked first among scored candidates* and
+`BACKUP` as *ranked below first*. Both rest on a total order over survivors, and
+reading the code before implementing showed that no such order is computed
+anywhere in Stage 11.
+
+**What `position` actually is.** `stage4.py:278` sorts the pool by
+`-composite_supported`. `stage11.rank` appends rows in that order and never
+sorts. `stage12.build` enumerates the survivors it is handed. So the package's
+`rank 1 of 5` is Stage 4's composite ordering, inherited three stages downstream
+and never declared as a ranking rule — while `_ranking_payload`'s docstring says
+the position is *"carried from the ranking with no re-ordering"*, which reads as
+though Stage 11 ordered it. Stage 11 did not.
+
+Defining `ADVANCE` on that position would have made the platform's headline
+decision a function of an undeclared inherited sort. It would also have
+contradicted the payload sitting beside it, which says *"No weighted total
+across objectives is emitted"* — `composite_supported` is a weighted total, so
+ranking first by it is the weighted sum re-entering through the display column.
+That is N4 being defeated by the field next to the one N4 guards.
+
+**The resolution.** `ADVANCE` is now non-domination, which Stage 11 genuinely
+computes and which needs no total order to be well-defined. More than one
+candidate can be told to advance, and in the current pancreatic run two are
+(FER1L6 and GPR35, the two front members). `BACKUP` is a survivor some other
+survivor beats on every objective at once — a defensible second choice, which is
+what the word means.
+
+`position` survives as a display index and nothing decisional hangs off it. Its
+basis is now stated in the payload rather than implied, so a reader is told the
+order came from Stage 4's composite and not from the front.
+
+**`VALIDATE` cannot be reached until step 4**, because it is defined on a
+measured fraction below the floor and no score is emitted yet. That is a branch
+no run can enter, which is the shape this repository has now recorded twelve
+times. It is handled by exercising `decision_for` directly with the state the
+pipeline cannot yet produce, so the branch is tested before it is reachable
+rather than after.
 
 ## 10. §16 — accept what the document names, reject the rest loudly
 
@@ -321,9 +361,32 @@ rather than discovered.
 | **W6** | the safety component changes when evidence confidence changes, or the confidence adjustment changes when the safety component changes. The two must be independently derived, which is the standing rule made falsifiable |
 | **W7** | re-running the ranking under a different declared weight set changes the Pareto front's membership. The score order may change; the front may not |
 | **W8** | any decision value is absent from the declared vocabulary, or any decision value equals or is a substring of any design-class value in either direction |
-| **W9** | two candidates sharing a design class and differing in rank receive the same decision, or any decision is derivable from design class alone |
+| **W9** | any candidate's decision does not recompute from its gate status and front membership alone, or the survivors split on front membership yet all carry the same decision |
 | **W10** | `POST /projects` accepts a field the platform does not honour, or rejects one it does, or fails to name the offending field in the refusal |
 | **W11** | the Stage 11 configuration hash does not change when a weight changes — a run under different weights must not compare equal to this one |
+
+### Amendment — W9 tested the rank rule, not the property
+
+W9 was written against the first draft's `ADVANCE`, which was rank position.
+With `ADVANCE` now defined on non-domination, the original wording — *two
+candidates sharing a design class and differing in rank receive the same
+decision* — trips on correct output: FER1L6 at position 1 and GPR35 at position
+2 differ in rank, share `INNOVATIVE_DESIGN`, and both correctly read `ADVANCE`
+because both are on the front. A criterion that fails when the code is right is
+worse than no criterion, because the run gets amended to satisfy it.
+
+This is the stale-pin shape for the fifth time, caught before the run rather
+than by it: a criterion holding a *result* — here, a specific rank-to-decision
+mapping — rather than the property it exists to test. The property is that
+decision and design class are computed independently, so W9 now recomputes each
+decision from gate status and front membership with no reference to design class
+and requires the survivors' decisions to distinguish them whenever the front
+does.
+
+**W8 and W9 land with the decision column, not at step 6.** They are that
+column's criteria, and shipping the column ahead of them would be the run
+preceding its criteria. W1–W7, W10 and W11 stay with the steps whose behaviour
+they describe.
 
 **W7 is the criterion that matters**, and it is the same shape as S11 in the
 construct-safety arm: it makes a claim falsifiable by changing the input the

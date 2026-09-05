@@ -212,7 +212,8 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
     progress("ranking", "attribution and Pareto front")
     composites = {r.gene: r.composite for r in ranked if r.gene}
     final, attrition, status = stage11.rank(
-        decisions, binders, by_construct, by_gate, liabilities, composites, ceiling)
+        decisions, binders, by_construct, by_gate, liabilities, composites,
+        ceiling, indication_key=indication.key)
 
     s5_hash = stage5.configuration_hash(s4_hash, [r.gene for r in records])
     s6_hash = stage6.configuration_hash(s5_hash, [c.gene for c in constructs])

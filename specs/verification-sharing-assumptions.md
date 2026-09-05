@@ -1,7 +1,7 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found twelve times in this
-repository. The fifth was found by suspecting the fourth, the sixth was
+Read this before writing a criterion. It has been found thirteen times in
+this repository. The fifth was found by suspecting the fourth, the sixth was
 introduced by a change made after the first five were written down, the seventh
 is the root cause of the third, found only when the third was fixed, the eighth
 was found by reading a criterion's own output rather than its verdict, the ninth
@@ -24,7 +24,7 @@ would this criterion report if the thing it tests were broken?** If the answer
 is "the same as it reports now", the criterion is not a test. Ask it before the
 criterion is written, not after it passes.
 
-## The twelve
+## The thirteen
 
 **1. The summary that was a literal.** Each verifier printed
 `{9 - len(tripped)}/9 criteria clear`. The denominator was a constant, not a
@@ -338,6 +338,48 @@ deletion looks free. The broader one is that **a branch written for a state
 nothing in the suite produces is not covered by anything**, however carefully
 its criteria are written, and the fix is to produce the state rather than to
 write another criterion about it.
+
+
+**13. The criterion that recomputed with the function it was testing.** W9 exists
+to assert that a candidate's decision is derived from its gate status and its
+Pareto-front membership, and from nothing else — in particular not from its
+design class, the vocabulary that had just been renamed to keep the two apart.
+
+The first version read:
+
+```python
+mismatched = [r.gene for r in rows if r.decision != stage11.decision_for(r, None)]
+```
+
+`stage11.rank` assigns `entry.decision = decision_for(entry, ...)`. So the
+criterion recomputed the value using the same function that produced it and
+compared the result to itself. It clears for every possible mapping. Point
+`GATE_DECISION` at the wrong decisions, invert the front test, return a constant
+— the criterion still reports `clear`, because both sides move together. It was
+written, run, and printed `clear    W9` before the tautology was noticed.
+
+Two things make this one worth recording despite being the same shape as the
+others. First, **it appeared inside the change whose own specification is about
+substring collisions and criteria that cannot fail**, which is the second time a
+defect of this family has been introduced by work explicitly aimed at it —
+instance eleven was the first. Reading the pattern file is not sufficient
+protection against the pattern.
+
+Second, **it was caught by the question at the top of this document rather than
+by any run**. What would W9 report if the gate-to-decision mapping were wrong?
+The same thing it reports now. That took one question and no execution.
+
+The fix writes the mapping out in the verifier as literals rather than importing
+`GATE_DECISION` or calling `decision_for`. The literals are the pin: changing
+either the gate tokens or the mapping now trips W9. Confirmed by blinding —
+marking `OVER_PAYLOAD_BUDGET` recoverable, which is the tempting mistake since
+a larger vector would clear it, trips W9 with the gene and both decisions named.
+
+The narrow lesson: **a criterion must never call the function that produced the
+value it checks.** The broader one is that importing a mapping is the same
+mistake as calling the function, one level quieter — a criterion that reads
+`GATE_DECISION` to check `GATE_DECISION` is equally tautological and looks more
+like ordinary code reuse. In a verifier, duplication is the point.
 
 ## What to do instead
 
