@@ -216,6 +216,15 @@ visible blast radius and it changes a value the API already returns. The
 alternative — keeping both and relying on everyone using `==` forever — is
 cheaper today and is the bet this repository has lost three times.
 
+**Applied, step 2 of §12, before any decision-column code.** `CONSERVATIVE` is
+now `CONSERVATIVE_DESIGN` and `ADVANCED` is now `INNOVATIVE_DESIGN`. The constant
+`ADVANCED` was renamed to `INNOVATIVE` alongside its value, and the summary's dict
+keys `conservative_backup` and `advanced` became `conservative_design` and
+`innovative_design` — a key named `advanced` returning `INNOVATIVE_DESIGN` is the
+same drift in a different field. The captured payload in DEPLOY.md still shows
+the old value and is recaptured by the step-8 run rather than hand-edited, per
+the standing rule on captured output.
+
 **The two are computed independently and neither is derived from the other.**
 Design class answers *what kind of design is this*, from the architecture table,
 fixed before the run. Decision answers *what should happen to this candidate*,

@@ -169,7 +169,7 @@ def main() -> int:
         "no gap carried a probe, so the whole table is unverified assertion")
 
     classes = validation.design_class_summary(run["constructs"])
-    backup = classes["conservative_backup"]
+    backup = classes["conservative_design"]
     refusal = [r for r in classes["reasons"] if "conservative" in r.lower()]
     has_counts = any(any(ch.isdigit() for ch in r) for r in refusal)
     labelled = [c.gene for c in run["constructs"]

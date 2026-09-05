@@ -20,11 +20,18 @@ PROJECTS = {
 
 ALIASES = {
     "pdac": PDAC.cancer_type.lower(),
+    "pancreatic": PDAC.cancer_type.lower(),
     "pancreatic cancer": PDAC.cancer_type.lower(),
     "brca": BREAST.cancer_type.lower(),
+    "breast": BREAST.cancer_type.lower(),
     "breast cancer": BREAST.cancer_type.lower(),
     "breast carcinoma": BREAST.cancer_type.lower(),
 }
+# The bare organ names are aliases because they are what a reader types. They
+# are unambiguous only while one indication per organ is configured; a second
+# breast or pancreatic indication makes "breast" a choice between two, and the
+# alias must then be removed rather than silently pointing at whichever was
+# registered first.
 
 
 def resolve(cancer_type: str) -> tuple[Indication, object]:

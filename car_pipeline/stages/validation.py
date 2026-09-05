@@ -214,8 +214,8 @@ def plan(construct, target: dict, safety=None) -> dict:
     }
 
 
-CONSERVATIVE = "CONSERVATIVE_BACKUP"
-ADVANCED = "ADVANCED"
+CONSERVATIVE = "CONSERVATIVE_DESIGN"
+INNOVATIVE = "INNOVATIVE_DESIGN"
 
 
 def design_class(construct) -> str | None:
@@ -226,7 +226,7 @@ def design_class(construct) -> str | None:
     if construct.outcome == "SINGLE" and clinical:
         return CONSERVATIVE
     if construct.outcome in ("DUAL", "ADAPTOR"):
-        return ADVANCED
+        return INNOVATIVE
     return None
 
 
@@ -234,7 +234,7 @@ def design_class_summary(constructs) -> dict:
     """What the pool can and cannot supply, named rather than approximated."""
     labelled = [(c, design_class(c)) for c in constructs]
     conservative = [c.gene for c, k in labelled if k == CONSERVATIVE]
-    advanced = [c.gene for c, k in labelled if k == ADVANCED]
+    innovative = [c.gene for c, k in labelled if k == INNOVATIVE]
     reasons = []
     if not conservative:
         singles = [c for c in constructs if c.outcome == "SINGLE"]
@@ -263,14 +263,14 @@ def design_class_summary(constructs) -> dict:
             + ". This is reported rather than filled by labelling something "
             "that does not qualify."
         )
-    if advanced:
+    if innovative:
         reasons.append(
-            f"{len(advanced)} advanced design(s) are available, all of them "
-            "adaptor receptors, which is the architecture row the spec lists "
-            "for serious normal-tissue expression."
+            f"{len(innovative)} innovative design(s) are available, all of "
+            "them adaptor receptors, which is the architecture row the spec "
+            "lists for serious normal-tissue expression."
         )
     return {
-        "conservative_backup": conservative or None,
-        "advanced": advanced or None,
+        "conservative_design": conservative or None,
+        "innovative_design": innovative or None,
         "reasons": reasons,
     }
