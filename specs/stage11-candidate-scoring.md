@@ -249,15 +249,52 @@ them without a word.
 | `indication` | accepted, alias of `cancer_type`, both honoured |
 | `target_mode` | accepted; `DISCOVER` or a gene symbol, replacing the derived-from-presence rule |
 | `project_id` | accepted as `client_reference` and echoed; the server-generated id stays canonical, because ids must be unique and server-controlled |
-| `objective` | **400** |
-| `architecture_mode` | **400** |
-| `delivery_mode` | **400** |
-| `max_final_candidates` | **400** |
+| `max_final_candidates` | **honoured** — a slice on the ranked list |
+| `architecture_mode` | **honoured where it maps to `CARFormat`**, which already accepts `AUTO`; values with no mapping are rejected by name |
+| `objective` | **400**, naming the field and saying it is not yet honoured |
+| `delivery_mode` | **400**, same |
 | any unknown field | **400** |
 
 A field the platform does not honour is **rejected by name** with
-`UNSUPPORTED_INPUT`, saying what the platform does instead. Accepting a field and
-ignoring it tells a client their instruction was followed. It was not.
+`UNSUPPORTED_INPUT`, saying what the platform does instead and what to remove.
+Accepting a field and ignoring it tells a client their instruction was followed.
+It was not. A bare refusal is only marginally better, so the body names the field.
+
+### Amendment — two fields honoured rather than refused
+
+The first draft returned `400` for all four unhonoured fields. Two are now
+honoured, for reasons that hold independently of convenience.
+
+**`max_final_candidates` is honoured.** It is a slice on an already-ordered list
+and needs no science the platform lacks. Refusing a field that the document's own
+example JSON sends would read as the platform being unable to count. It caps the
+ranked list only; it never manufactures candidates to reach the number, which is
+§17's explicit requirement, and the response reports both the cap and how many
+were actually eligible.
+
+**`architecture_mode` is honoured where it maps.** `CARFormat` already accepts
+`auto`, `conventional`, `dual_target`, `logic_gated`, `switchable` and `armored`,
+and the document's `AUTO`, `SINGLE`, `AND`, `OR`, `AND-NOT`, `ADAPTOR` overlap
+that vocabulary in part. The mapping is declared here:
+
+| `architecture_mode` | maps to | note |
+| --- | --- | --- |
+| `AUTO` | `CARFormat.AUTO` | routing chooses, as today |
+| `SINGLE` | `CARFormat.CONVENTIONAL` | single-antigen receptor |
+| `AND` | `CARFormat.LOGIC_GATED` | the AND-gate row of the architecture table |
+| `ADAPTOR` | `CARFormat.SWITCHABLE` | the adaptor row |
+| `OR` | **rejected** | no OR-gate row is implemented; routing has no such architecture |
+| `AND-NOT` | **rejected** | the inhibitory row is `NOT_IMPLEMENTED` in routing, with a recorded reason |
+
+A rejected value is named in the refusal along with the values that do map.
+**Accepting `OR` or `AND-NOT` and then routing something else would be the
+silent-substitution failure this platform exists to avoid**, which is why they
+refuse rather than falling back to `AUTO`.
+
+`objective` and `delivery_mode` still return `400`. Neither has anything behind
+it: no optimisation objective is read anywhere, and delivery modality is fixed by
+the vector payload budget in Stage 1. Honouring them would mean accepting a value
+that changes nothing.
 
 **This is a breaking change** for any caller sending extra keys. None is known —
 the two verifiers and DEPLOY.md send only `cancer_type` — and it is stated here
@@ -293,13 +330,23 @@ claim is about. W4 and W6 carry the two guarantees the amendment in §8 rests on
 
 ## 12. Order of work
 
+Ordered so that the part a frontend renders lands before the part gated on
+Stages 7 and 8. If the milestone runs short, the decision column and gate status
+are worth more than the score, and the score is the piece whose components are
+missing anyway.
+
 1. This document, reviewed, committed before any code.
-2. The design-class rename, if approved — it must land before the decision
-   vocabulary, not after.
-3. `stages/scoring.py`: components, states, weights, the adjustment, the floor.
-4. `stage11`: Level B scoring beside the existing front; the decision column;
-   `candidate_id`; `gate_status`; the weight version into the configuration hash.
-5. `api/server.py`: the §16 input contract, accepting and refusing by name.
+2. **The design-class rename. Blocking** — it must land before the decision
+   vocabulary, not after, or the collision ships and has to be unpicked.
+3. `stage11`: `candidate_id`, `gate_status`, and the decision column.
+4. `stages/scoring.py` and Level B: components, states, weights, adjustment,
+   floor, beside the retained front; the weight version into the Stage 11
+   configuration hash.
+5. `api/server.py`: the §16 input contract, honouring and refusing by name.
 6. `verify_ranking_final.py`: W1–W11, and N4 re-specified.
 7. The candidate package and the run report carry the scorecard.
 8. Full suite, both indications, every count reported beside the count predicted.
+
+**The first run reports its scoring arithmetic before any biology**: applicable
+0.96, measured 0.60, fraction 0.625 are predicted in §6, and if the run lands
+elsewhere that is the first thing said, not a footnote after the results.
