@@ -34,23 +34,205 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def create_project(cancer_type: str, target_antigen: str | None = None) -> dict:
-    """Register a project and choose the discovery mode from the target."""
+class ContractError(ValueError):
+    """A refusal that names the field, so a client is told what to remove."""
+
+    def __init__(self, payload: dict):
+        super().__init__(payload.get("error", "unsupported input"))
+        self.payload = payload
+
+
+# The document's target-strategy vocabulary against the architectures routing
+# can actually produce. Its stated purpose is to control the architecture
+# search space, so an accepted value narrows which routed outcomes are
+# eligible for the final ranking. It never adds one.
+ARCHITECTURE_MAP = {
+    "AUTO": None,
+    "SINGLE": "SINGLE",
+    "AND": "DUAL",
+    "ADAPTOR": "ADAPTOR",
+}
+
+ARCHITECTURE_REFUSED = {
+    "OR": "no OR-gate architecture is implemented; routing has no such row, "
+          "and accepting this then routing something else would be a silent "
+          "substitution",
+    "AND-NOT": "the inhibitory architecture is recorded as NOT_IMPLEMENTED in "
+               "routing, with the reason, so it cannot be selected",
+}
+
+# Fields the document names that the platform does not act on. Each is
+# refused by name rather than accepted and dropped, because accepting a field
+# and ignoring it tells a client their instruction was followed.
+NOT_HONOURED = {
+    "objective": (
+        "no optimisation objective is read anywhere in the platform. The "
+        "objective is fixed: rank candidates that pass the hard gates. "
+        "Supplying one would change nothing, so it is refused rather than "
+        "accepted and dropped."),
+    "delivery_mode": (
+        "delivery modality is fixed by the vector payload budget declared in "
+        "Stage 1, and no alternative route is implemented. Supplying one "
+        "would change nothing."),
+}
+
+ACCEPTED_FIELDS = (
+    "cancer_type", "indication", "target_antigen", "target_mode",
+    "project_id", "max_final_candidates", "architecture_mode",
+)
+
+
+def _refuse(field: str, error: str, **extra) -> ContractError:
+    """A 400 body that names the field and says what to do about it."""
+    return ContractError({
+        "status": "UNSUPPORTED_INPUT",
+        "field": field,
+        "error": error,
+        "accepted_fields": list(ACCEPTED_FIELDS),
+        "remove": [field],
+        **extra,
+    })
+
+
+def _max_candidates(value) -> int | None:
+    """A cap on the ranked list. It never manufactures candidates to reach it."""
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _refuse("max_final_candidates",
+                      f"max_final_candidates must be a whole number, got "
+                      f"{type(value).__name__}")
+    if value < 1:
+        raise _refuse("max_final_candidates",
+                      f"max_final_candidates must be at least 1, got {value}")
+    return value
+
+
+def _architecture(value) -> tuple[str, str | None]:
+    """The requested architecture mode and the routed outcome it admits."""
+    key = str(value).strip().upper()
+    if key in ARCHITECTURE_MAP:
+        return key, ARCHITECTURE_MAP[key]
+    if key in ARCHITECTURE_REFUSED:
+        raise _refuse(
+            "architecture_mode",
+            f"architecture_mode {key!r} is not implemented: "
+            f"{ARCHITECTURE_REFUSED[key]}",
+            supported_values=sorted(ARCHITECTURE_MAP),
+            rejected_values=sorted(ARCHITECTURE_REFUSED))
+    raise _refuse(
+        "architecture_mode",
+        f"architecture_mode {key!r} is not a value this platform recognises",
+        supported_values=sorted(ARCHITECTURE_MAP),
+        rejected_values=sorted(ARCHITECTURE_REFUSED))
+
+
+def create_project(body: dict) -> dict:
+    """Register a project against the section 16 input contract.
+
+    Every field the document names is either honoured or refused by name. A
+    field that is neither is an unknown field and is also refused, because
+    silently discarding it is how a client comes to believe an instruction was
+    followed.
+    """
+    if not isinstance(body, dict):
+        raise ValueError("the request body must be a JSON object")
+
+    for field in NOT_HONOURED:
+        if field in body:
+            raise _refuse(field, f"{field} is not yet honoured: "
+                                 f"{NOT_HONOURED[field]}")
+
+    unknown = sorted(set(body) - set(ACCEPTED_FIELDS) - set(NOT_HONOURED))
+    if unknown:
+        raise _refuse(
+            unknown[0],
+            f"unknown field(s) {unknown}. They are refused rather than "
+            "ignored, so a client is never told an instruction was followed "
+            "when it was discarded.",
+            remove=unknown)
+
+    # indication is the document's name for what this platform calls
+    # cancer_type. Both are honoured; supplying two different values is not.
+    cancer_type = body.get("cancer_type") or body.get("indication") or ""
+    if body.get("cancer_type") and body.get("indication") and (
+            str(body["cancer_type"]).strip().lower()
+            != str(body["indication"]).strip().lower()):
+        raise _refuse(
+            "indication",
+            f"cancer_type {body['cancer_type']!r} and indication "
+            f"{body['indication']!r} disagree. They are the same field under "
+            "two names; supply one.")
     if not isinstance(cancer_type, str) or not cancer_type.strip():
-        raise ValueError("cancer_type is required and must be a string")
+        raise ValueError(
+            "cancer_type is required and must be a string (the document calls "
+            "this field 'indication'; either name is accepted)")
+
+    target_antigen = body.get("target_antigen")
     if target_antigen is not None and not str(target_antigen).strip():
         raise ValueError(
             "target_antigen was supplied but is empty; omit it entirely to "
             "screen for targets")
 
+    # target_mode replaces the old derived-from-presence rule: DISCOVER, or a
+    # gene symbol naming the target.
+    target_mode = body.get("target_mode")
+    if target_mode is not None:
+        mode = str(target_mode).strip().upper()
+        if not mode:
+            raise _refuse("target_mode",
+                          "target_mode was supplied but is empty; use "
+                          "DISCOVER or a gene symbol")
+        if mode != "DISCOVER":
+            if target_antigen and mode != str(target_antigen).strip().upper():
+                raise _refuse(
+                    "target_mode",
+                    f"target_mode {mode!r} and target_antigen "
+                    f"{target_antigen!r} name different targets. Supply one.")
+            target_antigen = mode
+        elif target_antigen:
+            raise _refuse(
+                "target_mode",
+                f"target_mode is DISCOVER but target_antigen "
+                f"{target_antigen!r} was also supplied. DISCOVER means the "
+                "platform chooses the target; supply one or the other.")
+
+    cap = _max_candidates(body.get("max_final_candidates"))
+
+    architecture_mode, admits_outcome = "AUTO", None
+    if body.get("architecture_mode") is not None:
+        architecture_mode, admits_outcome = _architecture(body["architecture_mode"])
+
     pipeline.project_for(cancer_type)
     project_id = uuid.uuid4().hex[:12]
     project = {
         "project_id": project_id,
+        # The client's own reference is echoed; the server id stays canonical,
+        # because ids must be unique and server-controlled.
+        "client_reference": (str(body["project_id"]).strip()
+                             if body.get("project_id") else None),
         "cancer_type": cancer_type.strip(),
         "target_antigen": (target_antigen or "").strip().upper() or None,
         "discovery_mode": "A" if target_antigen else "B",
+        "target_mode": "DISCOVER" if not target_antigen
+                       else (target_antigen or "").strip().upper(),
+        "max_final_candidates": cap,
+        "architecture_mode": architecture_mode,
+        "admits_outcome": admits_outcome,
         "created_at": _now(),
+        "honoured": {
+            "max_final_candidates":
+                "a cap on the ranked list. It never manufactures candidates to "
+                "reach the number; the response reports the cap beside how "
+                "many were actually eligible."
+                if cap else "not supplied",
+            "architecture_mode":
+                f"{architecture_mode} admits routed outcome "
+                f"{admits_outcome or 'any'}. It narrows the architecture "
+                "search space and never adds an architecture."
+                if architecture_mode != "AUTO"
+                else "AUTO: routing chooses, which is the default behaviour",
+        },
     }
     with _LOCK:
         PROJECTS[project_id] = project
@@ -534,6 +716,156 @@ def result_view(project_id: str) -> dict:
     }
 
 
+RANKED_CANDIDATES = "RANKED_CANDIDATES"
+
+
+def _targets(row: dict | None) -> list[str]:
+    """Every antigen this design engages, which for a dual is two."""
+    if not row:
+        return []
+    return [g for g in (row.get("gene"), row.get("partner")) if g]
+
+
+def _scores(entry) -> dict:
+    """The document's scores object, with UNKNOWN as null and never as zero."""
+    card = entry.scorecard
+    if card is None:
+        return {}
+    value = {k: c.value for k, c in card.components.items()}
+    return {
+        # The document's key names, which differ from the platform's.
+        "tumor_coverage": value["tumour_coverage"],
+        "malignant_specificity": value["malignant_specificity"],
+        "normal_tissue_safety": value["normal_tissue_safety"],
+        "pairing_robustness": value["pairing_robustness"],
+        "binder": value["binder_quality"],
+        "structural": value["structural_feasibility"],
+        "functional": value["functional_prediction"],
+        "developability": value["developability"],
+        "manufacturability": value["manufacturability"],
+        "evidence_confidence": card.evidence_confidence,
+        "overall": card.overall,
+    }
+
+
+def contract_view(project_id: str) -> dict:
+    """The section 16 output contract, in the shape the document specifies.
+
+    Every score is null where the component is not measured. A null here is a
+    named absence: the state and the reason for each component are carried in
+    the scorecard, and nothing is reported as zero for want of a measurement.
+    """
+    r = _result(project_id)
+    project = PROJECTS.get(project_id, {})
+    rows = r["final"]
+    by_gene = {d["gene"]: d for d in r["decisions"]}
+
+    survivors = [x for x in rows if x.survived]
+    admits = project.get("admits_outcome")
+    if admits:
+        eligible = [x for x in survivors
+                    if (by_gene.get(x.gene) or {}).get("outcome") == admits]
+    else:
+        eligible = list(survivors)
+
+    cap = project.get("max_final_candidates")
+    returned = eligible[:cap] if cap else eligible
+
+    hashes = (r.get("provenance") or {}).get("hashes") or {}
+    audit_id = hashes.get("stage11") or hashes.get("stage3")
+
+    notes = [
+        "Every score is null where its component is not measured. The "
+        "per-component state and reason are in each candidate's scorecard; "
+        "nothing is reported as zero for want of a measurement.",
+        "overall is normalised over the measured subset rather than over all "
+        "nine components, so it is comparable only alongside scored_fraction.",
+    ]
+    if admits:
+        notes.append(
+            f"architecture_mode {project.get('architecture_mode')} admits "
+            f"routed outcome {admits}: {len(eligible)} of {len(survivors)} "
+            "gate-passing candidate(s) qualify. The mode narrows the "
+            "architecture search space and never adds an architecture, so "
+            "this filter can only reduce the list.")
+        if survivors and not eligible:
+            notes.append(
+                f"No candidate matches the requested architecture. That is "
+                f"reported rather than filled: {len(survivors)} design(s) "
+                "passed every gate under a different architecture, and "
+                "relabelling one of them would be a silent substitution.")
+    if cap:
+        notes.append(
+            f"max_final_candidates {cap} caps the list at {len(returned)} of "
+            f"{len(eligible)} eligible. The cap never manufactures candidates "
+            "to reach the number.")
+
+    return {
+        "run_status": (RANKED_CANDIDATES if returned
+                       else stage11.NO_DESIGN_REACHES_THE_END),
+        "project_id": project_id,
+        "client_reference": project.get("client_reference"),
+        "indication": (r.get("indication").cancer_type
+                       if r.get("indication") else None),
+        "eligible_candidate_count": len(eligible),
+        "returned_candidate_count": len(returned),
+        "max_final_candidates": cap,
+        "architecture_mode": project.get("architecture_mode"),
+        "candidates": [
+            {
+                "rank": x.position,
+                "candidate_id": x.candidate_id,
+                "targets": _targets(by_gene.get(x.gene)),
+                "architecture": (by_gene.get(x.gene) or {}).get("outcome"),
+                "gate_status": x.gate_status,
+                "scores": _scores(x),
+                "scored_fraction": (None if x.scorecard is None
+                                    else round(x.scorecard.fraction, 6)),
+                "uncertainty": (None if x.scorecard is None
+                                else x.scorecard.prediction_uncertainty),
+                "uncertainty_state": (
+                    "UNKNOWN: no prediction uncertainty is measured anywhere, "
+                    "because Stage 8 does not exist. It is null rather than "
+                    "0.00 so it cannot be read as a confident prediction."),
+                "decision": x.decision,
+                "on_pareto_front": x.on_front,
+            }
+            for x in returned
+        ],
+        "excluded_candidates": [
+            {
+                "gene": x.gene,
+                "accession": x.accession,
+                "gate_status": x.gate_status,
+                "decision": x.decision,
+                "scores": {},
+                "overall": None,
+            }
+            for x in rows if not x.survived
+        ],
+        "excluded_candidate_count": sum(1 for x in rows if not x.survived),
+        # Named absent rather than emitted empty. An empty list says no
+        # experiment is recommended; the true statement is that nothing
+        # computed one.
+        "next_best_experiments": None,
+        "next_best_experiments_state": (
+            "ABSENT: Stage 13, experimental recommendation, does not exist. "
+            "An empty list would say that no experiment is recommended, which "
+            "is not what is true -- nothing ranked one. A per-candidate "
+            "validation plan is served at /projects/{id}/validation; it is a "
+            "template of what to measure, not a ranked recommendation of what "
+            "is most informative."),
+        "audit_id": audit_id,
+        "audit_trail": {
+            "hashes": hashes,
+            "note": "Each hash covers the stage before it, so the chain is the "
+                    "run's decision lineage. audit_id is the last link, which "
+                    "changes if any earlier configuration changes.",
+        },
+        "notes": notes,
+    }
+
+
 def package_view(project_id: str) -> dict:
     """Every candidate package, or the status when nothing reached the end."""
     r = _result(project_id)
@@ -668,12 +1000,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/projects":
                 body = self._body()
-                return self._send(201, create_project(
-                        body.get("cancer_type", ""),
-                        body.get("target_antigen")))
+                return self._send(201, create_project(body))
             m = re.match(r"^/projects/([0-9a-f]{12})/runs$", path)
             if m:
                 return self._send(202, start_run(m.group(1)))
+        except ContractError as exc:
+            return self._send(400, exc.payload)
         except ValueError as exc:
             return self._send(400, {"status": "BAD_REQUEST", "error": str(exc)})
         except RuntimeError as exc:
@@ -732,6 +1064,9 @@ class Handler(BaseHTTPRequestHandler):
                     })
                 return self._send(200, snapshot)
 
+            m = re.match(r"^/projects/([0-9a-f]{12})/contract$", path)
+            if m:
+                return self._send(200, contract_view(m.group(1)))
             m = re.match(r"^/projects/([0-9a-f]{12})/validation$", path)
             if m:
                 return self._send(200, validation_view(m.group(1)))
