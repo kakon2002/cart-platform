@@ -348,7 +348,7 @@ def constructs_view(project_id: str) -> dict:
         "status": status,
         **_evidence(r),
         "design_classes": {k: classes[k]
-                           for k in ("conservative_backup", "advanced")},
+                           for k in ("conservative_design", "innovative_design")},
         "counts": counts,
         "buildable": len(buildable),
         "complete": len(complete),
