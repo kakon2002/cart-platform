@@ -189,10 +189,20 @@ GAPS: tuple[Gap, ...] = (
         "there is no module, no dataclass, no field and no stub. The project "
         "handoff described Stages 7 and 8 as schema only; there is no schema.",
         blocking_stage="7", probe=(PROBE_MODULE, "stage7"),
-        note="Buildable. It needs structure prediction over sequences Stage 6 "
-             "already emits, and no data source that is missing. Two of its "
-             "scores have sequence-level proxies in Stage 10's "
-             "aggregation-prone regions, which is not the structural claim."),
+        note="Partly buildable: retrieval yes, prediction no. What is "
+             "connected returns entry identifiers, chain labels and "
+             "experimental methods -- never atoms. No coordinate file exists "
+             "anywhere in the cache, and the cached anti-tag binder records "
+             "its antigen entity as excluded, so the platform holds an "
+             "antibody with no antigen. Retrieved geometry over deposited "
+             "complexes is buildable from one further endpoint and needs no "
+             "model; predicted geometry for a designed receptor is not, and "
+             "no folding model runs on the available hardware. One of its "
+             "scores has a sequence-level proxy in Stage 10's "
+             "aggregation-prone regions, not two, and that proxy is a "
+             "hydropathy window rather than the structural claim. Building "
+             "this stage moves nothing for the pool that currently ships: "
+             "see the measured gap on own-target binders."),
 
     Gap(8, "Functional predictions", ABSENT,
         "the entire stage: activation threshold, cytotoxic potential, "
@@ -226,11 +236,57 @@ def measured_gaps(packages: list[dict]) -> list[Gap]:
     """Gaps that are properties of this run, recomputed rather than declared."""
     if not packages:
         return []
+    out: list[Gap] = []
+
+    # What actually blocks Stage 7, recomputed rather than declared: a
+    # structural stage needs a binder and an antigen, and this pool ships
+    # designs that have neither of its own.
+    no_binder = [p["gene"] for p in packages
+                 if not p["binders"]["structure_route"]
+                 and not p["binders"]["sequence_route"]]
+    recorded = [
+        (p["gene"], c.get("identifier"), c.get("antigen_name") or "unnamed")
+        for p in packages for c in p["binders"]["structure_route"]
+    ]
+    if no_binder:
+        named = "; ".join(
+            f"{gene} {ident} records its antigen as {antigen}"
+            for gene, ident, antigen in recorded[:3])
+        out.append(Gap(
+            7, "Structural report", ABSENT,
+            "a binder and an antigen to compute geometry over, on the designs "
+            "that actually ship",
+            f"{len(no_binder)} of {len(packages)} candidate(s) carry no "
+            f"own-target binder by either route ({', '.join(no_binder)}). "
+            + (f"The remaining {len(packages) - len(no_binder)} "
+               f"{'carries' if len(packages) - len(no_binder) == 1 else 'carry'} "
+               f"{len(recorded)} structure-route "
+               f"{'entry' if len(recorded) == 1 else 'entries'}: {named}. Whether "
+               "that antibody binds the target or another chain of the same "
+               "deposited entry cannot be settled from what is connected, "
+               "because the entry was found by searching on the target's "
+               "accession and only coordinates would show what the heavy and "
+               "light chains contact. "
+               if recorded else "")
+            + "The receptor these designs ship binds a peptide tag, and the "
+              "molecule that would bind the target is the adaptor antibody, "
+              "which this platform never names. So there is no binder-antigen "
+              "pair to model, predicted or retrieved.",
+            blocking_stage="5, not 7",
+            note="Stage 7 is blocked on Stage 5, not on structure prediction. "
+                 "Funding a structural stage against this pool would buy "
+                 "geometry for pool members that failed the safety gate and "
+                 "nothing for any design that reaches the end. The constraint "
+                 "to relieve first is binder discovery. Measured from this "
+                 "run, so it disappears the moment a shipping design carries "
+                 "a target-specific binder.",
+        ))
+
     unscored = [p["gene"] for p in packages
                 if p["developability"]["binders_scored"] == 0]
     if len(unscored) != len(packages):
-        return []
-    return [Gap(
+        return out
+    return out + [Gap(
         9, "Manufacturability assessment", PARTIAL,
         "any developability figure describing the binder these designs carry",
         f"Stage 10 assesses Stage 5 sequence-route binders. None of the "
