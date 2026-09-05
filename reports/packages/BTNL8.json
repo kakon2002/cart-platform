@@ -21,6 +21,97 @@
       "Position is a display index carried from Stage 4's composite order. It is not a ranking Stage 11 computed, and nothing decisional reads it: the decision column reads front membership, which is the comparison this stage actually performs."
     ]
   },
+  "scorecard": {
+    "weight_version": "wm-scoring-1",
+    "components": [
+      {
+        "component": "tumour_coverage",
+        "state": "MEASURED",
+        "value": 0.2640449438202247,
+        "weight": 0.18,
+        "source": "stage3.patient_prevalence"
+      },
+      {
+        "component": "malignant_specificity",
+        "state": "MEASURED",
+        "value": 0.5806934002039319,
+        "weight": 0.16,
+        "source": "stage3.malignant_vs_stroma"
+      },
+      {
+        "component": "normal_tissue_safety",
+        "state": "MEASURED",
+        "value": 0.07228571428571426,
+        "weight": 0.16,
+        "source": "stage9 residual margin below the applied ceiling 0.35"
+      },
+      {
+        "component": "binder_quality",
+        "state": "UNKNOWN",
+        "value": null,
+        "weight": 0.12,
+        "source": "this is an adaptor design: the receptor binds a tag, no anti-tag binder is retrieved, and there is no binder to score"
+      },
+      {
+        "component": "manufacturability",
+        "state": "MEASURED",
+        "value": 0.18057142857142858,
+        "weight": 0.1,
+        "source": "stage6 headroom against the 3500 bp payload budget"
+      },
+      {
+        "component": "developability",
+        "state": "UNKNOWN",
+        "value": null,
+        "weight": 0.1,
+        "source": "Stage 10 counts sequence liabilities and refuses to sum them into a score, because one flag fires on every binder in the pool and a sum would hide it. That decision stands; this specification does not overturn it, so the component has no value to carry"
+      },
+      {
+        "component": "structural_feasibility",
+        "state": "UNKNOWN",
+        "value": null,
+        "weight": 0.08,
+        "source": "Stage 7 does not exist. It is buildable and unbuilt"
+      },
+      {
+        "component": "functional_prediction",
+        "state": "UNKNOWN",
+        "value": null,
+        "weight": 0.06,
+        "source": "Stage 8 does not exist and is not buildable from what is connected: the required training inputs are not available"
+      },
+      {
+        "component": "pairing_robustness",
+        "state": "NOT_APPLICABLE",
+        "value": null,
+        "weight": 0.04,
+        "source": "an ADAPTOR design names no partner, so pairing robustness is a question that does not arise. This is not missing evidence"
+      }
+    ],
+    "applicable_weight": 0.96,
+    "measured_weight": 0.6,
+    "scored_fraction": 0.625,
+    "minimum_scored_fraction": 0.5,
+    "weighted_sum": 0.170062,
+    "evidence_confidence": 1.0,
+    "prediction_uncertainty": null,
+    "confidence_adjustment": 1.0,
+    "overall": 0.283436,
+    "scored": true,
+    "unknown_components": [
+      "binder_quality",
+      "developability",
+      "structural_feasibility",
+      "functional_prediction"
+    ],
+    "not_applicable_components": [
+      "pairing_robustness"
+    ],
+    "reasons": [
+      "evidence confidence applied at exponent 1.0; the prediction-uncertainty penalty is NOT applied because no uncertainty is measured. It is not treated as zero uncertainty, which would flatter an unmeasured candidate.",
+      "Scored on 0.6000 of 0.9600 applicable weight (0.6250). The remaining components are named, not imputed, and the score is normalised over what was measured."
+    ]
+  },
   "design_class": "INNOVATIVE_DESIGN",
   "construct": {
     "verdict": "BUILDABLE",
@@ -899,7 +990,7 @@
       "stage6": "859cfd24c21ddd81",
       "stage9": "7b703a7cc4a2d0d6",
       "stage10": "518e1ef6953ee5fb",
-      "stage11": "f03b275dbb285e02"
+      "stage11": "2591188b434f185d"
     },
     "reasons": [
       "Each hash covers the stage before it, so the chain identifies the exact configuration a package was produced under.",

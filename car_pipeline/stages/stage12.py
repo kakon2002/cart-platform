@@ -549,6 +549,8 @@ def build(run: dict) -> tuple[list[dict], str]:
             "gene": gene,
             "accession": entry.accession,
             "ranking": _ranking_payload(entry, position, len(survivors)),
+            "scorecard": (entry.scorecard.as_payload()
+                          if entry.scorecard else None),
             "design_class": validation.design_class(construct),
             "construct": _construct_payload(construct),
             "target_evidence": _target_payload(ranked, attribution),
@@ -563,6 +565,6 @@ def build(run: dict) -> tuple[list[dict], str]:
 
 
 SECTIONS = (
-    "ranking", "design_class", "construct", "target_evidence", "binders",
-    "safety", "developability", "validation_plan", "provenance",
+    "ranking", "scorecard", "design_class", "construct", "target_evidence",
+    "binders", "safety", "developability", "validation_plan", "provenance",
 )

@@ -501,7 +501,12 @@ def result_view(project_id: str) -> dict:
                 "decision": x.decision,
                 "on_pareto_front": x.on_front,
                 "position": x.position,
-                "overall_score": None,
+                "overall_score": (None if x.scorecard is None
+                                  else x.scorecard.as_payload()["overall"]),
+                "scored_fraction": (None if x.scorecard is None
+                                    else round(x.scorecard.fraction, 6)),
+                "scorecard": (None if x.scorecard is None
+                              else x.scorecard.as_payload()),
             }
             for x in survivors
         ],
@@ -514,9 +519,15 @@ def result_view(project_id: str) -> dict:
             "different question and is computed independently.",
             "position is a display index carried from Stage 4's composite "
             "order. Nothing decisional reads it.",
-            "overall_score is null on every candidate: no scoring stage has "
-            "run. It is null rather than absent so a reader is told the field "
-            "exists and is unmeasured, which is not the same as zero.",
+            "overall_score is normalised over the measured subset, not over "
+            "all nine components. scored_fraction says how much of the "
+            "applicable frame it rests on, and a candidate below the floor "
+            "carries null rather than a low number.",
+            "The score and the front answer different questions and can "
+            "disagree. The front says which designs are not beaten on every "
+            "axis at once; the score says which is best under one declared set "
+            "of weights. The decision column follows the front, because front "
+            "membership does not move when the weights do.",
         ],
         "reasons": reasons + adaptor_notices(r["constructs"]),
         "developability_status": r["developability_status"],
