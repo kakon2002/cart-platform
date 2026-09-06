@@ -12,6 +12,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from benchmark import blind
 from car_pipeline.api import pipeline, server
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import binder_check
@@ -58,6 +59,81 @@ def main() -> int:
         checked.append(cid)
         if is_tripped:
             tripped.append(cid)
+
+    # ---------------- the blind rule, before anything else ----------------
+    lit = blind.literal_violations()
+    criterion("BM1", bool(lit),
+              f"no held-out value appears in any of the "
+              f"{len(set().union(*(blind.reachable_modules(e) for e in blind.ENTRY_POINTS)))} "
+              f"modules reachable from the algorithm"
+              if not lit else f"{lit}")
+
+    caught = [held for held in ("SS1", "M11", "26.9")
+              if blind.literal_violations(
+                  extra_source={"car_pipeline.stages.binder_check":
+                                f'X = "{held}"\n'})]
+    ordinary = blind.literal_violations(
+        extra_source={"car_pipeline.stages.binder_check": 'X = "Mesothelin"\n'})
+    criterion("BM1b", len(caught) != 3 or bool(ordinary),
+              "blinded: three held-out literals injected into a reachable "
+              "module are each caught, and an ordinary literal is not"
+              if len(caught) == 3 and not ordinary else
+              f"caught {caught}, ordinary {ordinary}")
+
+    reach = blind.answers_reachable()
+    criterion("BM2", bool(reach),
+              "the answers are unreachable from the algorithm's import graph"
+              if not reach else f"reachable from {reach}")
+
+    probes = [blind.answers_reachable(
+                  extra_source={"car_pipeline.stages.binder_check": snippet})
+              for snippet in ('P = "benchmark/answers/msln-literature.json"\n',
+                              "from benchmark.answers import msln\n")]
+    criterion("BM2b", not all(probes),
+              "blinded: a reachable module naming the answers path or package "
+              "is caught either way"
+              if all(probes) else f"probes {probes}")
+
+    a = {"binders": [{"binder_id": "b_1", "target_match": "PASS"}]}
+    b = {"binders": [{"binder_id": "b_1", "target_match": "FAIL"}]}
+    reordered = {"binders": [{"target_match": "PASS", "binder_id": "b_1"}]}
+    moves = blind.fingerprint(a) != blind.fingerprint(b)
+    stable = blind.fingerprint(reordered) == blind.fingerprint(a)
+    criterion("BM3", not (moves and stable),
+              "blinded: the fingerprint moves when the output changes and "
+              "holds when only key order does"
+              if moves and stable else f"moves {moves}, stable {stable}")
+
+    refused = False
+    try:
+        blind.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
+        blind.ANSWERS.write_text('{"probe": true}', encoding="utf-8")
+        try:
+            blind.freeze({"probe": True})
+        except blind.BlindViolation:
+            refused = True
+    finally:
+        if blind.ANSWERS.exists():
+            blind.ANSWERS.unlink()
+    criterion("BM4", not refused,
+              "blinded: freezing while the answers file exists is refused, so "
+              "an output cannot be frozen after the answers are on disk"
+              if refused else "freezing succeeded with the answers present")
+
+    # BM5 -- the commit ordering. This can only be violated once the answers
+    # exist, so until then it is satisfied by their absence rather than by a
+    # check that cannot fail. The first draft was written `criterion("BM5",
+    # False, ...)`, which is the shape this repository keeps finding: a line
+    # that reports rather than tests.
+    order = blind.committed_before_answers()
+    answers_present = blind.ANSWERS.exists() or bool(order.get("answers_commit"))
+    criterion("BM5", answers_present and not order["ordered"],
+              (f"the answers are present and {order['reason']}"
+               if answers_present else
+               "the answers are not on disk and have never been committed, so "
+               "no output could have been produced after reading them")
+              + f" [frozen output committed: "
+                f"{bool(order.get('frozen_commit'))}]")
 
     msln_names = binder_check.name_set(by_gene[BENCHMARK_TARGET])
 
