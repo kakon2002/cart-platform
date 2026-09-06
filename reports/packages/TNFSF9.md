@@ -145,6 +145,8 @@ None.
 
 > This receptor binds a tag, not the antigen, so its binding domain is not a Stage 5 record: it is anti-tag binder, peptide neo-epitope, GCN4(7P-14P) (PDB 1P4B entities 1+2, antigen entity 3 excluded), retrieved from 1P4B_1+2 and named in the construct section. A Stage 5 verdict of NO_BINDER for this target means no antigen-specific binder was retrieved, which is a different statement from the receptor having no binder.
 
+> A structural candidate carries a target-match verdict read from the entry's own antigen annotation. A retrieved count is a count of database hits, and a hit found by searching on this target's accession may carry an antibody raised against a different chain of the same complex.
+
 ## 6 — Safety
 
 |  |  |
@@ -233,7 +235,7 @@ Configuration hash chain, each covering the stage before it:
 
 ## What this package cannot tell you
 
-27 elements the reference document asks for are not produced, across 8 deliverables. 16 are checked mechanically by the verifier, 2 recomputed from this run, and 9 are judgements that say so.
+28 elements the reference document asks for are not produced, across 8 deliverables. 16 are checked mechanically by the verifier, 3 recomputed from this run, and 9 are judgements that say so.
 
 ### Deliverable 1 — Top 3-5 CAR-T constructs (PARTIAL)
 
@@ -299,9 +301,11 @@ what is recorded is the antigen chain and name of a deposited complex, which loc
 
 **cross-reactivity risk**
 
-no screen against paralogs, family members, normal-tissue proteins, alternative isoforms or polymorphic variants exists.
+no screen against paralogs, family members, normal-tissue proteins, alternative isoforms or polymorphic variants exists. Two things are missing rather than none: the connected proteome cache holds 20,431 reviewed human entries with no sequence column, so there is nothing to compare against, and no alignment library is installed.
 
-*Blocked by:* none; a paralog screen needs no stage that is missing
+*Blocked by:* none; but two connections, costed in the note
+
+*Note:* Cost, so the decision can be made rather than deferred. The sequences are one additional field on the UniProt query already issued, roughly doubling an 11 MB cache. The alignment method is the real cost: nothing is installed, and the CPU-friendly route is a k-mer identity screen written against the numeric library already present. What that would produce is a sequence similarity screen. What it would NOT produce is a cross-reactivity measurement: similarity is not binding, a shared linear stretch is not a shared epitope, and a conformational cross-reaction leaves no sequence signature at all. Shipping a similarity screen under the name specificity score would be the renamed-proxy failure this project refused for structural aggregation, so the component stays UNKNOWN and named until it can be labelled for what it is.
 
 **human-likeness**
 
@@ -314,6 +318,14 @@ no candidate carries one.
 **recommended status in the document's vocabulary**
 
 the platform emits PROTEIN_CONFIRMED, RNA_SUPPORTED or DATA_INSUFFICIENT as an evidence class, and SINGLE, DUAL, ADAPTOR, NO_DESIGN or UNRESOLVED as an outcome. The document asks for high-confidence single, conditional, dual candidate, safety-gated or rejected. These map loosely and are not the same partition.
+
+**a retrieved binder count that means target-specific binding**
+
+1 of 1 structural binder(s) carried by the shipping designs are annotated against a different protein: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. The retrieval count did not change; what it means did. Every structure-route count this platform has reported was a count of database hits found by searching on the target's accession, and an entry containing the target may carry an antibody raised against another chain of the same complex.
+
+*Blocked by:* none; the check exists and is applied here
+
+*Note:* This reaches the ranking. binder_count is one of the four Pareto objectives and counts hits rather than matches, so a design can sit on the front on the strength of a binder annotated against something else. Whether the objective should count only matched binders is a decision that changes which designs advance, and it is surfaced here rather than taken quietly. Measured from this run.
 
 ### Deliverable 6 — Safety-risk matrix (PARTIAL)
 

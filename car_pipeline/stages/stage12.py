@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from car_pipeline.data import domains
-from car_pipeline.stages import stage6, stage11, validation
+from car_pipeline.stages import binder_check, stage6, stage11, validation
 
 PACKAGED = "PACKAGED"
 NO_CANDIDATE_REACHES_THE_END = "NO_CANDIDATE_REACHES_THE_END"
@@ -299,6 +299,37 @@ def measured_gaps(packages: list[dict]) -> list[Gap]:
                  "a target-specific binder.",
         ))
 
+    # What every retrieved binder count in this platform has been counting.
+    flagged = [(p["gene"], c)
+               for p in packages
+               for c in p["binders"]["structure_route"]
+               if c.get("wrong_antigen_flag")]
+    structural = [c for p in packages for c in p["binders"]["structure_route"]]
+    if flagged:
+        named = "; ".join(
+            f"{gene} {c.get('identifier')} records "
+            f"{', '.join(c.get('recorded_antigens') or []) or 'nothing'}"
+            for gene, c in flagged[:2])
+        out.append(Gap(
+            5, "Target and binder evidence report", PARTIAL,
+            "a retrieved binder count that means target-specific binding",
+            f"{len(flagged)} of {len(structural)} structural binder(s) carried "
+            f"by the shipping designs are annotated against a different "
+            f"protein: {named}. The retrieval count did not change; what it "
+            "means did. Every structure-route count this platform has "
+            "reported was a count of database hits found by searching on the "
+            "target's accession, and an entry containing the target may carry "
+            "an antibody raised against another chain of the same complex.",
+            blocking_stage="none; the check exists and is applied here",
+            note="This reaches the ranking. binder_count is one of the four "
+                 "Pareto objectives and counts hits rather than matches, so a "
+                 "design can sit on the front on the strength of a binder "
+                 "annotated against something else. Whether the objective "
+                 "should count only matched binders is a decision that "
+                 "changes which designs advance, and it is surfaced here "
+                 "rather than taken quietly. Measured from this run.",
+        ))
+
     unscored = [p["gene"] for p in packages
                 if p["developability"]["binders_scored"] == 0]
     if len(unscored) != len(packages):
@@ -453,7 +484,21 @@ def _adaptor_binder_note(construct) -> str | None:
     )
 
 
-def _binder_payload(record, construct) -> dict:
+def _target_match(candidates: list[dict], surface_record) -> list[dict]:
+    """Each structural candidate with its antigen-match verdict attached."""
+    names = binder_check.name_set(surface_record) if surface_record else set()
+    out = []
+    for c in candidates:
+        verdict = binder_check.evaluate(
+            c.get("antigen_name"), names, c.get("method"))
+        out.append({**c,
+                    "target_match": verdict["target_match"],
+                    "wrong_antigen_flag": verdict["wrong_antigen_flag"],
+                    "recorded_antigens": verdict["recorded_antigens"]})
+    return out
+
+
+def _binder_payload(record, construct, surface_record=None) -> dict:
     """Deliverable 5 on the binder side, by route and never summed."""
     note = _adaptor_binder_note(construct)
     if record is None:
@@ -479,9 +524,16 @@ def _binder_payload(record, construct) -> dict:
         "entries": len(record.entries),
         "entries_without_antibody": record.entries_without_antibody,
         "entries_excluded_as_model": record.entries_excluded_as_model,
-        "structure_route": [_candidate_payload(c) for c in record.structure],
+        "structure_route": _target_match(
+            [_candidate_payload(c) for c in record.structure], surface_record),
         "sequence_route": [_candidate_payload(c) for c in record.sequence],
-        "reasons": reasons,
+        "reasons": reasons + [
+            "A structural candidate carries a target-match verdict read from "
+            "the entry's own antigen annotation. A retrieved count is a count "
+            "of database hits, and a hit found by searching on this target's "
+            "accession may carry an antibody raised against a different chain "
+            "of the same complex.",
+        ],
     }
 
 
@@ -627,7 +679,9 @@ def build(run: dict) -> tuple[list[dict], str]:
             "design_class": validation.design_class(construct),
             "construct": _construct_payload(construct),
             "target_evidence": _target_payload(ranked, attribution),
-            "binders": _binder_payload(run["binders"].get(gene), construct),
+            "binders": _binder_payload(
+                run["binders"].get(gene), construct,
+                (run.get("surface_by_gene") or {}).get(gene)),
             "safety": _safety_payload(safety),
             "developability": _developability_payload(
                 dev_by_gene.get(gene, []), construct),
