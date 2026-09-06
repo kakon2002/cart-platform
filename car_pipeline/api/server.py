@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import threading
@@ -16,6 +17,9 @@ from car_pipeline.stages import stage4, stage6, stage10, stage11, validation, st
 
 _LOCK = threading.Lock()
 PROJECTS: dict[str, dict] = {}
+# Client references, resolved to canonical ids before any view is called, so
+# every view continues to see exactly one kind of id.
+ALIASES: dict[str, str] = {}
 JOBS: dict[str, dict] = {}
 RESULTS: dict[str, dict] = {}
 
@@ -78,8 +82,35 @@ NOT_HONOURED = {
 
 ACCEPTED_FIELDS = (
     "cancer_type", "indication", "target_antigen", "target_mode",
-    "project_id", "max_final_candidates", "architecture_mode",
+    "project_id", "max_final_candidates", "architecture_mode", "binder_mode",
 )
+
+# Stage 5 retrieves and stops: a structure route over deposited complexes and a
+# sequence route over named therapeutics. Nothing generates a binder, models a
+# complex, optimises an interface or germlines a framework. So RETRIEVAL_FIRST
+# is honoured because it is exactly what happens, and every other value is
+# refused rather than accepted and quietly ignored.
+BINDER_MODES = {"RETRIEVAL_FIRST"}
+
+BINDER_MODES_REFUSED = {
+    "DE_NOVO": "no binder is generated anywhere in this platform",
+    "OPTIMIZE": "no interface optimisation or variant search exists",
+    "HYBRID": "the generative half of a hybrid mode has no producer",
+}
+
+
+def _binder_mode(value) -> str:
+    """The retrieval mode, honoured only where the platform implements it."""
+    key = str(value).strip().upper()
+    if key in BINDER_MODES:
+        return key
+    detail = BINDER_MODES_REFUSED.get(
+        key, "this platform recognises no such binder mode")
+    raise _refuse(
+        "binder_mode",
+        f"binder_mode {key!r} is not honoured: {detail}. Stage 5 retrieves "
+        "binders and stops.",
+        supported_values=sorted(BINDER_MODES))
 
 
 def _refuse(field: str, error: str, **extra) -> ContractError:
@@ -203,14 +234,37 @@ def create_project(body: dict) -> dict:
     if body.get("architecture_mode") is not None:
         architecture_mode, admits_outcome = _architecture(body["architecture_mode"])
 
+    binder_mode = "RETRIEVAL_FIRST"
+    if body.get("binder_mode") is not None:
+        binder_mode = _binder_mode(body["binder_mode"])
+
+    # A client reference is an addressable alias, so it must be unambiguous.
+    reference = str(body["project_id"]).strip() if body.get("project_id") else None
+    if reference:
+        if re.fullmatch(r"[0-9a-f]{12}", reference):
+            raise _refuse(
+                "project_id",
+                f"project_id {reference!r} has the shape of a server-generated "
+                "id. Client references are addressable aliases, so one that "
+                "could be mistaken for a canonical id would make resolution "
+                "order decide which project a caller reached.")
+        with _LOCK:
+            existing = ALIASES.get(reference)
+        if existing:
+            raise _refuse(
+                "project_id",
+                f"project_id {reference!r} already names project {existing}. "
+                "Returning that project would hand you someone else's run; "
+                "choose another reference.",
+                existing_project_id=existing)
+
     pipeline.project_for(cancer_type)
     project_id = uuid.uuid4().hex[:12]
     project = {
         "project_id": project_id,
         # The client's own reference is echoed; the server id stays canonical,
         # because ids must be unique and server-controlled.
-        "client_reference": (str(body["project_id"]).strip()
-                             if body.get("project_id") else None),
+        "client_reference": reference,
         "cancer_type": cancer_type.strip(),
         "target_antigen": (target_antigen or "").strip().upper() or None,
         "discovery_mode": "A" if target_antigen else "B",
@@ -219,6 +273,7 @@ def create_project(body: dict) -> dict:
         "max_final_candidates": cap,
         "architecture_mode": architecture_mode,
         "admits_outcome": admits_outcome,
+        "binder_mode": binder_mode,
         "created_at": _now(),
         "honoured": {
             "max_final_candidates":
@@ -236,7 +291,129 @@ def create_project(body: dict) -> dict:
     }
     with _LOCK:
         PROJECTS[project_id] = project
+        if reference:
+            ALIASES[reference] = project_id
     return project
+
+
+def resolve_project(reference: str) -> str:
+    """A canonical project id, from either name for it.
+
+    One id space with two ways to name it. Resolution happens here, before any
+    view is called, so nothing downstream ever sees a client reference.
+    """
+    with _LOCK:
+        if reference in PROJECTS:
+            return reference
+        canonical = ALIASES.get(reference)
+    if canonical:
+        return canonical
+    raise KeyError(reference)
+
+
+def job_status(job_id: str) -> dict:
+    """One run's status, as a snapshot rather than the live record."""
+    with _LOCK:
+        job = JOBS.get(job_id)
+        return dict(job) if job else {}
+
+
+def _binder_id(gene: str, route: str, identifier: str) -> str:
+    """A stable id for one retrieved binder.
+
+    Derived from what identifies it rather than from a counter, so the same
+    binder carries the same id across runs and a client can cache it.
+    """
+    blob = f"{gene}|{route}|{identifier}".encode("utf-8")
+    return "b_" + hashlib.sha1(blob).hexdigest()[:10]
+
+
+def _binder_rows(r: dict) -> list[dict]:
+    """Every retrieved binder in the run, flattened, with stable ids."""
+    rows = []
+    for gene, record in sorted((r.get("binders") or {}).items()):
+        for route, entries in (("structure", record.structure),
+                               ("sequence", record.sequence)):
+            for c in entries:
+                rows.append({
+                    "binder_id": _binder_id(gene, route, c.identifier or ""),
+                    "target_id": gene,
+                    "origin": "RETRIEVED",
+                    "route": route,
+                    "identifier": c.identifier,
+                    "name": c.name or None,
+                    "format": c.fmt or None,
+                    "clinical_stage": c.clinical_stage or None,
+                    "antigen_chain": c.antigen_chain or None,
+                    "antigen_name": c.antigen_name or None,
+                    "method": c.method or None,
+                    "sequence_available": bool(c.heavy_sequence or c.light_sequence),
+                    "heavy_sequence": c.heavy_sequence or None,
+                    "light_sequence": c.light_sequence or None,
+                    "affinity": c.affinity,
+                    "target_match": "UNKNOWN",
+                })
+    return rows
+
+
+BINDER_NOTES = [
+    "origin is RETRIEVED on every row. Nothing in this platform generates a "
+    "binder, models a complex, optimises an interface or germlines a "
+    "framework, so OPTIMIZED_VARIANT and CPU_GENERATED_VARIANT have no "
+    "producer and never appear.",
+    "affinity is NOT_CONNECTED on every row. No connected evidence release "
+    "carries an affinity, KD or free-energy column, so no binder has a "
+    "retrieved value and none is predicted.",
+    "target_match is UNKNOWN on every row until the antigen-match check "
+    "exists. A recorded database hit is not evidence of target-specific "
+    "binding: an entry found by searching on the target's accession may "
+    "contain an antibody against a different chain of the same complex.",
+    "The two retrieval routes are reported apart and never summed. A target "
+    "with a named therapeutic but no deposited structure is not a target "
+    "without a binder.",
+]
+
+
+def binders_view(project_id: str, target_id: str | None = None) -> dict:
+    """Every binder Stage 5 retrieved, optionally for one target."""
+    r = _result(project_id)
+    rows = _binder_rows(r)
+    if target_id:
+        rows = [b for b in rows if b["target_id"] == target_id.strip().upper()]
+    return {
+        **_evidence(r),
+        "target_id": (target_id or "").strip().upper() or None,
+        "binders": rows,
+        "total_binders_found": len(rows),
+        "reasons": BINDER_NOTES,
+    }
+
+
+def binder_view(project_id: str, binder_id: str) -> dict:
+    """One binder's scorecard and provenance."""
+    r = _result(project_id)
+    row = next((b for b in _binder_rows(r) if b["binder_id"] == binder_id), None)
+    if row is None:
+        raise KeyError(binder_id)
+    return {
+        **_evidence(r),
+        **row,
+        "sequence_original": row["heavy_sequence"],
+        "sequence_clean": None,
+        "modifications": [],
+        "provenance": [
+            {"step": "retrieval", "route": row["route"],
+             "identifier": row["identifier"],
+             "source": "deposited structural complexes" if row["route"] == "structure"
+                       else "named therapeutic antibodies"},
+        ],
+        "reasons": BINDER_NOTES + [
+            "sequence_clean is null and modifications is empty because the "
+            "sanitation step does not exist yet. The original sequence is "
+            "carried unmodified, which is the state a cleaning step must "
+            "preserve rather than overwrite.",
+        ],
+    }
 
 
 def start_run(project_id: str) -> dict:
@@ -971,6 +1148,20 @@ def evidence_view(project_id: str, gene: str) -> dict:
     }
 
 
+def _canonical(reference: str) -> str:
+    """Either name for a project, resolved to the one the views understand."""
+    try:
+        return resolve_project(reference)
+    except KeyError:
+        raise UnknownProject(reference)
+
+
+def _adapter_refusal():
+    """The adapter's refusal type, imported late to keep the cycle open."""
+    from car_pipeline.api import adapter
+    return adapter.Refusal
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "car-platform/1"
 
@@ -996,24 +1187,32 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """Route the write endpoints."""
+        from car_pipeline.api import adapter
         path = self.path.split("?")[0]
+        # Read once. The request body is a stream: a second _body() call
+        # returns empty because the first consumed it, which would silently
+        # hand create_project an empty request.
+        body = self._body()
         try:
+            handled = adapter.dispatch_post(path, body)
+            if handled is not None:
+                return self._send(*handled)
             if path == "/projects":
-                body = self._body()
                 return self._send(201, create_project(body))
-            m = re.match(r"^/projects/([0-9a-f]{12})/runs$", path)
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/runs$", path)
             if m:
-                return self._send(202, start_run(m.group(1)))
+                return self._send(202, start_run(_canonical(m.group(1))))
             if path == "/structure/evaluate":
                 return self._send(200, constants.structure_evaluate(
-                    self._body().get("construct_id")))
+                    body.get("construct_id")))
             if path == "/function/predict":
                 return self._send(200, constants.function_predict(
-                    self._body().get("construct_id")))
+                    body.get("construct_id")))
             if path == "/learning/calibrate":
-                body = self._body()
                 return self._send(200, constants.learning_calibrate(
                     body.get("dataset_version"), body.get("model_family")))
+        except _adapter_refusal() as exc:
+            return self._send(exc.status, exc.payload)
         except ContractError as exc:
             return self._send(400, exc.payload)
         except ValueError as exc:
@@ -1042,6 +1241,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """Route the read endpoints."""
+        from car_pipeline.api import adapter
+        query = {}
+        if "?" in self.path:
+            for part in self.path.split("?", 1)[1].split("&"):
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    query[k] = v
+        try:
+            handled = adapter.dispatch_get(self.path.split("?")[0], query)
+            if handled is not None:
+                return self._send(*handled)
+        except adapter.Refusal as exc:
+            return self._send(exc.status, exc.payload)
+        except KeyError as exc:
+            return self._send(404, {"status": "NOT_FOUND", "error": str(exc)})
         path = self.path.split("?")[0]
         try:
             if path == "/indications":
@@ -1074,34 +1288,34 @@ class Handler(BaseHTTPRequestHandler):
                     })
                 return self._send(200, snapshot)
 
-            m = re.match(r"^/projects/([0-9a-f]{12})/contract$", path)
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/contract$", path)
             if m:
-                return self._send(200, contract_view(m.group(1)))
-            m = re.match(r"^/projects/([0-9a-f]{12})/validation$", path)
+                return self._send(200, contract_view(_canonical(m.group(1))))
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/validation$", path)
             if m:
-                return self._send(200, validation_view(m.group(1)))
+                return self._send(200, validation_view(_canonical(m.group(1))))
             for name, view, paged in (("targets", targets_view, True),
                                       ("pairs", pairs_view, True),
                                       ("constructs", constructs_view, False),
                                       ("package", package_view, False),
                                       ("result", result_view, False)):
-                m = re.match(rf"^/projects/([0-9a-f]{{12}})/{name}$", path)
+                m = re.match(rf"^/projects/([A-Za-z0-9_.:-]{{1,64}})/{name}$", path)
                 if m:
                     if paged:
-                        return self._send(200, view(m.group(1), self._limit()))
-                    return self._send(200, view(m.group(1)))
+                        return self._send(200, view(_canonical(m.group(1)), self._limit()))
+                    return self._send(200, view(_canonical(m.group(1))))
 
-            m = re.match(r"^/projects/([0-9a-f]{12})/plan/([A-Za-z0-9_.-]+)$", path)
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/plan/([A-Za-z0-9_.-]+)$", path)
             if m:
-                return self._send(200, plan_view(m.group(1), m.group(2)))
+                return self._send(200, plan_view(_canonical(m.group(1)), m.group(2)))
 
-            m = re.match(r"^/projects/([0-9a-f]{12})/package/([A-Za-z0-9_.-]+)$", path)
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/package/([A-Za-z0-9_.-]+)$", path)
             if m:
-                return self._send(200, package_for_view(m.group(1), m.group(2)))
+                return self._send(200, package_for_view(_canonical(m.group(1)), m.group(2)))
 
-            m = re.match(r"^/projects/([0-9a-f]{12})/evidence/([A-Za-z0-9_.-]+)$", path)
+            m = re.match(r"^/projects/([A-Za-z0-9_.:-]{1,64})/evidence/([A-Za-z0-9_.-]+)$", path)
             if m:
-                return self._send(200, evidence_view(m.group(1), m.group(2)))
+                return self._send(200, evidence_view(_canonical(m.group(1)), m.group(2)))
         except UnknownProject as exc:
             return self._send(404, {
                 "status": "NOT_FOUND",
