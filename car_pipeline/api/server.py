@@ -13,7 +13,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from car_pipeline.api import constants, pipeline
 from car_pipeline.data.source import CacheError
-from car_pipeline.stages import stage4, stage6, stage10, stage11, validation, stage12
+from car_pipeline.stages import (
+    binder_check, stage4, stage6, stage10, stage11, validation, stage12,
+)
 
 _LOCK = threading.Lock()
 PROJECTS: dict[str, dict] = {}
@@ -351,7 +353,6 @@ def _binder_rows(r: dict) -> list[dict]:
                     "heavy_sequence": c.heavy_sequence or None,
                     "light_sequence": c.light_sequence or None,
                     "affinity": c.affinity,
-                    "target_match": "UNKNOWN",
                 })
     return rows
 
@@ -364,14 +365,24 @@ BINDER_NOTES = [
     "affinity is NOT_CONNECTED on every row. No connected evidence release "
     "carries an affinity, KD or free-energy column, so no binder has a "
     "retrieved value and none is predicted.",
-    "target_match is UNKNOWN on every row until the antigen-match check "
-    "exists. A recorded database hit is not evidence of target-specific "
-    "binding: an entry found by searching on the target's accession may "
-    "contain an antibody against a different chain of the same complex.",
+    "target_match is decided from the entry's recorded antigen annotation. "
+    "A database hit is not evidence of target-specific binding: an entry "
+    "found by searching on the target's accession may carry an antibody "
+    "against a different chain of the same complex.",
     "The two retrieval routes are reported apart and never summed. A target "
     "with a named therapeutic but no deposited structure is not a target "
     "without a binder.",
 ]
+
+
+def _checked_rows(r: dict, rows: list[dict]) -> list[dict]:
+    """Rows with the target-match verdict applied, per target."""
+    surface = r.get("surface_by_gene") or {}
+    out = []
+    for gene in sorted({b["target_id"] for b in rows}):
+        out += binder_check.check([b for b in rows if b["target_id"] == gene],
+                                  surface.get(gene))
+    return out
 
 
 def binders_view(project_id: str, target_id: str | None = None) -> dict:
@@ -380,19 +391,25 @@ def binders_view(project_id: str, target_id: str | None = None) -> dict:
     rows = _binder_rows(r)
     if target_id:
         rows = [b for b in rows if b["target_id"] == target_id.strip().upper()]
+    rows = _checked_rows(r, rows)
+    verdicts = {}
+    for row in rows:
+        verdicts[row["target_match"]] = verdicts.get(row["target_match"], 0) + 1
     return {
         **_evidence(r),
         "target_id": (target_id or "").strip().upper() or None,
         "binders": rows,
         "total_binders_found": len(rows),
-        "reasons": BINDER_NOTES,
+        "target_match_counts": verdicts,
+        "reasons": BINDER_NOTES + binder_check.NOTES,
     }
 
 
 def binder_view(project_id: str, binder_id: str) -> dict:
     """One binder's scorecard and provenance."""
     r = _result(project_id)
-    row = next((b for b in _binder_rows(r) if b["binder_id"] == binder_id), None)
+    row = next((b for b in _checked_rows(r, _binder_rows(r))
+                if b["binder_id"] == binder_id), None)
     if row is None:
         raise KeyError(binder_id)
     return {
