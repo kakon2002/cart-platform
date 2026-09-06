@@ -15,7 +15,7 @@ from pathlib import Path
 from benchmark import blind
 from car_pipeline.api import pipeline, server
 from car_pipeline.data.uniprot import load_surface
-from car_pipeline.stages import binder_check
+from car_pipeline.stages import binder_check, structural_evidence
 
 ROOT = Path(__file__).resolve().parent
 SABDAB = ROOT / "data/antibodies/sabdab_summary_all.csv"
@@ -214,15 +214,54 @@ def main() -> int:
     struct = [b for b in rows if b["route"] == "structure"]
     seq = [b for b in rows if b["route"] == "sequence"]
 
-    # BM9 -- structural evidence only where target match passed.
-    leaked = [b for b in rows
-              if b["target_match"] != binder_check.PASS
-              and (b.get("method") or b.get("antigen_chain"))
-              and b.get("structural_evidence")]
+    # BM9 -- structural evidence only where target match passed. The evidence
+    # fields themselves must be null, not merely a status saying UNKNOWN
+    # beside a populated entry. The first version of this criterion checked
+    # only that a structural_evidence key existed, which nothing produced at
+    # the time, so it could not fail; this checks the fields.
+    EVIDENCE_FIELDS = ("entry", "resolution", "antigen_type",
+                       "heavy_chain", "light_chain", "basis")
+    leaked = [
+        f"{b['binder_id']} ({b['target_match']}) carries "
+        f"{[f for f in EVIDENCE_FIELDS if (b.get('structural_evidence') or {}).get(f) is not None]}"
+        for b in rows
+        if b["target_match"] != binder_check.PASS
+        and any((b.get("structural_evidence") or {}).get(f) is not None
+                for f in EVIDENCE_FIELDS)
+    ]
+    verified = [b for b in rows
+                if (b.get("structural_evidence") or {}).get("structural_status")
+                == structural_evidence.VERIFIED]
     criterion("BM9", bool(leaked),
-              "no binder carries structural evidence without a passing "
-              "target match; the field is gated rather than filtered later"
-              if not leaked else f"{len(leaked)} carry it regardless")
+              f"{len(verified)} of {len(rows)} binder(s) carry verified "
+              f"structural evidence, and every one of them passed target "
+              f"match; no non-passing row carries an entry, resolution or basis"
+              if not leaked else "; ".join(leaked[:3]))
+
+    # BM9b -- blinded. A row whose verdict is not PASS must yield nothing even
+    # when it names a real deposited entry.
+    probe = dict(next(b for b in rows if b["target_match"] == binder_check.PASS))
+    probe["target_match"] = binder_check.FAIL
+    blinded_out = structural_evidence.evidence(probe)
+    probe["target_match"] = binder_check.UNKNOWN
+    blinded_unknown = structural_evidence.evidence(probe)
+    gated = all(blinded_out.get(f) is None for f in EVIDENCE_FIELDS) and \
+        all(blinded_unknown.get(f) is None for f in EVIDENCE_FIELDS)
+    criterion("BM9b", not gated,
+              "blinded: a row naming a real deposited entry yields no entry, "
+              "resolution or basis when its verdict is flipped to FAIL or to "
+              "UNKNOWN" if gated else
+              f"FAIL yielded {blinded_out.get('entry')}, UNKNOWN yielded "
+              f"{blinded_unknown.get('entry')}")
+
+    # BM9c -- geometry is never reported, whatever the verdict.
+    geometry = [b["binder_id"] for b in rows
+                if (b.get("structural_evidence") or {}).get("interface_geometry")
+                is not None]
+    criterion("BM9c", bool(geometry),
+              "interface geometry is null on every row; no coordinate file is "
+              "connected, so which residues contact which is not reported"
+              if not geometry else f"{len(geometry)} rows report geometry")
 
     # BM12 -- affinity is UNKNOWN everywhere while no source is connected.
     values = {b["affinity"] for b in rows}
