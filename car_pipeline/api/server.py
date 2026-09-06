@@ -720,6 +720,26 @@ def constructs_view(project_id: str) -> dict:
     reasons.extend(adaptor_notices(r["constructs"]))
     classes = validation.design_class_summary(constructs)
     reasons.extend(classes["reasons"])
+    checked = _checked_rows(r, _binder_rows(r))
+    structural = [b for b in checked if b["route"] == "structure"]
+    flagged = [b for b in structural if b.get("wrong_antigen_flag")]
+    shipping = {c.gene for c in buildable}
+    flagged_shipping = [b for b in flagged if b["target_id"] in shipping]
+    if flagged:
+        reasons.append(
+            f"{len(flagged)} of {len(structural)} structural binder(s) across "
+            f"this pool are annotated against a different protein than the "
+            f"target they were retrieved for, and "
+            f"{len(flagged_shipping)} of those belong to a design that "
+            f"assembles: "
+            + "; ".join(f"{b['target_id']} {b['identifier']} records "
+                        + ", ".join(b["recorded_antigens"])
+                        for b in (flagged_shipping or flagged)[:2])
+            + ". A retrieved count is a count of database hits. The entry was "
+              "found by searching on the target's accession, so it contains "
+              "the target; the antibody in it is annotated against another "
+              "chain of the same complex. The count did not change, what it "
+              "means did.")
     return {
         "status": status,
         **_evidence(r),
