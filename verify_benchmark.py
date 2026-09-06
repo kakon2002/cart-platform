@@ -15,7 +15,9 @@ from pathlib import Path
 from benchmark import blind
 from car_pipeline.api import pipeline, server
 from car_pipeline.data.uniprot import load_surface
-from car_pipeline.stages import binder_check, structural_evidence
+from car_pipeline.stages import (
+    binder_check, binder_ranking, scoring, structural_evidence,
+)
 
 ROOT = Path(__file__).resolve().parent
 SABDAB = ROOT / "data/antibodies/sabdab_summary_all.csv"
@@ -262,6 +264,59 @@ def main() -> int:
               "interface geometry is null on every row; no coordinate file is "
               "connected, so which residues contact which is not reported"
               if not geometry else f"{len(geometry)} rows report geometry")
+
+    # ---------------- B10, the two rankings ----------------
+    msln_rows = [b for b in rows if b["target_id"] == BENCHMARK_TARGET]
+    ranked = binder_ranking.rank(msln_rows)
+
+    # BM10 -- no gate failure is scored, and no component is imputed.
+    rescued = [b["binder_id"] for b in ranked["binders"]
+               if b["target_match"] == binder_check.FAIL]
+    imputed = [f"{b['binder_id']}.{c['key']}"
+               for b in ranked["binders"]
+               for block in ("binding", "suitability")
+               for c in b[block]["components"]
+               if c["state"] != scoring.MEASURED and c["value"] is not None]
+    criterion("BM10", bool(rescued or imputed),
+              f"{len(ranked['excluded_binders'])} binder(s) failed the gate "
+              f"and none is scored; no component among "
+              f"{sum(len(b[k]['components']) for b in ranked['binders'] for k in ('binding','suitability'))} "
+              f"carries a value while unmeasured"
+              if not (rescued or imputed) else
+              f"rescued {rescued[:3]}; imputed {imputed[:3]}")
+
+    # BM11 -- the front cannot be moved by weights, and the two rankings read
+    # different component sets. Blinded by swapping the weight sets outright.
+    original = dict(binder_ranking.BINDING_WEIGHTS)
+    try:
+        binder_ranking.BINDING_WEIGHTS.clear()
+        binder_ranking.BINDING_WEIGHTS.update(
+            {"affinity": 0.10, "structural_verification": 0.60,
+             "evidence_completeness": 0.30})
+        alt = binder_ranking.rank(msln_rows)
+    finally:
+        binder_ranking.BINDING_WEIGHTS.clear()
+        binder_ranking.BINDING_WEIGHTS.update(original)
+    same_front = set(ranked["front"]) == set(alt["front"])
+    distinct_sets = (set(binder_ranking.BINDING_WEIGHTS)
+                     != set(binder_ranking.SUITABILITY_WEIGHTS))
+    criterion("BM11", not (same_front and distinct_sets),
+              f"the front holds at {len(ranked['front'])} member(s) under a "
+              f"different weight set, and the two rankings read "
+              f"{len(binder_ranking.BINDING_WEIGHTS)} and "
+              f"{len(binder_ranking.SUITABILITY_WEIGHTS)} distinct components"
+              if same_front and distinct_sets else
+              f"front moved {same_front}, distinct {distinct_sets}")
+
+    # BM11b -- a populated front that has not discriminated must say so.
+    degenerate = ranked["front"] and not ranked["front_discriminates"]
+    criterion("BM11b",
+              degenerate and "carries no discrimination" not in ranked["front_note"],
+              f"the front reports whether it discriminated: "
+              f"discriminates={ranked['front_discriminates']}, "
+              f"{len(ranked['front'])} member(s)"
+              if not degenerate or "carries no discrimination" in ranked["front_note"]
+              else "a tied front is reported as though it ranked")
 
     # BM12 -- affinity is UNKNOWN everywhere while no source is connected.
     values = {b["affinity"] for b in rows}

@@ -1,0 +1,3608 @@
+{
+  "benchmark_id": "MSLN-LITERATURE-001",
+  "blind": true,
+  "fingerprint": "160f4b250a325894",
+  "output": {
+    "binders": [
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "4F3F:BA",
+        "binder_id": "b_3aa53b4fdf",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (4F3F)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "C",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "4F3F",
+          "heavy_chain": "B",
+          "interface_geometry": null,
+          "light_chain": "A",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 2.65 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 2.65,
+          "resolution_recorded": "2.65",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "7U8C:HL",
+        "binder_id": "b_6d4a3f255d",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (7U8C)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "A",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "7U8C",
+          "heavy_chain": "H",
+          "interface_geometry": null,
+          "light_chain": "L",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.74 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.74,
+          "resolution_recorded": "1.74",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "7UED:HL",
+        "binder_id": "b_88e4fc1a17",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "no verified deposited complex for this binder",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "no deposited record to read metadata from",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "affinity",
+            "structural_verification",
+            "evidence_completeness"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": false,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "NA"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": null,
+          "antigen_type": null,
+          "basis": null,
+          "entry": null,
+          "heavy_chain": null,
+          "interface_geometry": null,
+          "light_chain": null,
+          "method": null,
+          "reason": "Target match is UNKNOWN, so no structural evidence is reported. Absent or inapplicable antigen annotation is not a reason to treat a structure as verified.",
+          "resolution": null,
+          "structural_status": "UNKNOWN"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "UNKNOWN",
+        "wrong_antigen_flag": null
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CXC:A2A1",
+        "binder_id": "b_31f8641dfb",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CXC)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CXC",
+          "heavy_chain": "A2",
+          "interface_geometry": null,
+          "light_chain": "A1",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 4.31 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 4.31,
+          "resolution_recorded": "4.31",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CXC:HL",
+        "binder_id": "b_f10bcc46b5",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CXC)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CXC",
+          "heavy_chain": "H",
+          "interface_geometry": null,
+          "light_chain": "L",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 4.31 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 4.31,
+          "resolution_recorded": "4.31",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CYH:HL",
+        "binder_id": "b_4e6728f91d",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CYH)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CYH",
+          "heavy_chain": "H",
+          "interface_geometry": null,
+          "light_chain": "L",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 3.38 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 3.38,
+          "resolution_recorded": "3.38",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CZ8:A2A1",
+        "binder_id": "b_f0c5194953",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CZ8)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CZ8",
+          "heavy_chain": "A2",
+          "interface_geometry": null,
+          "light_chain": "A1",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 2.6 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 2.6,
+          "resolution_recorded": "2.6",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CZ8:B2B1",
+        "binder_id": "b_d0157f784d",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CZ8)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form",
+          "SULFATE ION"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M|R",
+          "antigen_type": "PROTEIN|ION",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CZ8",
+          "heavy_chain": "B2",
+          "interface_geometry": null,
+          "light_chain": "B1",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 2.6 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 2.6,
+          "resolution_recorded": "2.6",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CZ8:C2C1",
+        "binder_id": "b_eacd283723",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CZ8)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "E",
+          "antigen_type": "PROTEIN",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CZ8",
+          "heavy_chain": "C2",
+          "interface_geometry": null,
+          "light_chain": "C1",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 2.6 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 2.6,
+          "resolution_recorded": "2.6",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "8CZ8:D2D1",
+        "binder_id": "b_71411808d7",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (8CZ8)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form",
+          "SULFATE ION"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "E|O",
+          "antigen_type": "PROTEIN|ION",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "8CZ8",
+          "heavy_chain": "D2",
+          "interface_geometry": null,
+          "light_chain": "D1",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 2.6 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 2.6,
+          "resolution_recorded": "2.6",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "9P4C:HL",
+        "binder_id": "b_a83c4e5f62",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (9P4C)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin, cleaved form"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "M",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "9P4C",
+          "heavy_chain": "H",
+          "interface_geometry": null,
+          "light_chain": "L",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.52 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.52,
+          "resolution_recorded": "1.52",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "9Z3B:BA",
+        "binder_id": "b_7af01b5ce8",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (9Z3B)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "I",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "9Z3B",
+          "heavy_chain": "B",
+          "interface_geometry": null,
+          "light_chain": "A",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.96 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.96,
+          "resolution_recorded": "1.96",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "9Z3B:DC",
+        "binder_id": "b_893626d825",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (9Z3B)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "J",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "9Z3B",
+          "heavy_chain": "D",
+          "interface_geometry": null,
+          "light_chain": "C",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.96 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.96,
+          "resolution_recorded": "1.96",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "9Z3B:FE",
+        "binder_id": "b_3c1565c05a",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (9Z3B)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "K",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "9Z3B",
+          "heavy_chain": "F",
+          "interface_geometry": null,
+          "light_chain": "E",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.96 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.96,
+          "resolution_recorded": "1.96",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Fab",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": null,
+            "cysteines": null,
+            "glycosylation_sequons": null,
+            "length": null,
+            "present": false
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": false
+        },
+        "binder": "9Z3B:HG",
+        "binder_id": "b_180c9281ef",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "a deposited experimental complex whose recorded antigen names the target (9Z3B)",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "4 of 4 expected metadata fields recorded",
+              "state": "MEASURED",
+              "value": 1.0,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0.45,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.4500 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.45,
+          "unknown_components": [
+            "affinity"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "reason": "no sequence to assess",
+          "status": "NOTHING_TO_SCORE"
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": true,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [
+          "Mesothelin"
+        ],
+        "route": "structure",
+        "sequence_clean": null,
+        "sequence_original": null,
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": "L",
+          "antigen_type": "PEPTIDE",
+          "basis": "deposited experimental structure, retrieved; not predicted",
+          "entry": "9Z3B",
+          "heavy_chain": "H",
+          "interface_geometry": null,
+          "light_chain": "G",
+          "method": "XRAY",
+          "reason": "A deposited XRAY structure whose recorded antigen names this target, solved at 1.96 angstrom. Interface geometry is null: which residues contact which needs coordinates, and no coordinate file is connected. What is reported is that a verified complex exists and what kind it is, never what its interface looks like.",
+          "resolution": 1.96,
+          "resolution_recorded": "1.96",
+          "structural_status": "VERIFIED_EXPERIMENTAL"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "PASS",
+        "wrong_antigen_flag": false
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Whole mAb",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 119,
+            "present": true
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 106,
+            "present": true
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": true
+        },
+        "binder": "Amatuximab",
+        "binder_id": "b_1ff2d1a5ca",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "no verified deposited complex for this binder",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "no deposited record to read metadata from",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "affinity",
+            "structural_verification",
+            "evidence_completeness"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "aggregation_prone_regions": [
+            16,
+            45,
+            80,
+            91
+          ],
+          "cysteines": 2,
+          "deamidation_motifs": [
+            55
+          ],
+          "developability_score": null,
+          "glycosylation_sequons": [],
+          "gravy": -0.4269,
+          "hydrolysis_motifs": [],
+          "isoelectric_point": 8.808,
+          "isomerisation_motifs": [
+            90,
+            102
+          ],
+          "length": 119,
+          "low_complexity_windows": [
+            1,
+            75,
+            94
+          ],
+          "net_charge_at_formulation_ph": 1.8674,
+          "oxidation_sites": [
+            34,
+            36,
+            47,
+            81,
+            109
+          ],
+          "reasons": [
+            "developability_score is null by standing decision, not for want of inputs. Liability flags are counted and listed and never summed, because a flag that fires on every binder in a pool carries no information and a total would hide that.",
+            "Motif counts are positions where a liability is possible, not measurements that it occurs. Whether a site is exposed enough to deamidate or oxidise depends on the folded structure, and no coordinates are connected."
+          ],
+          "status": "SCORED",
+          "unpaired_cysteine": false
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": false,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [],
+        "route": "sequence",
+        "sequence_clean": null,
+        "sequence_original": "QVQLQQSGPELEKPGASVKISCKASGYSFTGYTMNWVKQSHGKSLEWIGLITPYNGASSYNQKFRGKATLTVDKSSSTAYMDLLSLTSEDSAVYFCARGGYDGRGFDYWGSGTPVTVSS",
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": null,
+          "antigen_type": null,
+          "basis": null,
+          "entry": null,
+          "heavy_chain": null,
+          "interface_geometry": null,
+          "light_chain": null,
+          "method": null,
+          "reason": "Target match is UNKNOWN, so no structural evidence is reported. Absent or inapplicable antigen annotation is not a reason to treat a structure as verified.",
+          "resolution": null,
+          "structural_status": "UNKNOWN"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "UNKNOWN",
+        "wrong_antigen_flag": null
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Whole mAb ADC",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 120,
+            "present": true
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 111,
+            "present": true
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": true
+        },
+        "binder": "Anetumab",
+        "binder_id": "b_e7111e535d",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "no verified deposited complex for this binder",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "no deposited record to read metadata from",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "affinity",
+            "structural_verification",
+            "evidence_completeness"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "aggregation_prone_regions": [
+            45,
+            113
+          ],
+          "cysteines": 2,
+          "deamidation_motifs": [],
+          "developability_score": null,
+          "glycosylation_sequons": [],
+          "gravy": -0.3317,
+          "hydrolysis_motifs": [
+            52
+          ],
+          "isoelectric_point": 8.815,
+          "isomerisation_motifs": [
+            55,
+            90,
+            108
+          ],
+          "length": 120,
+          "low_complexity_windows": [
+            17,
+            102
+          ],
+          "net_charge_at_formulation_ph": 1.8299,
+          "oxidation_sites": [
+            33,
+            36,
+            47,
+            48,
+            83,
+            93,
+            107,
+            110
+          ],
+          "reasons": [
+            "developability_score is null by standing decision, not for want of inputs. Liability flags are counted and listed and never summed, because a flag that fires on every binder in a pool carries no information and a total would hide that.",
+            "Motif counts are positions where a liability is possible, not measurements that it occurs. Whether a site is exposed enough to deamidate or oxidise depends on the folded structure, and no coordinates are connected."
+          ],
+          "status": "SCORED",
+          "unpaired_cysteine": false
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": false,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [],
+        "route": "sequence",
+        "sequence_clean": null,
+        "sequence_original": "QVELVQSGAEVKKPGESLKISCKGSGYSFTSYWIGWVRQAPGKGLEWMGIIDPGDSRTRYSPSFQGQVTISADKSISTAYLQWSSLKASDTAMYYCARGQLYGGTYMDGWGQGTLVTVSS",
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": null,
+          "antigen_type": null,
+          "basis": null,
+          "entry": null,
+          "heavy_chain": null,
+          "interface_geometry": null,
+          "light_chain": null,
+          "method": null,
+          "reason": "Target match is UNKNOWN, so no structural evidence is reported. Absent or inapplicable antigen annotation is not a reason to treat a structure as verified.",
+          "resolution": null,
+          "structural_status": "UNKNOWN"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "UNKNOWN",
+        "wrong_antigen_flag": null
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Bispecific Mixed mAb and scFv",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 120,
+            "present": true
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 111,
+            "present": true
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": true
+        },
+        "binder": "Inezetamab",
+        "binder_id": "b_361ff9b5bd",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "no verified deposited complex for this binder",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "no deposited record to read metadata from",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "affinity",
+            "structural_verification",
+            "evidence_completeness"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "aggregation_prone_regions": [
+            18,
+            91,
+            113
+          ],
+          "cysteines": 2,
+          "deamidation_motifs": [
+            32,
+            74,
+            84,
+            102
+          ],
+          "developability_score": null,
+          "glycosylation_sequons": [],
+          "gravy": -0.2725,
+          "hydrolysis_motifs": [],
+          "isoelectric_point": 8.85,
+          "isomerisation_motifs": [
+            62,
+            90
+          ],
+          "length": 120,
+          "low_complexity_windows": [
+            1,
+            15,
+            49
+          ],
+          "net_charge_at_formulation_ph": 1.8327,
+          "oxidation_sites": [
+            34,
+            36,
+            47,
+            83,
+            104,
+            105,
+            110
+          ],
+          "reasons": [
+            "developability_score is null by standing decision, not for want of inputs. Liability flags are counted and listed and never summed, because a flag that fires on every binder in a pool carries no information and a total would hide that.",
+            "Motif counts are positions where a liability is possible, not measurements that it occurs. Whether a site is exposed enough to deamidate or oxidise depends on the folded structure, and no coordinates are connected."
+          ],
+          "status": "SCORED",
+          "unpaired_cysteine": false
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": false,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [],
+        "route": "sequence",
+        "sequence_clean": null,
+        "sequence_original": "EVQLLESGGGLVQPGGSLRLSCAASGFTFSRNAMSWVRQAPGKGLEWVSATGGSGISTYYADSVKGRFTISRDNSKNTLYLQMNSLRAEDTAVYYCARGYSNSWWYFDYWGQGTLVTVSS",
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": null,
+          "antigen_type": null,
+          "basis": null,
+          "entry": null,
+          "heavy_chain": null,
+          "interface_geometry": null,
+          "light_chain": null,
+          "method": null,
+          "reason": "Target match is UNKNOWN, so no structural evidence is reported. Absent or inapplicable antigen annotation is not a reason to treat a structure as verified.",
+          "resolution": null,
+          "structural_status": "UNKNOWN"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "UNKNOWN",
+        "wrong_antigen_flag": null
+      },
+      {
+        "affinity": {
+          "confidence": null,
+          "type": "UNKNOWN",
+          "unit": "nM",
+          "value": null
+        },
+        "annotation": {
+          "cdr_boundaries": null,
+          "format": "Whole mAb",
+          "germline_similarity": null,
+          "heavy_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 124,
+            "present": true
+          },
+          "humanness": null,
+          "light_chain": {
+            "cysteine_parity": "even",
+            "cysteines": 2,
+            "glycosylation_sequons": [],
+            "length": 106,
+            "present": true
+          },
+          "reasons": [
+            "Heavy and light chains are identified because the source records them separately, not because they were inferred.",
+            "cdr_boundaries is null. Assigning complementarity-determining regions requires a numbering scheme, and no numbering tool is connected. A motif-anchored guess reported as CDRs would be a weaker measurement under a stronger name.",
+            "germline_similarity and humanness are null. No germline reference is connected. The naming-convention signal this platform holds elsewhere is a convention, not a sequence measurement, and it is not reported here as one."
+          ],
+          "vh_vl_identified": true
+        },
+        "binder": "Misitatug",
+        "binder_id": "b_b8c97e79a2",
+        "binding": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity, KD or free-energy column, so no binder has a retrieved value and none is predicted",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.55
+            },
+            {
+              "key": "structural_verification",
+              "source": "no verified deposited complex for this binder",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.3
+            },
+            {
+              "key": "evidence_completeness",
+              "source": "no deposited record to read metadata from",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "affinity",
+            "structural_verification",
+            "evidence_completeness"
+          ]
+        },
+        "binding_rank": null,
+        "car_suitability_rank": null,
+        "developability": {
+          "aggregation_prone_regions": [
+            18,
+            58,
+            116
+          ],
+          "cysteines": 2,
+          "deamidation_motifs": [
+            74,
+            84
+          ],
+          "developability_score": null,
+          "glycosylation_sequons": [],
+          "gravy": -0.2976,
+          "hydrolysis_motifs": [],
+          "isoelectric_point": 8.317,
+          "isomerisation_motifs": [
+            54,
+            90
+          ],
+          "length": 124,
+          "low_complexity_windows": [
+            1,
+            15,
+            94,
+            113
+          ],
+          "net_charge_at_formulation_ph": 0.8694,
+          "oxidation_sites": [
+            33,
+            34,
+            36,
+            47,
+            83,
+            114
+          ],
+          "reasons": [
+            "developability_score is null by standing decision, not for want of inputs. Liability flags are counted and listed and never summed, because a flag that fires on every binder in a pool carries no information and a total would hide that.",
+            "Motif counts are positions where a liability is possible, not measurements that it occurs. Whether a site is exposed enough to deamidate or oxidise depends on the folded structure, and no coordinates are connected."
+          ],
+          "status": "SCORED",
+          "unpaired_cysteine": false
+        },
+        "epitope": {
+          "confidence": null,
+          "location": null,
+          "membrane_proximity": null
+        },
+        "modifications": [],
+        "on_front": false,
+        "origin": "RETRIEVED",
+        "recorded_antigens": [],
+        "route": "sequence",
+        "sequence_clean": null,
+        "sequence_original": "EVQLVESGGGLVQPGGSLRLSCAASGFDFSRYWMSWVRQAPGKGLEWIGEINPDSSTIVYTPSLKDKFIISRDNAKNTLYLQMNSLRAEDTALYYCARRGSHYYGYRTGYFDVWGAGTTVTVSS",
+        "specificity_score": null,
+        "structural_evidence": {
+          "antigen_chain": null,
+          "antigen_type": null,
+          "basis": null,
+          "entry": null,
+          "heavy_chain": null,
+          "interface_geometry": null,
+          "light_chain": null,
+          "method": null,
+          "reason": "Target match is UNKNOWN, so no structural evidence is reported. Absent or inapplicable antigen annotation is not a reason to treat a structure as verified.",
+          "resolution": null,
+          "structural_status": "UNKNOWN"
+        },
+        "suitability": {
+          "applicable_weight": 1.0,
+          "components": [
+            {
+              "key": "epitope_accessibility",
+              "source": "no epitope is established for this binder; locating one needs coordinates, and none is connected",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.2
+            },
+            {
+              "key": "membrane_proximity",
+              "source": "membrane proximity is a property of the epitope, which is not established",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "shedding_suitability",
+              "source": "the target's cleavage is known from its annotated chains, but whether this binder engages a released fragment needs an epitope",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "specificity",
+              "source": "no homolog screen exists: the connected proteome cache carries no sequence column and no alignment method is installed",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "affinity",
+              "source": "no connected evidence release carries an affinity column",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.15
+            },
+            {
+              "key": "developability",
+              "source": "liability flags are counted and listed and never summed into a score, by a standing decision this ranking does not overturn",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.12
+            },
+            {
+              "key": "humanness",
+              "source": "no germline reference is connected; the naming-convention signal held elsewhere is a convention rather than a measurement",
+              "state": "UNKNOWN",
+              "value": null,
+              "weight": 0.08
+            }
+          ],
+          "measured_weight": 0,
+          "minimum_scored_fraction": 0.5,
+          "overall": null,
+          "reason": "No score emitted: 0.0000 of the applicable frame is measured, below the 0.5 floor. The unmeasured components are named rather than imputed.",
+          "scored_fraction": 0.0,
+          "unknown_components": [
+            "epitope_accessibility",
+            "membrane_proximity",
+            "shedding_suitability",
+            "specificity",
+            "affinity",
+            "developability",
+            "humanness"
+          ]
+        },
+        "target_match": "UNKNOWN",
+        "wrong_antigen_flag": null
+      }
+    ],
+    "normalized_target": {
+      "accession": "Q13421",
+      "epitope_regions": null,
+      "full_length_chain": {
+        "chain_id": "PRO_0000253559",
+        "end": 598,
+        "length": 562,
+        "note": "Mesothelin",
+        "start": 37
+      },
+      "gene": "MSLN",
+      "gpi_anchored": true,
+      "mature_chains": [
+        {
+          "chain_id": "PRO_0000253559",
+          "end": 598,
+          "length": 562,
+          "note": "Mesothelin",
+          "start": 37
+        },
+        {
+          "chain_id": "PRO_0000253560",
+          "end": 286,
+          "length": 250,
+          "note": "Megakaryocyte-potentiating factor",
+          "start": 37
+        },
+        {
+          "chain_id": "PRO_0000253561",
+          "end": 598,
+          "length": 303,
+          "note": "Mesothelin, cleaved form",
+          "start": 296
+        }
+      ],
+      "membrane_class": "gpi_anchored",
+      "processed_fragments": [
+        {
+          "chain_id": "PRO_0000253560",
+          "end": 286,
+          "length": 250,
+          "note": "Megakaryocyte-potentiating factor",
+          "start": 37
+        },
+        {
+          "chain_id": "PRO_0000253561",
+          "end": 598,
+          "length": 303,
+          "note": "Mesothelin, cleaved form",
+          "start": 296
+        }
+      ],
+      "protein_name": "Mesothelin (CAK1 antigen) (Pre-pro-megakaryocyte-potentiating factor) [Cleaved into: Megakaryocyte-potentiating factor (MPF); Mesothelin, cleaved form]",
+      "reasons": [
+        "2 processed fragment(s) are annotated beside the full-length chain, so this target is cleaved and a fragment can be released. Which fragment a binder engages therefore matters, and a binder against a released fragment meets soluble antigen.",
+        "sequence is null: the connected proteome cache holds annotation with no sequence column, so residue-level work is not available from it.",
+        "epitope_regions is null: no epitope is established without coordinates or curated epitope evidence, and neither is connected."
+      ],
+      "sequence": null,
+      "shedding_relevant": true,
+      "status": "NORMALISED",
+      "transmembrane_count": 0
+    },
+    "ranking": {
+      "excluded_binders": [],
+      "front": [
+        "b_3aa53b4fdf",
+        "b_6d4a3f255d",
+        "b_31f8641dfb",
+        "b_f10bcc46b5",
+        "b_4e6728f91d",
+        "b_f0c5194953",
+        "b_d0157f784d",
+        "b_eacd283723",
+        "b_71411808d7",
+        "b_a83c4e5f62",
+        "b_7af01b5ce8",
+        "b_893626d825",
+        "b_3c1565c05a",
+        "b_180c9281ef"
+      ],
+      "front_axes": [
+        "structural_verification",
+        "evidence_completeness"
+      ],
+      "front_discriminates": false,
+      "front_note": "14 binder(s) are on the front over 2 measured axis/axes, and they are all the same point. Every one is tied at the same value on every measured axis, so none dominates any other and all are non-dominated by default. This front is populated and carries no discrimination: it says nothing distinguishes these binders on what was measured, which is the same statement an empty front would make.",
+      "status": "NOT_SCORED",
+      "weight_versions": {
+        "binding": "binder_binding_v1",
+        "suitability": "binder_suitability_v1"
+      }
+    },
+    "retrieval": {
+      "sequence_route": 4,
+      "sequences_available": 4,
+      "source_coverage": [
+        "deposited structural complexes, searched by target accession",
+        "named therapeutic antibodies, matched by recorded target"
+      ],
+      "structure_route": 15,
+      "target_match_counts": {
+        "PASS": 14,
+        "UNKNOWN": 5
+      },
+      "total_binders_found": 19
+    },
+    "source_coverage": {
+      "affinity_values_present": 0,
+      "retrieved_candidates_pool_wide": 422,
+      "statement": "Affinity is UNKNOWN on every retrieved binder. No connected evidence release carries an affinity, KD or free-energy column. Fold error against a literature value and rank correlation against a literature ordering are therefore structurally uncomputable rather than computed and failed: there is no value on either side of the comparison. This is a source-coverage fact and should be read before any result."
+    },
+    "target": "MSLN",
+    "validation": {
+      "affinity_rank_correlation": null,
+      "benchmark_revealed_after_prediction": true,
+      "binder_retrieval_recall": null,
+      "reason": "Every validation figure is null because each compares against the literature panel, which has not been read. They are filled only after this output is frozen and committed.",
+      "target_match_accuracy": null
+    }
+  }
+}
