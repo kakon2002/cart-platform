@@ -14,7 +14,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from car_pipeline.api import constants, pipeline
 from car_pipeline.data.source import CacheError
 from car_pipeline.stages import (
-    binder_check, stage4, stage6, stage10, stage11, validation, stage12,
+    binder_check, stage4, stage6, stage10, stage11, structural_evidence,
+    validation, stage12,
 )
 
 _LOCK = threading.Lock()
@@ -382,7 +383,7 @@ def _checked_rows(r: dict, rows: list[dict]) -> list[dict]:
     for gene in sorted({b["target_id"] for b in rows}):
         out += binder_check.check([b for b in rows if b["target_id"] == gene],
                                   surface.get(gene))
-    return out
+    return structural_evidence.attach(out)
 
 
 def binders_view(project_id: str, target_id: str | None = None) -> dict:
@@ -401,7 +402,7 @@ def binders_view(project_id: str, target_id: str | None = None) -> dict:
         "binders": rows,
         "total_binders_found": len(rows),
         "target_match_counts": verdicts,
-        "reasons": BINDER_NOTES + binder_check.NOTES,
+        "reasons": BINDER_NOTES + binder_check.NOTES + structural_evidence.NOTES,
     }
 
 
