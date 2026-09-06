@@ -110,9 +110,26 @@ GAPS: tuple[Gap, ...] = (
     Gap(5, "Target and binder evidence report", PARTIAL,
         "cross-reactivity risk",
         "no screen against paralogs, family members, normal-tissue proteins, "
-        "alternative isoforms or polymorphic variants exists.",
-        blocking_stage="none; a paralog screen needs no stage that is missing",
-        probe=(PROBE_KEY, "binders", "cross_reactivity")),
+        "alternative isoforms or polymorphic variants exists. Two things are "
+        "missing rather than none: the connected proteome cache holds 20,431 "
+        "reviewed human entries with no sequence column, so there is nothing "
+        "to compare against, and no alignment library is installed.",
+        blocking_stage="none; but two connections, costed in the note",
+        probe=(PROBE_KEY, "binders", "cross_reactivity"),
+        note="Cost, so the decision can be made rather than deferred. The "
+             "sequences are one additional field on the UniProt query already "
+             "issued, roughly doubling an 11 MB cache. The alignment method is "
+             "the real cost: nothing is installed, and the CPU-friendly route "
+             "is a k-mer identity screen written against the numeric library "
+             "already present. What that would produce is a sequence "
+             "similarity screen. What it would NOT produce is a "
+             "cross-reactivity measurement: similarity is not binding, a "
+             "shared linear stretch is not a shared epitope, and a "
+             "conformational cross-reaction leaves no sequence signature at "
+             "all. Shipping a similarity screen under the name specificity "
+             "score would be the renamed-proxy failure this project refused "
+             "for structural aggregation, so the component stays UNKNOWN and "
+             "named until it can be labelled for what it is."),
     Gap(5, "Target and binder evidence report", PARTIAL,
         "human-likeness",
         "read from an INN name stem, which is a naming convention and not a "

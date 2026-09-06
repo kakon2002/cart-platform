@@ -308,9 +308,76 @@ where binding rank and suitability rank disagree, the front shows which binders
 are non-dominated across both. A reader who disagrees with either weight set
 still has it.
 
-**What to expect on the first run, stated in advance:** with affinity `UNKNOWN`
-on every binder, a binding score resting mostly on affinity falls below the 0.50
-floor and correctly emits `null`. That is the machinery working, not failing.
+### The two weight sets, declared before any run
+
+Both sum to 1.00 exactly and are versioned. Neither is fitted: each follows the
+question its ranking asks.
+
+**`binder_binding_v1`** — *which binder appears to bind the target most
+strongly?* Affinity is the direct answer, so it carries the most weight. The
+other two are evidence that binding occurs at all, and evidence that the first
+two can be interpreted.
+
+| component | weight | why |
+| --- | --- | --- |
+| affinity | **0.55** | the direct measure of the thing this ranking asks about |
+| structural verification | **0.30** | a deposited complex with the B3-verified antigen is experimental proof that binding occurs |
+| evidence completeness | **0.15** | assay, format and resolution metadata, without which the other two cannot be read |
+
+**`binder_suitability_v1`** — *which binder makes the best CAR?* Affinity is
+deliberately **not** the largest weight. That is the document's own thesis, and
+putting affinity on top here would contradict §6.2 in the act of implementing
+it.
+
+| component | weight | why |
+| --- | --- | --- |
+| epitope accessibility | **0.20** | a receptor that cannot reach its epitope does not work at any affinity |
+| membrane proximity | **0.15** | synapse geometry, and the reason a juxtamembrane epitope is a distinct question |
+| shedding suitability | **0.15** | soluble antigen competing for the receptor is a CAR-specific failure mode |
+| specificity | **0.15** | on-target off-tumour risk carried at binder level |
+| affinity | **0.15** | it matters, and it is one factor among several rather than the determinant |
+| developability | **0.12** | manufacturable at all, given the hard gates already passed |
+| humanness | **0.08** | lowest because what is connected is a naming convention, not a sequence measurement |
+
+### Predicted arithmetic, fixed before the run
+
+In the same form as the candidate frame's 0.96 / 0.60 / 0.625, which landed
+exactly. Every component is `UNKNOWN` unless something connected measures it.
+
+| ranking | binder route | applicable | measured | fraction | floor 0.50 |
+| --- | --- | --- | --- | --- | --- |
+| binding | structure route, B3 `PASS` | 1.00 | **0.45** | **0.45** | below → `null` |
+| binding | sequence route | 1.00 | **0.15** | **0.15** | below → `null` |
+| suitability | either route | 1.00 | **0.00** | **0.00** | below → `null` |
+
+**Predicted outcome: 0 binders receive a score in either ranking, and the Pareto
+front is empty**, because no component carries a value for the front to compare.
+
+The reasons, component by component, so the prediction is checkable rather than
+atmospheric: affinity is `UNKNOWN` on all 422 candidates because no connected
+release carries the column; epitope accessibility and membrane proximity need an
+epitope, which needs coordinates; shedding suitability is derivable at *target*
+level for MSLN — the `296–598` cleaved chain is exactly that — but not per
+binder without an epitope; specificity is `UNKNOWN` because B8 stays unbuilt;
+developability is `UNKNOWN` by the standing decision that Stage 10 does not sum
+its flags into a score, which this document does not overturn; humanness is
+`UNKNOWN` because no germline reference is connected.
+
+**What the run does produce**, and what the report leads with after the coverage
+statement: retrieval counts with source coverage, B3 verdicts per entry,
+original and cleaned sequences with every modification justified, and structural
+evidence carrying its own resolution. Those are the results. The rankings being
+`null` is a fourth result, not a failure to produce the first three.
+
+**If any of this lands elsewhere it is the first thing reported**, before any
+interpretation. A ranking that comes back populated means a component was
+measured that this table says is `UNKNOWN`, and that is a finding about the
+sources, not a success.
+
+One consequence worth stating plainly for whoever reads the dashboard: **a
+correct first run renders an empty ranking table.** That is the platform
+declining to order binders on evidence it does not have, and it is the same
+refusal that makes the candidate frame trustworthy.
 
 ## 12. B1, B5, B7 — build what is derivable, name what is not
 
@@ -401,7 +468,11 @@ Checked first, before any interpretation:
 | MSLN entries whose recorded antigen matches the UniProt name set | **7 distinct, 14 antibody instances** |
 | MSLN-targeting named therapeutics carrying a heavy-chain sequence | **4** |
 | B3 verdicts | `4F3F` PASS, `7U8C` PASS, `8H8J` FAIL, `1P4B` FAIL |
-| binding rank under the current evidence | mostly `null`, below the 0.50 floor |
+| binding rank, structure route | applicable 1.00, measured 0.45, fraction 0.45 → `null` |
+| binding rank, sequence route | applicable 1.00, measured 0.15, fraction 0.15 → `null` |
+| CAR-suitability rank, either route | applicable 1.00, measured 0.00, fraction 0.00 → `null` |
+| binders receiving a score in either ranking | **0** |
+| Pareto front over binders | **empty** |
 
 If any lands elsewhere, that is the first thing reported, before the biology.
 

@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from car_pipeline.api import pipeline
+from car_pipeline.api import constants, pipeline
 from car_pipeline.data.source import CacheError
 from car_pipeline.stages import stage4, stage6, stage10, stage11, validation, stage12
 
@@ -1004,6 +1004,16 @@ class Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/projects/([0-9a-f]{12})/runs$", path)
             if m:
                 return self._send(202, start_run(m.group(1)))
+            if path == "/structure/evaluate":
+                return self._send(200, constants.structure_evaluate(
+                    self._body().get("construct_id")))
+            if path == "/function/predict":
+                return self._send(200, constants.function_predict(
+                    self._body().get("construct_id")))
+            if path == "/learning/calibrate":
+                body = self._body()
+                return self._send(200, constants.learning_calibrate(
+                    body.get("dataset_version"), body.get("model_family")))
         except ContractError as exc:
             return self._send(400, exc.payload)
         except ValueError as exc:
