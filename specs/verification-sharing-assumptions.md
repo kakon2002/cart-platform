@@ -1,7 +1,9 @@
 # Verification that shares an assumption with the thing it verifies
 
-Read this before writing a criterion. It has been found thirteen times in
-this repository. The fifth was found by suspecting the fourth, the sixth was
+Read this before writing a criterion. The first failure -- a check that
+cannot fail -- has been found thirteen times in this repository. A second
+family, assertions nobody ever examined, is recorded after them and needs a
+different question to find. The fifth was found by suspecting the fourth, the sixth was
 introduced by a change made after the first five were written down, the seventh
 is the root cause of the third, found only when the third was fixed, the eighth
 was found by reading a criterion's own output rather than its verdict, the ninth
@@ -380,6 +382,61 @@ value it checks.** The broader one is that importing a mapping is the same
 mistake as calling the function, one level quieter — a criterion that reads
 `GATE_DECISION` to check `GATE_DECISION` is equally tautological and looks more
 like ordinary code reuse. In a verifier, duplication is the point.
+
+## A second family: assertions nobody ever examined
+
+Every instance above is a check that could not fail. This is a different
+failure and the question at the top of this document does not catch it.
+
+**These are not computations that go wrong. They are claims the system prints
+on every run that nothing has ever checked.** No criterion covers them because
+nobody thought of them as claims at all -- they read as description.
+
+Four were found in a single session, each by making the system prove something
+it had been asserting for months.
+
+**A. "Full run" ran thirteen verifiers of fifteen.** Two existed and were never
+added to the run driver's stage list. Every criteria total reported externally
+was over a subset, short by 33 criteria. The number was not wrong about what it
+counted; it was wrong about what it was called. Found by counting the verifiers
+on disk against the ones in the list.
+
+**B. "Raw caches read, not rebuilt" was printed on every run and was wrong
+about one directory in eleven.** The trials cache is keyed by the screened
+antigen set, so it rewrote itself whenever that set changed. Nothing compared
+the caches before a run to after until a size-and-mtime fingerprint was added,
+and it fired on the first run that carried it.
+
+**C. Two verifiers sat outside the inventory every audit reads.** They used a
+`check(label, got, expected)` idiom of their own rather than `criterion()`, so
+they counted toward the suite total while being invisible to every tool that
+examined "the criteria" -- including the audit that eventually found them, which
+noticed only because a tracer returned an empty table. A total that mixes
+audited and unaudited checks is a number meaning two things.
+
+**D. `BM4` deleted the evidence it was written to protect.** It belongs to both
+families. As a criterion it could not fail; as an assertion, nothing had ever
+stated that running a verifier leaves the repository as it found it. It wrote a
+probe to the real answers path and unlinked it in a `finally`, so every run of
+the benchmark verifier destroyed the literature panel, and the next `git add -A`
+committed the deletion.
+
+### The question that finds them
+
+The question at the top of this document asks what a criterion would report if
+its subject were broken. That is the wrong question here, because these are not
+criteria. The one that works is:
+
+> **What does this line claim, and what would notice if it were false?**
+
+Applied to a run banner, a status line, a printed count or a docstring. Each of
+the four was found by making the claim checkable: count the verifiers,
+fingerprint the caches before and after, inventory the criteria mechanically,
+hash the file on both sides of the code that touches it.
+
+**The pattern to distrust is a statement the system makes about itself, in the
+same words every run, that no check has ever touched.** Familiarity reads as
+verification. It is not.
 
 ## What to do instead
 
