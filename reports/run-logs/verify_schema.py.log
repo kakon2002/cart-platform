@@ -1,34 +1,39 @@
-  ok    discovery_mode: got 'B'  expected 'B'
-  ok    target_antigen: got None  expected None
-  ok    cancer_type: got 'Pancreatic Ductal Adenocarcinoma'  expected 'Pancreatic Ductal Adenocarcinoma'
-  ok    malignancy_type: got 'solid'  expected 'solid'
-  ok    product_type: got 'autologous'  expected 'autologous'
-  ok    car_format: got 'auto'  expected 'auto'
-  ok    safety_tolerance: got 'conservative'  expected 'conservative'
-  ok    vector_payload_limit_kb: got 4.7  expected 4.7
-  ok    max_genetic_edits: got 2  expected 2
-  ok    pancreas override tier: got 2  expected 2
-  ok    mistyped field rejected: got True  expected True
-  ok    blank antigen -> None: got None  expected None
-  ok    blank antigen -> mode B: got <DiscoveryMode.DISCOVER: 'B'>  expected <DiscoveryMode.DISCOVER: 'B'>
-  ok    supplied antigen -> mode A: got 'A'  expected 'A'
-  ok    blank cancer_type rejected: got True  expected True
-  ok    override without rationale rejected: got True  expected True
-  ok    spec discovery_mode: got 'B'  expected 'B'
-  ok    datasets: got 10  expected 10
-  ok    blocking datasets: got 8  expected 8
-  ok    construct budget kb: got 3.5  expected 3.5
-  ok    safety switch required: got True  expected True
-  ok    risk ceiling: got 0.15  expected 0.15
-  ok    allowed formats: got 5  expected 5
-  ok    auto excluded: got True  expected True
-  ok    spec target_antigen: got None  expected None
-  ok    unresolved availability score: got 0.0  expected 0.0
-  ok    resolved availability score: got 0.75  expected 0.75
-  ok    validation datasets: got 7  expected 7
-  ok    validation blocking: got 5  expected 5
-  ok    input not mutated by build: got None  expected None
-  ok    project id unique: got True  expected True
-
-discovery mode: B   expected: B
-checks passed: 31/31
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    C1: discovery_mode: got 'B', expected 'B'
+  clear    C2: target_antigen: got None, expected None
+  clear    C3: cancer_type: got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'
+  clear    C4: malignancy_type: got 'solid', expected 'solid'
+  clear    C5: product_type: got 'autologous', expected 'autologous'
+  clear    C6: car_format: got 'auto', expected 'auto'
+  clear    C7: safety_tolerance: got 'conservative', expected 'conservative'
+  clear    C8: vector_payload_limit_kb: got 4.7, expected 4.7
+  clear    C9: max_genetic_edits: got 2, expected 2
+  clear    C10: pancreas override tier: got 2, expected 2
+  clear    C11: mistyped field rejected: got True, expected True
+  clear    C12: blank antigen -> None: got None, expected None
+  clear    C13: blank antigen -> mode B: got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>
+  clear    C14: supplied antigen -> mode A: got 'A', expected 'A'
+  clear    C15: blank cancer_type rejected: got True, expected True
+  clear    C16: override without rationale rejected: got True, expected True
+  clear    C17: spec discovery_mode: got 'B', expected 'B'
+  clear    C18: datasets: got 10, expected 10
+  clear    C19: blocking datasets: got 8, expected 8
+  clear    C20: construct budget kb: got 3.5, expected 3.5
+  clear    C21: safety switch required: got True, expected True
+  clear    C22: risk ceiling: got 0.15, expected 0.15
+  clear    C23: allowed formats: got 5, expected 5
+  clear    C24: auto excluded: got True, expected True
+  clear    C25: spec target_antigen: got None, expected None
+  clear    C26: unresolved availability score: got 0.0, expected 0.0
+  clear    C27: availability score within [0, 1]: got True, expected True
+  clear    C28: availability score reflects some resolved dataset: got True, expected True
+  clear    C29: availability score is zero when nothing resolves: got 0.0, expected 0.0
+  clear    C30: availability score responds to status: got True, expected True
+  clear    C31: validation datasets: got 7, expected 7
+  clear    C32: validation blocking: got 5, expected 5
+  clear    C33: input not mutated by build: got None, expected None
+  clear    C34: project id unique: got True, expected True
+========================================================================
+  34/34 criteria clear

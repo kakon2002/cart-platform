@@ -66,5 +66,16 @@ rejection reasons
     admitted it on a sentence denying the thing it was matching.
   CALR: outward=True attached=False   expected outward=True attached=False
 
-validation sets: pass
-filter decisions within 3% of the reference: yes
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    S1: 28 of 28 known surface targets survive the filter
+  clear    S2: 12 of 12 negative controls are rejected
+  clear    S3: 3 control(s) rejected on topology rather than on absence of an anchor, so the topology arm is exercised
+  clear    S4: the note-only rejects are exactly ['GOLM1', 'MTLN']
+  clear    S5: CALR is present in the surface record set to be judged
+  clear    S6: CALR reads outward: it carries plasma-membrane evidence
+  clear    S7: CALR is not attached, so it is held out despite reading outward -- the case the anchor requirement exists for
+  clear    S8: filter decisions are within 3% of the reference counts
+========================================================================
+  8/8 criteria clear

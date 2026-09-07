@@ -1,7 +1,7 @@
 {
-  "clear": 208,
-  "total": 216,
-  "minutes": 28.1,
+  "clear": 217,
+  "total": 225,
+  "minutes": 26.8,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -65,187 +65,232 @@
     {
       "number": "1",
       "name": "Design spec",
-      "clear": 31,
-      "total": 31,
+      "clear": 34,
+      "total": 34,
       "ok": true,
-      "seconds": 0.9,
+      "seconds": 0.8,
       "exit": 0,
       "criteria": [
         {
-          "id": "check 1",
+          "id": "C1",
           "tripped": false,
-          "detail": "discovery_mode \u2014 got 'B', expected 'B'"
+          "detail": "discovery_mode: got 'B', expected 'B'"
         },
         {
-          "id": "check 2",
+          "id": "C2",
           "tripped": false,
-          "detail": "target_antigen \u2014 got None, expected None"
+          "detail": "target_antigen: got None, expected None"
         },
         {
-          "id": "check 3",
+          "id": "C3",
           "tripped": false,
-          "detail": "cancer_type \u2014 got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'"
+          "detail": "cancer_type: got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'"
         },
         {
-          "id": "check 4",
+          "id": "C4",
           "tripped": false,
-          "detail": "malignancy_type \u2014 got 'solid', expected 'solid'"
+          "detail": "malignancy_type: got 'solid', expected 'solid'"
         },
         {
-          "id": "check 5",
+          "id": "C5",
           "tripped": false,
-          "detail": "product_type \u2014 got 'autologous', expected 'autologous'"
+          "detail": "product_type: got 'autologous', expected 'autologous'"
         },
         {
-          "id": "check 6",
+          "id": "C6",
           "tripped": false,
-          "detail": "car_format \u2014 got 'auto', expected 'auto'"
+          "detail": "car_format: got 'auto', expected 'auto'"
         },
         {
-          "id": "check 7",
+          "id": "C7",
           "tripped": false,
-          "detail": "safety_tolerance \u2014 got 'conservative', expected 'conservative'"
+          "detail": "safety_tolerance: got 'conservative', expected 'conservative'"
         },
         {
-          "id": "check 8",
+          "id": "C8",
           "tripped": false,
-          "detail": "vector_payload_limit_kb \u2014 got 4.7, expected 4.7"
+          "detail": "vector_payload_limit_kb: got 4.7, expected 4.7"
         },
         {
-          "id": "check 9",
+          "id": "C9",
           "tripped": false,
-          "detail": "max_genetic_edits \u2014 got 2, expected 2"
+          "detail": "max_genetic_edits: got 2, expected 2"
         },
         {
-          "id": "check 10",
+          "id": "C10",
           "tripped": false,
-          "detail": "pancreas override tier \u2014 got 2, expected 2"
+          "detail": "pancreas override tier: got 2, expected 2"
         },
         {
-          "id": "check 11",
+          "id": "C11",
           "tripped": false,
-          "detail": "mistyped field rejected \u2014 got True, expected True"
+          "detail": "mistyped field rejected: got True, expected True"
         },
         {
-          "id": "check 12",
+          "id": "C12",
           "tripped": false,
-          "detail": "blank antigen -> None \u2014 got None, expected None"
+          "detail": "blank antigen -> None: got None, expected None"
         },
         {
-          "id": "check 13",
+          "id": "C13",
           "tripped": false,
-          "detail": "blank antigen -> mode B \u2014 got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>"
+          "detail": "blank antigen -> mode B: got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>"
         },
         {
-          "id": "check 14",
+          "id": "C14",
           "tripped": false,
-          "detail": "supplied antigen -> mode A \u2014 got 'A', expected 'A'"
+          "detail": "supplied antigen -> mode A: got 'A', expected 'A'"
         },
         {
-          "id": "check 15",
+          "id": "C15",
           "tripped": false,
-          "detail": "blank cancer_type rejected \u2014 got True, expected True"
+          "detail": "blank cancer_type rejected: got True, expected True"
         },
         {
-          "id": "check 16",
+          "id": "C16",
           "tripped": false,
-          "detail": "override without rationale rejected \u2014 got True, expected True"
+          "detail": "override without rationale rejected: got True, expected True"
         },
         {
-          "id": "check 17",
+          "id": "C17",
           "tripped": false,
-          "detail": "spec discovery_mode \u2014 got 'B', expected 'B'"
+          "detail": "spec discovery_mode: got 'B', expected 'B'"
         },
         {
-          "id": "check 18",
+          "id": "C18",
           "tripped": false,
-          "detail": "datasets \u2014 got 10, expected 10"
+          "detail": "datasets: got 10, expected 10"
         },
         {
-          "id": "check 19",
+          "id": "C19",
           "tripped": false,
-          "detail": "blocking datasets \u2014 got 8, expected 8"
+          "detail": "blocking datasets: got 8, expected 8"
         },
         {
-          "id": "check 20",
+          "id": "C20",
           "tripped": false,
-          "detail": "construct budget kb \u2014 got 3.5, expected 3.5"
+          "detail": "construct budget kb: got 3.5, expected 3.5"
         },
         {
-          "id": "check 21",
+          "id": "C21",
           "tripped": false,
-          "detail": "safety switch required \u2014 got True, expected True"
+          "detail": "safety switch required: got True, expected True"
         },
         {
-          "id": "check 22",
+          "id": "C22",
           "tripped": false,
-          "detail": "risk ceiling \u2014 got 0.15, expected 0.15"
+          "detail": "risk ceiling: got 0.15, expected 0.15"
         },
         {
-          "id": "check 23",
+          "id": "C23",
           "tripped": false,
-          "detail": "allowed formats \u2014 got 5, expected 5"
+          "detail": "allowed formats: got 5, expected 5"
         },
         {
-          "id": "check 24",
+          "id": "C24",
           "tripped": false,
-          "detail": "auto excluded \u2014 got True, expected True"
+          "detail": "auto excluded: got True, expected True"
         },
         {
-          "id": "check 25",
+          "id": "C25",
           "tripped": false,
-          "detail": "spec target_antigen \u2014 got None, expected None"
+          "detail": "spec target_antigen: got None, expected None"
         },
         {
-          "id": "check 26",
+          "id": "C26",
           "tripped": false,
-          "detail": "unresolved availability score \u2014 got 0.0, expected 0.0"
+          "detail": "unresolved availability score: got 0.0, expected 0.0"
         },
         {
-          "id": "check 27",
+          "id": "C27",
           "tripped": false,
-          "detail": "resolved availability score \u2014 got 0.75, expected 0.75"
+          "detail": "availability score within [0, 1]: got True, expected True"
         },
         {
-          "id": "check 28",
+          "id": "C28",
           "tripped": false,
-          "detail": "validation datasets \u2014 got 7, expected 7"
+          "detail": "availability score reflects some resolved dataset: got True, expected True"
         },
         {
-          "id": "check 29",
+          "id": "C29",
           "tripped": false,
-          "detail": "validation blocking \u2014 got 5, expected 5"
+          "detail": "availability score is zero when nothing resolves: got 0.0, expected 0.0"
         },
         {
-          "id": "check 30",
+          "id": "C30",
           "tripped": false,
-          "detail": "input not mutated by build \u2014 got None, expected None"
+          "detail": "availability score responds to status: got True, expected True"
         },
         {
-          "id": "check 31",
+          "id": "C31",
           "tripped": false,
-          "detail": "project id unique \u2014 got True, expected True"
+          "detail": "validation datasets: got 7, expected 7"
+        },
+        {
+          "id": "C32",
+          "tripped": false,
+          "detail": "validation blocking: got 5, expected 5"
+        },
+        {
+          "id": "C33",
+          "tripped": false,
+          "detail": "input not mutated by build: got None, expected None"
+        },
+        {
+          "id": "C34",
+          "tripped": false,
+          "detail": "project id unique: got True, expected True"
         }
       ]
     },
     {
       "number": "2",
       "name": "Surface proteome",
-      "clear": 2,
-      "total": 2,
+      "clear": 8,
+      "total": 8,
       "ok": true,
-      "seconds": 0.8,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
-          "id": "validation sets",
+          "id": "S1",
           "tripped": false,
-          "detail": "pass"
+          "detail": "28 of 28 known surface targets survive the filter"
         },
         {
-          "id": "count drift",
+          "id": "S2",
           "tripped": false,
-          "detail": "yes"
+          "detail": "12 of 12 negative controls are rejected"
+        },
+        {
+          "id": "S3",
+          "tripped": false,
+          "detail": "3 control(s) rejected on topology rather than on absence of an anchor, so the topology arm is exercised"
+        },
+        {
+          "id": "S4",
+          "tripped": false,
+          "detail": "the note-only rejects are exactly ['GOLM1', 'MTLN']"
+        },
+        {
+          "id": "S5",
+          "tripped": false,
+          "detail": "CALR is present in the surface record set to be judged"
+        },
+        {
+          "id": "S6",
+          "tripped": false,
+          "detail": "CALR reads outward: it carries plasma-membrane evidence"
+        },
+        {
+          "id": "S7",
+          "tripped": false,
+          "detail": "CALR is not attached, so it is held out despite reading outward -- the case the anchor requirement exists for"
+        },
+        {
+          "id": "S8",
+          "tripped": false,
+          "detail": "filter decisions are within 3% of the reference counts"
         }
       ]
     },
@@ -255,7 +300,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 21.6,
+      "seconds": 22.1,
       "exit": 1,
       "criteria": [
         {
@@ -401,7 +446,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 9.0,
+      "seconds": 9.5,
       "exit": 2,
       "criteria": [
         {
@@ -487,7 +532,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 248.9,
+      "seconds": 218.2,
       "exit": 2,
       "criteria": [
         {
@@ -558,7 +603,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 234.5,
+      "seconds": 204.9,
       "exit": 0,
       "criteria": [
         {
@@ -604,7 +649,7 @@
       "clear": 8,
       "total": 9,
       "ok": false,
-      "seconds": 0.6,
+      "seconds": 0.5,
       "exit": 2,
       "criteria": [
         {
@@ -660,7 +705,7 @@
       "clear": 14,
       "total": 14,
       "ok": true,
-      "seconds": 3.9,
+      "seconds": 4.0,
       "exit": 0,
       "criteria": [
         {
@@ -741,7 +786,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.7,
       "exit": 0,
       "criteria": [
         {
@@ -782,7 +827,7 @@
       "clear": 16,
       "total": 16,
       "ok": true,
-      "seconds": 4.4,
+      "seconds": 4.1,
       "exit": 0,
       "criteria": [
         {
@@ -873,7 +918,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 7.9,
+      "seconds": 7.8,
       "exit": 0,
       "criteria": [
         {
@@ -945,7 +990,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 07866cc1ca9d rather than blocking"
+          "detail": "a run returns 202 with job afed610c0236 rather than blocking"
         },
         {
           "id": "A4",
@@ -1000,7 +1045,7 @@
       "clear": 12,
       "total": 12,
       "ok": true,
-      "seconds": 267.8,
+      "seconds": 237.2,
       "exit": 0,
       "criteria": [
         {
@@ -1016,7 +1061,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 0f2f69c59484 rather than blocking"
+          "detail": "a run returns 202 with job da047f7ae3d7 rather than blocking"
         },
         {
           "id": "A4",
@@ -1071,7 +1116,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 578.2,
+      "seconds": 591.2,
       "exit": 0,
       "criteria": [
         {
@@ -1137,7 +1182,7 @@
       "clear": 14,
       "total": 14,
       "ok": true,
-      "seconds": 283.2,
+      "seconds": 283.0,
       "exit": 0,
       "criteria": [
         {
@@ -1218,7 +1263,7 @@
       "clear": 19,
       "total": 19,
       "ok": true,
-      "seconds": 9.3,
+      "seconds": 9.5,
       "exit": 0,
       "criteria": [
         {
