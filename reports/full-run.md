@@ -2,7 +2,7 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**161/169 criteria clear across 14 stages**, 22.4 minutes.
+**208/216 criteria clear across 16 stages**, 28.1 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
@@ -10,16 +10,18 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 | 2 | Surface proteome | 2/2 | clear | 1s |
 | 3 | Target discovery | 26/27 | **TRIPPED** | 22s |
 | 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 224s |
-| 5 | Binder discovery | 7/7 | clear | 215s |
-| 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 249s |
+| 5 | Binder discovery | 7/7 | clear | 235s |
+| 6 | Construct assembly | 8/9 | **TRIPPED** | 1s |
 | 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
-| 11 | Final ranking | 6/6 | clear | 4s |
+| 11 | Final ranking | 16/16 | clear | 4s |
 | 12 | Candidate package | 9/9 | clear | 8s |
-| API | HTTP surface, pancreatic | 10/10 | clear | 11s |
-| API2 | HTTP surface, breast | 10/10 | clear | 252s |
-| MULTI | Multi-indication | 11/11 | clear | 591s |
+| API | HTTP surface, pancreatic | 12/12 | clear | 12s |
+| API2 | HTTP surface, breast | 12/12 | clear | 268s |
+| MULTI | Multi-indication | 11/11 | clear | 578s |
+| ADAPT | Dashboard surface | 14/14 | clear | 283s |
+| BENCH | Binder benchmark | 19/19 | clear | 9s |
 
 ## Every criterion
 
@@ -173,52 +175,66 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `D5` — 107 rows against 107 binders carrying a sequence
 - clear `D6` — no liability is summed into a single score; flags are counted and listed
 
-### Stage 11 — Final ranking (6/6)
+### Stage 11 — Final ranking (16/16)
 
 - clear `N1` — a dominated point is excluded from the front
 - clear `N2` — both non-dominated points are on the front
 - clear `N3` — attrition accounts for 200 of 200
-- clear `N4` — no weighted or summed score across objectives is emitted
+- clear `N4` — no gate failure carries a score (195 failed, 5 scored) and no component is imputed
 - clear `N5` — status RANKED matches the survivor count 5
 - clear `N6` — 200 rows against the 200 the Stage 4 manifest records
+- clear `W8` — 4 decision value(s) all declared, and none overlaps either design class by substring
+- clear `W9` — every decision recomputes from gate status and the front alone; 2 of 5 survivors are on the front and the decisions distinguish them
+- clear `W1` — nine weights sum to 1, all eleven components carry a declared coefficient, version wm-scoring-1
+- clear `W2` — 5 scorecard(s): every component is exactly one of the three states, every non-measured one names its reason and carries no value, and the denominator is the measured weight alone
+- clear `W3` — 5 score(s) recompute from the components, weights and adjustment recorded on the candidate, to within 1e-12
+- clear `W4` — 195 gate failure(s) carry neither a score nor a scorecard; scoring is reached by survivors only, which is what makes the weighted sum safe
+- clear `W5` — every candidate above the 0.5 floor carries a number and every candidate below it carries null (5 scored of 5)
+- clear `W6` — confidence moved 1.0 -> 0.5 and the safety component held at 0.1769; risk moved the safety component to 0.5884 and the adjustment held at 1.0
+- clear `W7` — the front is ['FER1L6', 'GPR35'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
+- clear `W11` — changing one weight moves the Stage 11 hash 2591188b434f185d -> ae2e71d87dcff90a
 
 ### Stage 12 — Candidate package (9/9)
 
 - clear `Q1` — 5 package(s), one per surviving candidate, in the ranking's order: FER1L6, GPR35, TMEM92, TNFSF9, BTNL8
 - clear `Q2` — every one of 5 candidates that reached the end is packaged, and none of the 195 that did not
-- clear `Q3` — all 9 sections present on every package, and each carries what its stage produced
+- clear `Q3` — all 10 sections present on every package, and each carries what its stage produced
 - clear `Q4` — the packaged DNA translates to the packaged sequence and the packaged domains partition it, for all 5
 - clear `Q5` — every packaged attribution reconstructs its own risk to within 1e-12 and matches Stage 3
-- clear `Q6` — 16 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements
+- clear `Q6` — 16 declared gap(s) probed and all still open; 3 recomputed from the run and 9 stated as judgements
 - clear `Q7` — no conservative design exists in this pool and the section says so with the counts behind it, rather than standing blank
 - clear `Q8` — 9 connected sources each name a release, and the hash chain is unbroken from Stage 3 to Stage 11
-- clear `Q9` — no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)
+- clear `Q9` — no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (3 absent-stage entries)
 
-### Stage API — HTTP surface, pancreatic (10/10)
+### Stage API — HTTP surface, pancreatic (12/12)
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job a4387fa9e708 rather than blocking
+- clear `A3` — a run returns 202 with job 07866cc1ca9d rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
-- clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons
+- clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 7 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
 - clear `A7` — top target CEACAM5 ranked 1 carries all 6 scoring components
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.006321856890514115 at percentile 0.037)
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
+- clear `W10` — 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
+- clear `W12` — the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 2591188b434f185d
 
-### Stage API2 — HTTP surface, breast (10/10)
+### Stage API2 — HTTP surface, breast (12/12)
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 9a3d0dd959cf rather than blocking
+- clear `A3` — a run returns 202 with job 0f2f69c59484 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
-- clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 5 reasons
+- clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
 - clear `A7` — top target CD24 ranked 1 carries all 6 scoring components
 - clear `A8` — pairs carry the span percentile beside the raw fraction (0.012740414063457063 at percentile 0.1942)
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
+- clear `W10` — 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
+- clear `W12` — the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 5b0c8d78ee5e7be7
 
 ### Stage MULTI — Multi-indication (11/11)
 
@@ -234,6 +250,45 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `M10` — a degraded indication names its missing source: ["dependency lineage 'NoSuchLineage': ValueError: need at least one array to concatenate"]
 - clear `M11` — breast: 1548 rejected by the stromal gate, 0 of them on an absent measurement; known targets CEACAM6=138.7, MUC1=49.3, ERBB2=10.8, TACSTD2=12.5, MSLN=26.5, CEACAM5=exempt
 
+### Stage ADAPT — Dashboard surface (14/14)
+
+- clear `D1` — the adapter imports ['__future__', '__future__.annotations', 'car_pipeline.api', 'car_pipeline.api.constants', 'car_pipeline.api.server'] directly and reaches no deciding module
+- clear `D1b` — blinded: adding an import of stage11 trips D1
+- clear `D2` — none of the 13 decision, gate or design-class values appears as a literal in adapter source
+- clear `D2b` — blinded: adding the literal ADVANCE trips D2
+- clear `D4` — objective and delivery_mode are still refused by name through the adapter
+- clear `D5` — binder_mode RETRIEVAL_FIRST is honoured and three other values are refused by name
+- clear `D12` — a native POST still receives its body after the adapter is consulted (201, cancer_type 'Pancreatic Ductal Adenocarcinoma')
+- clear `D7` — a reference shaped like a canonical id and a duplicate reference are both refused by name
+- clear `D3` — progress is null with a reason; stage ranking at 8 of 9
+- clear `D6` — an alias and its canonical id return byte-identical bodies from every view tried
+- clear `D9` — all 19 documented paths answer
+- clear `D8` — the three constants return their declared status through the adapter
+- clear `D10` — logic mode OR is refused by name: logic mode 'OR' is not implemented: no OR-gate architecture is impleme
+- clear `D11` — 200 candidate(s), every failed_gates carries at most one element
+
+### Stage BENCH — Binder benchmark (19/19)
+
+- clear `BM1` — no held-out value appears in any of the 6 modules reachable from the algorithm
+- clear `BM1b` — blinded: three held-out literals injected into a reachable module are each caught, and an ordinary literal is not
+- clear `BM2` — the answers are unreachable from the algorithm's import graph
+- clear `BM2b` — blinded: a reachable module naming the answers path or package is caught either way
+- clear `BM3` — blinded: the fingerprint moves when the output changes and holds when only key order does
+- clear `BM4` — blinded: freezing while the answers file exists is refused, so an output cannot be frozen after the answers are on disk
+- clear `BM5` — the answers are present and the frozen output was committed no later than the answers [frozen output committed: True]
+- clear `BM6` — all 6 pinned verdicts hold: 4F3F=PASS, 7U8C=PASS, 8H8J=FAIL, 1P4B=FAIL, 7UED=UNKNOWN, 8CZ8=PASS
+- clear `BM6a` — absent annotation reads UNKNOWN for every marker the source uses
+- clear `BM6b` — per-element matching is load-bearing: 'Mesothelin, cleaved form|SULFATE ION' fails a whole-string test and passes per element
+- clear `BM6c` — an unrelated antigen against the target's name set reads FAIL and raises wrong_antigen_flag
+- clear `BM7` — 3 pinned entries record species NA and 7U8C, a genuine MSLN entry among them, still passes
+- clear `BM9` — 221 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis
+- clear `BM9b` — blinded: a row naming a real deposited entry yields no entry, resolution or basis when its verdict is flipped to FAIL or to UNKNOWN
+- clear `BM9c` — interface geometry is null on every row; no coordinate file is connected, so which residues contact which is not reported
+- clear `BM10` — 0 binder(s) failed the gate and none is scored; no component among 190 carries a value while unmeasured
+- clear `BM11` — the front holds at 14 member(s) under a different weight set, and the two rankings read 3 and 7 distinct components
+- clear `BM11b` — the front reports whether it discriminated: discriminates=False, 14 member(s)
+- clear `BM12` — affinity is NOT_CONNECTED on all 422 retrieved candidates; no connected release carries the column
+
 ## What the platform returns for this indication
 
 ```
@@ -244,7 +299,8 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       - The retrieved binder is murine. The clinical construct in this tag system is humanized and its sequence is not established, so what is built here is the crystallised murine scFv, not the clinical one. Non-human sequence content is an explicit Stage 9 immunogenicity question and that arm is empty: epitope-level immunogenicity reports NOT_CONNECTED on every row because no epitope source is connected, and the origin check reads INN name stems, which a structure-derived binder does not carry. Nothing in this pipeline has assessed the immunogenicity of this binder.
       - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
-      - 5 advanced design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.
+      - 5 innovative design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.
+      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
     GET /result     -> RANKED
       blocked on normal tissue risk      - 192     8 remain
       no design recommended              -   0     8 remain
@@ -259,6 +315,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.
       - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
+      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
     GET /result     -> NO_DESIGN_REACHES_THE_END
       blocked on normal tissue risk      - 196     4 remain
       no design recommended              -   0     4 remain

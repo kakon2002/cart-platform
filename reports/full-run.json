@@ -1,7 +1,7 @@
 {
-  "clear": 161,
-  "total": 169,
-  "minutes": 22.4,
+  "clear": 208,
+  "total": 216,
+  "minutes": 28.1,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -37,7 +37,8 @@
     "      - The retrieved binder is murine. The clinical construct in this tag system is humanized and its sequence is not established, so what is built here is the crystallised murine scFv, not the clinical one. Non-human sequence content is an explicit Stage 9 immunogenicity question and that arm is empty: epitope-level immunogenicity reports NOT_CONNECTED on every row because no epitope source is connected, and the origin check reads INN name stems, which a structure-derived binder does not carry. Nothing in this pipeline has assessed the immunogenicity of this binder.",
     "      - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.",
     "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.",
-    "      - 5 advanced design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.",
+    "      - 5 innovative design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.",
+    "      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
     "    GET /result     -> RANKED",
     "      blocked on normal tissue risk      - 192     8 remain",
     "      no design recommended              -   0     8 remain",
@@ -52,6 +53,7 @@
     "      - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.",
     "      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.",
     "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.",
+    "      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
     "    GET /result     -> NO_DESIGN_REACHES_THE_END",
     "      blocked on normal tissue risk      - 196     4 remain",
     "      no design recommended              -   0     4 remain",
@@ -66,7 +68,7 @@
       "clear": 31,
       "total": 31,
       "ok": true,
-      "seconds": 0.5,
+      "seconds": 0.9,
       "exit": 0,
       "criteria": [
         {
@@ -232,7 +234,7 @@
       "clear": 2,
       "total": 2,
       "ok": true,
-      "seconds": 0.5,
+      "seconds": 0.8,
       "exit": 0,
       "criteria": [
         {
@@ -485,7 +487,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 224.2,
+      "seconds": 248.9,
       "exit": 2,
       "criteria": [
         {
@@ -556,7 +558,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 215.4,
+      "seconds": 234.5,
       "exit": 0,
       "criteria": [
         {
@@ -602,7 +604,7 @@
       "clear": 8,
       "total": 9,
       "ok": false,
-      "seconds": 0.5,
+      "seconds": 0.6,
       "exit": 2,
       "criteria": [
         {
@@ -777,10 +779,10 @@
     {
       "number": "11",
       "name": "Final ranking",
-      "clear": 6,
-      "total": 6,
+      "clear": 16,
+      "total": 16,
       "ok": true,
-      "seconds": 4.0,
+      "seconds": 4.4,
       "exit": 0,
       "criteria": [
         {
@@ -801,7 +803,7 @@
         {
           "id": "N4",
           "tripped": false,
-          "detail": "no weighted or summed score across objectives is emitted"
+          "detail": "no gate failure carries a score (195 failed, 5 scored) and no component is imputed"
         },
         {
           "id": "N5",
@@ -812,6 +814,56 @@
           "id": "N6",
           "tripped": false,
           "detail": "200 rows against the 200 the Stage 4 manifest records"
+        },
+        {
+          "id": "W8",
+          "tripped": false,
+          "detail": "4 decision value(s) all declared, and none overlaps either design class by substring"
+        },
+        {
+          "id": "W9",
+          "tripped": false,
+          "detail": "every decision recomputes from gate status and the front alone; 2 of 5 survivors are on the front and the decisions distinguish them"
+        },
+        {
+          "id": "W1",
+          "tripped": false,
+          "detail": "nine weights sum to 1, all eleven components carry a declared coefficient, version wm-scoring-1"
+        },
+        {
+          "id": "W2",
+          "tripped": false,
+          "detail": "5 scorecard(s): every component is exactly one of the three states, every non-measured one names its reason and carries no value, and the denominator is the measured weight alone"
+        },
+        {
+          "id": "W3",
+          "tripped": false,
+          "detail": "5 score(s) recompute from the components, weights and adjustment recorded on the candidate, to within 1e-12"
+        },
+        {
+          "id": "W4",
+          "tripped": false,
+          "detail": "195 gate failure(s) carry neither a score nor a scorecard; scoring is reached by survivors only, which is what makes the weighted sum safe"
+        },
+        {
+          "id": "W5",
+          "tripped": false,
+          "detail": "every candidate above the 0.5 floor carries a number and every candidate below it carries null (5 scored of 5)"
+        },
+        {
+          "id": "W6",
+          "tripped": false,
+          "detail": "confidence moved 1.0 -> 0.5 and the safety component held at 0.1769; risk moved the safety component to 0.5884 and the adjustment held at 1.0"
+        },
+        {
+          "id": "W7",
+          "tripped": false,
+          "detail": "the front is ['FER1L6', 'GPR35'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not"
+        },
+        {
+          "id": "W11",
+          "tripped": false,
+          "detail": "changing one weight moves the Stage 11 hash 2591188b434f185d -> ae2e71d87dcff90a"
         }
       ]
     },
@@ -821,7 +873,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 8.0,
+      "seconds": 7.9,
       "exit": 0,
       "criteria": [
         {
@@ -837,7 +889,7 @@
         {
           "id": "Q3",
           "tripped": false,
-          "detail": "all 9 sections present on every package, and each carries what its stage produced"
+          "detail": "all 10 sections present on every package, and each carries what its stage produced"
         },
         {
           "id": "Q4",
@@ -852,7 +904,7 @@
         {
           "id": "Q6",
           "tripped": false,
-          "detail": "16 declared gap(s) probed and all still open; 1 recomputed from the run and 9 stated as judgements"
+          "detail": "16 declared gap(s) probed and all still open; 3 recomputed from the run and 9 stated as judgements"
         },
         {
           "id": "Q7",
@@ -867,17 +919,17 @@
         {
           "id": "Q9",
           "tripped": false,
-          "detail": "no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (2 absent-stage entries)"
+          "detail": "no package emits a section or placeholder for Stage 7 or Stage 8; both are recorded in the gaps section instead (3 absent-stage entries)"
         }
       ]
     },
     {
       "number": "API",
       "name": "HTTP surface, pancreatic",
-      "clear": 10,
-      "total": 10,
+      "clear": 12,
+      "total": 12,
       "ok": true,
-      "seconds": 11.2,
+      "seconds": 11.7,
       "exit": 0,
       "criteria": [
         {
@@ -893,7 +945,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job a4387fa9e708 rather than blocking"
+          "detail": "a run returns 202 with job 07866cc1ca9d rather than blocking"
         },
         {
           "id": "A4",
@@ -903,7 +955,7 @@
         {
           "id": "A5",
           "tripped": false,
-          "detail": "200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 6 reasons"
+          "detail": "200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 7 reasons"
         },
         {
           "id": "A6",
@@ -929,16 +981,26 @@
           "id": "A9",
           "tripped": false,
           "detail": "evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11"
+        },
+        {
+          "id": "W10",
+          "tripped": false,
+          "detail": "5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']"
+        },
+        {
+          "id": "W12",
+          "tripped": false,
+          "detail": "the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 2591188b434f185d"
         }
       ]
     },
     {
       "number": "API2",
       "name": "HTTP surface, breast",
-      "clear": 10,
-      "total": 10,
+      "clear": 12,
+      "total": 12,
       "ok": true,
-      "seconds": 251.6,
+      "seconds": 267.8,
       "exit": 0,
       "criteria": [
         {
@@ -954,7 +1016,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 9a3d0dd959cf rather than blocking"
+          "detail": "a run returns 202 with job 0f2f69c59484 rather than blocking"
         },
         {
           "id": "A4",
@@ -964,7 +1026,7 @@
         {
           "id": "A5",
           "tripped": false,
-          "detail": "200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 5 reasons"
+          "detail": "200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 6 reasons"
         },
         {
           "id": "A6",
@@ -990,6 +1052,16 @@
           "id": "A9",
           "tripped": false,
           "detail": "evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11"
+        },
+        {
+          "id": "W10",
+          "tripped": false,
+          "detail": "5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']"
+        },
+        {
+          "id": "W12",
+          "tripped": false,
+          "detail": "the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 5b0c8d78ee5e7be7"
         }
       ]
     },
@@ -999,7 +1071,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 590.8,
+      "seconds": 578.2,
       "exit": 0,
       "criteria": [
         {
@@ -1056,6 +1128,193 @@
           "id": "M11",
           "tripped": false,
           "detail": "breast: 1548 rejected by the stromal gate, 0 of them on an absent measurement; known targets CEACAM6=138.7, MUC1=49.3, ERBB2=10.8, TACSTD2=12.5, MSLN=26.5, CEACAM5=exempt"
+        }
+      ]
+    },
+    {
+      "number": "ADAPT",
+      "name": "Dashboard surface",
+      "clear": 14,
+      "total": 14,
+      "ok": true,
+      "seconds": 283.2,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "D1",
+          "tripped": false,
+          "detail": "the adapter imports ['__future__', '__future__.annotations', 'car_pipeline.api', 'car_pipeline.api.constants', 'car_pipeline.api.server'] directly and reaches no deciding module"
+        },
+        {
+          "id": "D1b",
+          "tripped": false,
+          "detail": "blinded: adding an import of stage11 trips D1"
+        },
+        {
+          "id": "D2",
+          "tripped": false,
+          "detail": "none of the 13 decision, gate or design-class values appears as a literal in adapter source"
+        },
+        {
+          "id": "D2b",
+          "tripped": false,
+          "detail": "blinded: adding the literal ADVANCE trips D2"
+        },
+        {
+          "id": "D4",
+          "tripped": false,
+          "detail": "objective and delivery_mode are still refused by name through the adapter"
+        },
+        {
+          "id": "D5",
+          "tripped": false,
+          "detail": "binder_mode RETRIEVAL_FIRST is honoured and three other values are refused by name"
+        },
+        {
+          "id": "D12",
+          "tripped": false,
+          "detail": "a native POST still receives its body after the adapter is consulted (201, cancer_type 'Pancreatic Ductal Adenocarcinoma')"
+        },
+        {
+          "id": "D7",
+          "tripped": false,
+          "detail": "a reference shaped like a canonical id and a duplicate reference are both refused by name"
+        },
+        {
+          "id": "D3",
+          "tripped": false,
+          "detail": "progress is null with a reason; stage ranking at 8 of 9"
+        },
+        {
+          "id": "D6",
+          "tripped": false,
+          "detail": "an alias and its canonical id return byte-identical bodies from every view tried"
+        },
+        {
+          "id": "D9",
+          "tripped": false,
+          "detail": "all 19 documented paths answer"
+        },
+        {
+          "id": "D8",
+          "tripped": false,
+          "detail": "the three constants return their declared status through the adapter"
+        },
+        {
+          "id": "D10",
+          "tripped": false,
+          "detail": "logic mode OR is refused by name: logic mode 'OR' is not implemented: no OR-gate architecture is impleme"
+        },
+        {
+          "id": "D11",
+          "tripped": false,
+          "detail": "200 candidate(s), every failed_gates carries at most one element"
+        }
+      ]
+    },
+    {
+      "number": "BENCH",
+      "name": "Binder benchmark",
+      "clear": 19,
+      "total": 19,
+      "ok": true,
+      "seconds": 9.3,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "BM1",
+          "tripped": false,
+          "detail": "no held-out value appears in any of the 6 modules reachable from the algorithm"
+        },
+        {
+          "id": "BM1b",
+          "tripped": false,
+          "detail": "blinded: three held-out literals injected into a reachable module are each caught, and an ordinary literal is not"
+        },
+        {
+          "id": "BM2",
+          "tripped": false,
+          "detail": "the answers are unreachable from the algorithm's import graph"
+        },
+        {
+          "id": "BM2b",
+          "tripped": false,
+          "detail": "blinded: a reachable module naming the answers path or package is caught either way"
+        },
+        {
+          "id": "BM3",
+          "tripped": false,
+          "detail": "blinded: the fingerprint moves when the output changes and holds when only key order does"
+        },
+        {
+          "id": "BM4",
+          "tripped": false,
+          "detail": "blinded: freezing while the answers file exists is refused, so an output cannot be frozen after the answers are on disk"
+        },
+        {
+          "id": "BM5",
+          "tripped": false,
+          "detail": "the answers are present and the frozen output was committed no later than the answers [frozen output committed: True]"
+        },
+        {
+          "id": "BM6",
+          "tripped": false,
+          "detail": "all 6 pinned verdicts hold: 4F3F=PASS, 7U8C=PASS, 8H8J=FAIL, 1P4B=FAIL, 7UED=UNKNOWN, 8CZ8=PASS"
+        },
+        {
+          "id": "BM6a",
+          "tripped": false,
+          "detail": "absent annotation reads UNKNOWN for every marker the source uses"
+        },
+        {
+          "id": "BM6b",
+          "tripped": false,
+          "detail": "per-element matching is load-bearing: 'Mesothelin, cleaved form|SULFATE ION' fails a whole-string test and passes per element"
+        },
+        {
+          "id": "BM6c",
+          "tripped": false,
+          "detail": "an unrelated antigen against the target's name set reads FAIL and raises wrong_antigen_flag"
+        },
+        {
+          "id": "BM7",
+          "tripped": false,
+          "detail": "3 pinned entries record species NA and 7U8C, a genuine MSLN entry among them, still passes"
+        },
+        {
+          "id": "BM9",
+          "tripped": false,
+          "detail": "221 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis"
+        },
+        {
+          "id": "BM9b",
+          "tripped": false,
+          "detail": "blinded: a row naming a real deposited entry yields no entry, resolution or basis when its verdict is flipped to FAIL or to UNKNOWN"
+        },
+        {
+          "id": "BM9c",
+          "tripped": false,
+          "detail": "interface geometry is null on every row; no coordinate file is connected, so which residues contact which is not reported"
+        },
+        {
+          "id": "BM10",
+          "tripped": false,
+          "detail": "0 binder(s) failed the gate and none is scored; no component among 190 carries a value while unmeasured"
+        },
+        {
+          "id": "BM11",
+          "tripped": false,
+          "detail": "the front holds at 14 member(s) under a different weight set, and the two rankings read 3 and 7 distinct components"
+        },
+        {
+          "id": "BM11b",
+          "tripped": false,
+          "detail": "the front reports whether it discriminated: discriminates=False, 14 member(s)"
+        },
+        {
+          "id": "BM12",
+          "tripped": false,
+          "detail": "affinity is NOT_CONNECTED on all 422 retrieved candidates; no connected release carries the column"
         }
       ]
     }
