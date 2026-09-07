@@ -134,10 +134,16 @@ names it at the top of its report:
 
 That is a note, not a problem. Re-running `--from-release` replaces it.
 
-**One thing this step does not do.** It provisions the caches, but the first
-run afterwards still rebuilds one single-cell artifact from raw, which costs
-about 40 minutes. §7 explains why and how to tell it from a hang. Budget for
-it now rather than discovering it later.
+`bootstrap.py` provisions from release tag **`data-v2`**. If your copy is
+configured for `data-v1`, it is an older checkout: that payload is missing
+eight malignant-cell digests and the anti-tag binder, and §7 describes what
+that costs. `data-v1` is deliberately left published so a cache provisioned
+from it can still be identified.
+
+**One thing this step does not do, if you are on `data-v1`.** It provisions
+the caches, and the first run afterwards still rebuilds one single-cell
+artifact from raw at a cost of about 40 minutes. §7 explains why and how to
+tell it from a hang. On `data-v2` this does not happen.
 
 **Do not proceed past this step until the report reads `8/8 shared sources
 usable`.** Everything downstream depends on the cache, and a half-provisioned
@@ -212,12 +218,13 @@ different from the rule being broken. It is enforced where the work is done.
 What travels with the archive is the frozen fingerprint, not the history that
 ordered it.
 
-### The first pipeline run will take about 40 minutes. This is expected today
+### A first pipeline run that takes about 40 minutes
 
-**As the release currently stands, the first thing that runs the pipeline — a
-verifier, `run_all.py`, or a run started over HTTP — downloads 2.6 GB and
-expands it to 8.3 GB before it does anything else.** Measured at 2,003 seconds
-on one pass, and it happens for both indications.
+**This applies to caches provisioned from `data-v1`. On `data-v2` it does not
+happen.** If you provisioned from the older tag, the first thing that runs the
+pipeline — a verifier, `run_all.py`, or a run started over HTTP — downloads
+2.6 GB and expands it to 8.3 GB before doing anything else. Measured at 2,003
+seconds on one pass, and it happens for both indications.
 
 It is not a hang and it is not the verifier. Here is the mechanism, because it
 is not guessable from the symptom.
@@ -239,11 +246,11 @@ ls -la data/singlecell/*.partial       # macOS, Linux
 A `.partial` that grows between two checks means it is downloading. Nothing
 else in this platform writes one.
 
-**When this stops happening.** The packager now refuses to build a release
-whose digests do not match what a standard run asks for, so a rebuilt release
-does not have this problem. Until the published asset is replaced, every fresh
-provision pays the 40 minutes once. After that the cache holds the artifact and
-later runs are minutes.
+**Why it happened and why it will not recur.** The packager now computes the
+digest a standard run of each registered indication asks for and refuses to
+build an archive without it, so a stale release cannot be produced by accident
+again. `data-v2` was built under that check and carries both. A cache that has
+already paid the 40 minutes holds the artifact and later runs are minutes.
 
 > **Retraction.** An earlier version of this section said the wait was because
 > the verifier "runs the whole pipeline through the adapter". That was written
@@ -386,7 +393,27 @@ Then follow §9 with the returned `project_id`.
 
 ---
 
-## 12. Where to go next
+## 12. Outstanding
+
+One thing in this document describes a state that is waiting on an action
+outside the repository.
+
+**`data-v2` is built and verified but not yet published.** Until it is, `gh
+release download data-v2` fails and §5 cannot complete as written; provision
+from `data-v1` and expect what §7 describes. The payload and its checksum are
+built by `bootstrap.py --package`, which refuses to produce a stale one.
+
+What `data-v2` adds over `data-v1`, measured file by file: **eighteen files,
+21.6 MB**, and nothing removed. Sixteen are malignant-cell artifacts covering
+eight gene-set digests, including the one each indication's standard run asks
+for. Two are the anti-tag binder, which `data-v1` omits entirely — it is
+fetched on demand from a public structure database when absent, so its absence
+is slow rather than fatal. Five derived artifacts differ in size because they
+are rebuilt per run.
+
+---
+
+## 13. Where to go next
 
 - `ORIENTATION.md` — what the platform is, what it refuses to do, and the
   failure shapes this project keeps producing. Read it before changing
