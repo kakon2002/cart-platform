@@ -1431,4 +1431,14 @@ if __name__ == "__main__":
         else:
             parser.error(f"PORT={raw!r} in the environment is not a port "
                          "number; pass --port instead")
-    serve(options.host, port)
+    # Serve through the imported module rather than this one. Run as
+    # `python -m car_pipeline.api.server`, this file is executed as __main__
+    # and imported again under its real name when the adapter imports it, so
+    # two copies exist. Their exception classes are then different objects,
+    # and a ContractError raised by the imported copy misses the `except
+    # ContractError` clause in __main__'s handler and falls through to the
+    # generic ValueError branch, which answers 400 without naming the field.
+    # Delegating here means one module, one Handler, one set of classes.
+    from car_pipeline.api import server as _canonical
+
+    _canonical.serve(options.host, port)
