@@ -1,0 +1,154 @@
+[
+  {
+    "id": "D1",
+    "line": 108,
+    "setup_lines": [
+      107
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D1b",
+    "line": 114,
+    "setup_lines": [
+      113
+    ],
+    "comprehension_lines": [],
+    "cond": "not blinded",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D2",
+    "line": 121,
+    "setup_lines": [
+      120
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(spelt)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D2b",
+    "line": 127,
+    "setup_lines": [
+      126
+    ],
+    "comprehension_lines": [],
+    "cond": "not literals_in(probe)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D4",
+    "line": 147,
+    "setup_lines": [
+      139
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(d4)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D5",
+    "line": 161,
+    "setup_lines": [
+      151
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(d5)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D12",
+    "line": 170,
+    "setup_lines": [
+      136
+    ],
+    "comprehension_lines": [],
+    "cond": "st != 201 or native.get(\"cancer_type\") != cancer_type",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D7",
+    "line": 188,
+    "setup_lines": [
+      177
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(d7)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D3",
+    "line": 218,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "state.get(\"progress\") is not None or not state.get(\"reasons\")",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D6",
+    "line": 231,
+    "setup_lines": [
+      225
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(d6)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D9",
+    "line": 251,
+    "setup_lines": [
+      236
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(missing)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D8",
+    "line": 266,
+    "setup_lines": [
+      256
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(d8)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D10",
+    "line": 273,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "st != 400 or b.get(\"field\") != \"logic_modes\"",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "D11",
+    "line": 280,
+    "setup_lines": [
+      279
+    ],
+    "comprehension_lines": [
+      279
+    ],
+    "cond": "bool(over)",
+    "reached": true,
+    "examined": 201
+  }
+]

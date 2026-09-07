@@ -1,0 +1,200 @@
+[
+  {
+    "id": "N1",
+    "line": 99,
+    "setup_lines": [
+      98
+    ],
+    "comprehension_lines": [],
+    "cond": "1 in front",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "N2",
+    "line": 102,
+    "setup_lines": [
+      98
+    ],
+    "comprehension_lines": [],
+    "cond": "not (0 in front and 2 in front)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "N3",
+    "line": 107,
+    "setup_lines": [
+      106
+    ],
+    "comprehension_lines": [
+      106
+    ],
+    "cond": "total != len(decisions)",
+    "reached": true,
+    "examined": 202
+  },
+  {
+    "id": "N4",
+    "line": 120,
+    "setup_lines": [
+      116,
+      117,
+      118,
+      119
+    ],
+    "comprehension_lines": [
+      116,
+      117,
+      118,
+      119
+    ],
+    "cond": "bool(rescued or imputed)",
+    "reached": true,
+    "examined": 276
+  },
+  {
+    "id": "N5",
+    "line": 127,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "status == stage11.RANKED and not any(r.survived for r in rows)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "N6",
+    "line": 132,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "len(rows) != manifest[\"pool_size\"]",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W8",
+    "line": 142,
+    "setup_lines": [
+      139,
+      140,
+      141
+    ],
+    "comprehension_lines": [
+      139,
+      140,
+      141
+    ],
+    "cond": "bool(undeclared or overlap)",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "W9",
+    "line": 176,
+    "setup_lines": [
+      171,
+      172,
+      175
+    ],
+    "comprehension_lines": [
+      172,
+      175
+    ],
+    "cond": "bool(mismatched or undistinguished)",
+    "reached": true,
+    "examined": 202
+  },
+  {
+    "id": "W1",
+    "line": 198,
+    "setup_lines": [
+      191
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w1_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W2",
+    "line": 219,
+    "setup_lines": [
+      203
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w2_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W3",
+    "line": 236,
+    "setup_lines": [
+      225
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w3_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W4",
+    "line": 244,
+    "setup_lines": [
+      242,
+      243
+    ],
+    "comprehension_lines": [
+      242,
+      243
+    ],
+    "cond": "bool(w4_bad)",
+    "reached": true,
+    "examined": 596
+  },
+  {
+    "id": "W5",
+    "line": 257,
+    "setup_lines": [
+      250
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w5_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W6",
+    "line": 292,
+    "setup_lines": [
+      282
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w6_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W7",
+    "line": 340,
+    "setup_lines": [
+      333
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w7_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W11",
+    "line": 355,
+    "setup_lines": [
+      348,
+      351
+    ],
+    "comprehension_lines": [],
+    "cond": "hash_before == hash_after",
+    "reached": true,
+    "examined": null
+  }
+]

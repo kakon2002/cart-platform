@@ -1,0 +1,365 @@
+[
+  {
+    "id": "R1",
+    "line": 242,
+    "setup_lines": [
+      37,
+      232
+    ],
+    "comprehension_lines": [],
+    "cond": "len(outside) == len(KNOWN_TARGETS)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R2",
+    "line": 254,
+    "setup_lines": [
+      247,
+      248,
+      249,
+      250,
+      251
+    ],
+    "comprehension_lines": [
+      249,
+      250,
+      251
+    ],
+    "cond": "bool(breached)",
+    "reached": true,
+    "examined": 8
+  },
+  {
+    "id": "R3",
+    "line": 261,
+    "setup_lines": [
+      260
+    ],
+    "comprehension_lines": [],
+    "cond": "r3",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R4",
+    "line": 270,
+    "setup_lines": [
+      269
+    ],
+    "comprehension_lines": [
+      269
+    ],
+    "cond": "bool(strays)",
+    "reached": true,
+    "examined": 3467
+  },
+  {
+    "id": "R5",
+    "line": 284,
+    "setup_lines": [
+      272,
+      283
+    ],
+    "comprehension_lines": [],
+    "cond": "abs(worst[1]) > 0.95",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R6",
+    "line": 299,
+    "setup_lines": [
+      290,
+      298
+    ],
+    "comprehension_lines": [],
+    "cond": "worst_overlap[1] < 0.5",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R7",
+    "line": 305,
+    "setup_lines": [
+      304
+    ],
+    "comprehension_lines": [
+      304
+    ],
+    "cond": "cleared == 0 or cleared == len(rows)",
+    "reached": true,
+    "examined": 3468
+  },
+  {
+    "id": "R9",
+    "line": 329,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "best_insuff is not None and best_conf is not None and best_insuff > best_conf",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R10",
+    "line": 338,
+    "setup_lines": [
+      335,
+      337
+    ],
+    "comprehension_lines": [
+      337
+    ],
+    "cond": "bridged > 0.10 * max(1, len(top100))",
+    "reached": true,
+    "examined": 102
+  },
+  {
+    "id": "R11",
+    "line": 346,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "False",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R12",
+    "line": 376,
+    "setup_lines": [
+      367,
+      375
+    ],
+    "comprehension_lines": [],
+    "cond": "worst_sat[1] < 0.5",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "G1",
+    "line": 396,
+    "setup_lines": [
+      395
+    ],
+    "comprehension_lines": [
+      395
+    ],
+    "cond": "bool(blind)",
+    "reached": true,
+    "examined": 1666
+  },
+  {
+    "id": "G2",
+    "line": 411,
+    "setup_lines": [
+      408,
+      409,
+      410
+    ],
+    "comprehension_lines": [
+      408,
+      409,
+      410
+    ],
+    "cond": "bool(lost)",
+    "reached": true,
+    "examined": 16
+  },
+  {
+    "id": "G3",
+    "line": 427,
+    "setup_lines": [
+      422,
+      423,
+      424,
+      425,
+      426
+    ],
+    "comprehension_lines": [
+      422,
+      423,
+      424,
+      425,
+      426
+    ],
+    "cond": "\"LRRC15\" not in rejected_genes or not mhc2 or not immunoglobulin",
+    "reached": true,
+    "examined": 4988
+  },
+  {
+    "id": "G4",
+    "line": 436,
+    "setup_lines": [
+      387,
+      435
+    ],
+    "comprehension_lines": [
+      387,
+      435
+    ],
+    "cond": "not rejected or len(rejected) >= len(measurable)",
+    "reached": true,
+    "examined": 3467
+  },
+  {
+    "id": "G5",
+    "line": 443,
+    "setup_lines": [
+      387,
+      390,
+      391,
+      392,
+      441,
+      442
+    ],
+    "comprehension_lines": [
+      387,
+      390,
+      391,
+      392,
+      441,
+      442
+    ],
+    "cond": "len(rejected) != len(measured_fail) or bool(bad_note)",
+    "reached": true,
+    "examined": 9498
+  },
+  {
+    "id": "G6",
+    "line": 462,
+    "setup_lines": [
+      451
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(drifted)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R14",
+    "line": 487,
+    "setup_lines": [
+      473
+    ],
+    "comprehension_lines": [],
+    "cond": "not separable",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T1",
+    "line": 522,
+    "setup_lines": [
+      508
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(t1_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T2",
+    "line": 541,
+    "setup_lines": [
+      528
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(t2_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T3",
+    "line": 568,
+    "setup_lines": [
+      547
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(t3_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T4",
+    "line": 592,
+    "setup_lines": [
+      574
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(t4_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T5",
+    "line": 611,
+    "setup_lines": [
+      609,
+      610
+    ],
+    "comprehension_lines": [],
+    "cond": "not both",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T6",
+    "line": 631,
+    "setup_lines": [
+      619
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(t6_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "T7",
+    "line": 644,
+    "setup_lines": [
+      639,
+      640,
+      641,
+      642
+    ],
+    "comprehension_lines": [
+      640,
+      641,
+      642
+    ],
+    "cond": "bool(leaked)",
+    "reached": true,
+    "examined": 317712
+  },
+  {
+    "id": "T8",
+    "line": 657,
+    "setup_lines": [
+      656
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(seeded)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "R8",
+    "line": 314,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "True",
+    "reached": false,
+    "examined": null
+  },
+  {
+    "id": "R8",
+    "line": 318,
+    "setup_lines": [
+      317
+    ],
+    "comprehension_lines": [],
+    "cond": "share > 0.05",
+    "reached": true,
+    "examined": null
+  }
+]

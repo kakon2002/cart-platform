@@ -1,0 +1,167 @@
+[
+  {
+    "id": "A1",
+    "line": 59,
+    "setup_lines": [
+      58
+    ],
+    "comprehension_lines": [
+      58
+    ],
+    "cond": "bool(drift)",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "A2",
+    "line": 66,
+    "setup_lines": [
+      63,
+      64,
+      65
+    ],
+    "comprehension_lines": [
+      63,
+      64,
+      65
+    ],
+    "cond": "bool(wrong)",
+    "reached": true,
+    "examined": 419
+  },
+  {
+    "id": "A3",
+    "line": 72,
+    "setup_lines": [
+      71
+    ],
+    "comprehension_lines": [
+      71
+    ],
+    "cond": "bool(moved)",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "A4",
+    "line": 78,
+    "setup_lines": [
+      75,
+      76,
+      77
+    ],
+    "comprehension_lines": [
+      75,
+      76,
+      77
+    ],
+    "cond": "bool(over)",
+    "reached": true,
+    "examined": 404
+  },
+  {
+    "id": "A5",
+    "line": 83,
+    "setup_lines": [
+      82
+    ],
+    "comprehension_lines": [],
+    "cond": "npsr1 is None or npsr1.architecture != routing.CONVENTIONAL",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A6",
+    "line": 88,
+    "setup_lines": [
+      87
+    ],
+    "comprehension_lines": [],
+    "cond": "msln is None or msln.architecture != routing.ADAPTOR",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A7",
+    "line": 94,
+    "setup_lines": [
+      92,
+      93
+    ],
+    "comprehension_lines": [
+      92,
+      93
+    ],
+    "cond": "bool(silent)",
+    "reached": true,
+    "examined": 589
+  },
+  {
+    "id": "A8",
+    "line": 101,
+    "setup_lines": [
+      98,
+      99,
+      100
+    ],
+    "comprehension_lines": [
+      98,
+      99,
+      100
+    ],
+    "cond": "bool(leak)",
+    "reached": true,
+    "examined": 600
+  },
+  {
+    "id": "A9",
+    "line": 107,
+    "setup_lines": [
+      105,
+      106
+    ],
+    "comprehension_lines": [
+      106
+    ],
+    "cond": "not counts",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "A10",
+    "line": 111,
+    "setup_lines": [
+      15,
+      25
+    ],
+    "comprehension_lines": [],
+    "cond": "terminable != SPEC_TERMINABLE_CEILING",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A11",
+    "line": 117,
+    "setup_lines": [
+      116
+    ],
+    "comprehension_lines": [
+      116
+    ],
+    "cond": "bool(lying)",
+    "reached": true,
+    "examined": 6
+  },
+  {
+    "id": "A12",
+    "line": 137,
+    "setup_lines": [
+      122,
+      123
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(blind) or bool(connected)",
+    "reached": true,
+    "examined": null
+  }
+]

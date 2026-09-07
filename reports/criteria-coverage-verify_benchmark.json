@@ -1,0 +1,283 @@
+[
+  {
+    "id": "BM1",
+    "line": 67,
+    "setup_lines": [
+      66
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(lit)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM1b",
+    "line": 79,
+    "setup_lines": [
+      73,
+      74,
+      75,
+      76,
+      77,
+      78
+    ],
+    "comprehension_lines": [
+      73,
+      74,
+      75,
+      76
+    ],
+    "cond": "len(caught) != 3 or bool(ordinary)",
+    "reached": true,
+    "examined": 7
+  },
+  {
+    "id": "BM2",
+    "line": 86,
+    "setup_lines": [
+      85
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(reach)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM2b",
+    "line": 94,
+    "setup_lines": [
+      90,
+      91,
+      92,
+      93
+    ],
+    "comprehension_lines": [
+      92
+    ],
+    "cond": "not all(probes)",
+    "reached": true,
+    "examined": 4
+  },
+  {
+    "id": "BM3",
+    "line": 104,
+    "setup_lines": [
+      102,
+      103
+    ],
+    "comprehension_lines": [],
+    "cond": "not (moves and stable)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM4",
+    "line": 120,
+    "setup_lines": [
+      109,
+      116
+    ],
+    "comprehension_lines": [],
+    "cond": "not refused",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM5",
+    "line": 132,
+    "setup_lines": [
+      130,
+      131
+    ],
+    "comprehension_lines": [],
+    "cond": "answers_present and not order[\"ordered\"]",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM6",
+    "line": 162,
+    "setup_lines": [
+      153
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(wrong)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM6a",
+    "line": 171,
+    "setup_lines": [
+      168,
+      169,
+      170
+    ],
+    "comprehension_lines": [
+      168,
+      169,
+      170
+    ],
+    "cond": "bool(absent)",
+    "reached": true,
+    "examined": 11
+  },
+  {
+    "id": "BM6b",
+    "line": 182,
+    "setup_lines": [
+      179,
+      180,
+      181
+    ],
+    "comprehension_lines": [
+      179
+    ],
+    "cond": "whole or not per_element",
+    "reached": true,
+    "examined": 8
+  },
+  {
+    "id": "BM6c",
+    "line": 191,
+    "setup_lines": [
+      189,
+      190
+    ],
+    "comprehension_lines": [],
+    "cond": "v[\"target_match\"] != binder_check.FAIL or not v[\"wrong_antigen_flag\"]",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM7",
+    "line": 205,
+    "setup_lines": [
+      201,
+      202,
+      203,
+      204
+    ],
+    "comprehension_lines": [],
+    "cond": "u8c != binder_check.PASS",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM9",
+    "line": 237,
+    "setup_lines": [
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232
+    ],
+    "comprehension_lines": [
+      228,
+      229,
+      230,
+      231,
+      232
+    ],
+    "cond": "bool(leaked)",
+    "reached": true,
+    "examined": 1809
+  },
+  {
+    "id": "BM9b",
+    "line": 252,
+    "setup_lines": [
+      250,
+      251
+    ],
+    "comprehension_lines": [
+      250,
+      251
+    ],
+    "cond": "not gated",
+    "reached": true,
+    "examined": 9
+  },
+  {
+    "id": "BM9c",
+    "line": 263,
+    "setup_lines": [
+      260,
+      261,
+      262
+    ],
+    "comprehension_lines": [
+      260,
+      261,
+      262
+    ],
+    "cond": "bool(geometry)",
+    "reached": true,
+    "examined": 845
+  },
+  {
+    "id": "BM10",
+    "line": 280,
+    "setup_lines": [
+      273,
+      274,
+      275,
+      276,
+      277,
+      278,
+      279
+    ],
+    "comprehension_lines": [
+      273,
+      274,
+      276,
+      277,
+      278,
+      279
+    ],
+    "cond": "bool(rescued or imputed)",
+    "reached": true,
+    "examined": 352
+  },
+  {
+    "id": "BM11",
+    "line": 303,
+    "setup_lines": [
+      300,
+      301,
+      302
+    ],
+    "comprehension_lines": [],
+    "cond": "not (same_front and distinct_sets)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM11b",
+    "line": 313,
+    "setup_lines": [
+      270,
+      312
+    ],
+    "comprehension_lines": [],
+    "cond": "degenerate and \"carries no discrimination\" not in ranked[\"front_note\"]",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "BM12",
+    "line": 323,
+    "setup_lines": [
+      322
+    ],
+    "comprehension_lines": [
+      322
+    ],
+    "cond": "values != {\"NOT_CONNECTED\"}",
+    "reached": true,
+    "examined": 423
+  }
+]

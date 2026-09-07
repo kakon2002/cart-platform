@@ -1,0 +1,140 @@
+[
+  {
+    "id": "A1",
+    "line": 74,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "status != 201 or project.get(\"target_antigen\") is not None",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A2",
+    "line": 80,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "status != 409 or early.get(\"status\") != \"RUN_NOT_COMPLETE\"",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A3",
+    "line": 86,
+    "setup_lines": [
+      85
+    ],
+    "comprehension_lines": [],
+    "cond": "status != 202 or not jid",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A4",
+    "line": 103,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "state.get(\"status\") != \"complete\"",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A5",
+    "line": 115,
+    "setup_lines": [
+      113,
+      114
+    ],
+    "comprehension_lines": [
+      113
+    ],
+    "cond": "status != 200 or not constructs.get(\"reasons\") or counted != constructs.get(\"buildable\") or (constructs.get(\"awaiting_binder\") and \"AWAITING_BINDER\" not in states)",
+    "reached": true,
+    "examined": 6
+  },
+  {
+    "id": "A6",
+    "line": 132,
+    "setup_lines": [
+      129,
+      131
+    ],
+    "comprehension_lines": [
+      129
+    ],
+    "cond": "status != 200 or total + reached != result.get(\"pool_size\") or result.get(\"complete\", 0) + result.get(\"awaiting_binder\", 0) != reached",
+    "reached": true,
+    "examined": 7
+  },
+  {
+    "id": "A7",
+    "line": 148,
+    "setup_lines": [
+      144,
+      145,
+      146,
+      147
+    ],
+    "comprehension_lines": [],
+    "cond": "status != 200 or not rows or not top.get(\"gene\") or set(breakdown) != components",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A8",
+    "line": 160,
+    "setup_lines": [
+      159
+    ],
+    "comprehension_lines": [],
+    "cond": "status != 200 or first.get(\"coverage_span_percentile\") is None",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A10",
+    "line": 170,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "s_unknown != 404 or unknown.get(\"status\") != \"NOT_FOUND\" or not unknown.get(\"reasons\") or s_unrun != 409 or unrun.get(\"status\") != \"RUN_NOT_COMPLETE\"",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "A9",
+    "line": 183,
+    "setup_lines": [
+      182
+    ],
+    "comprehension_lines": [
+      182
+    ],
+    "cond": "status != 200 or len(stages) < 6",
+    "reached": true,
+    "examined": 12
+  },
+  {
+    "id": "W10",
+    "line": 232,
+    "setup_lines": [
+      208
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(w10_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "W12",
+    "line": 264,
+    "setup_lines": [
+      244,
+      245
+    ],
+    "comprehension_lines": [
+      244
+    ],
+    "cond": "bool(w12_bad)",
+    "reached": true,
+    "examined": 7
+  }
+]
