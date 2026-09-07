@@ -134,6 +134,11 @@ names it at the top of its report:
 
 That is a note, not a problem. Re-running `--from-release` replaces it.
 
+**One thing this step does not do.** It provisions the caches, but the first
+run afterwards still rebuilds one single-cell artifact from raw, which costs
+about 40 minutes. §7 explains why and how to tell it from a hang. Budget for
+it now rather than discovering it later.
+
 **Do not proceed past this step until the report reads `8/8 shared sources
 usable`.** Everything downstream depends on the cache, and a half-provisioned
 one produces failures that look unrelated to provisioning — a run that reaches
@@ -207,28 +212,44 @@ different from the rule being broken. It is enforced where the work is done.
 What travels with the archive is the frozen fingerprint, not the history that
 ordered it.
 
-### The first verifier to touch the pipeline may run for half an hour
+### The first pipeline run will take about 40 minutes. This is expected today
 
-It is not stalled, and the reason is not the verifier.
+**As the release currently stands, the first thing that runs the pipeline — a
+verifier, `run_all.py`, or a run started over HTTP — downloads 2.6 GB and
+expands it to 8.3 GB before it does anything else.** Measured at 2,003 seconds
+on one pass, and it happens for both indications.
 
-**What it is doing:** the single-cell malignant-cell cache is keyed by a digest
-of the exact gene set the run asks for. If the release shipped a digest built
-from a different pool, the lookup misses and the source rebuilds it from raw —
-**a 2.6 GB download and an 8.3 GB expansion, to regenerate a file of about
-2.5 MB.** Measured once at 2,003 seconds.
+It is not a hang and it is not the verifier. Here is the mechanism, because it
+is not guessable from the symptom.
 
-**This is a stale release, not a property of the verifier.** With a release
-carrying the right digest the step is minutes, and the packager now refuses to
-build one that does not (§5). If you see it, the cache you provisioned is
-older than the pool the code produces.
+The single-cell malignant-cell cache is keyed by a **digest of the exact gene
+set** a run asks for. The published release carries digests built from an older
+pool, so a current run's lookup misses, and the source rebuilds the artifact
+from raw counts — which needs the archive the same `bootstrap.py` report calls
+*build-time only and not expected here*. The file being regenerated is about
+**2.5 MB**.
 
-You can tell which is happening: look for a growing `.partial` under
-`data/singlecell/`. If one is there, it is downloading.
+**How to tell it apart from a hang:**
+
+```
+dir data\singlecell\*.partial          # Windows
+ls -la data/singlecell/*.partial       # macOS, Linux
+```
+
+A `.partial` that grows between two checks means it is downloading. Nothing
+else in this platform writes one.
+
+**When this stops happening.** The packager now refuses to build a release
+whose digests do not match what a standard run asks for, so a rebuilt release
+does not have this problem. Until the published asset is replaced, every fresh
+provision pays the 40 minutes once. After that the cache holds the artifact and
+later runs are minutes.
 
 > **Retraction.** An earlier version of this section said the wait was because
 > the verifier "runs the whole pipeline through the adapter". That was written
-> without being established and is wrong: it named the wrong cause and told a
-> reader to expect a delay that a packaging fix removes entirely.
+> without being established and is wrong twice: it named the wrong cause, and
+> it told a reader to expect a delay that is a property of one stale artifact
+> rather than of the code.
 
 ---
 
@@ -243,8 +264,11 @@ Two options, depending on how much time you have.
 ```
 
 **Expected:** `9/9 criteria clear`, then a summary of five candidate packages
-and the elements they cannot carry. About 8 seconds once the cache exists,
-several minutes if the pipeline has not run yet.
+and the elements they cannot carry.
+
+About 8 seconds once the pipeline has run before. **The first time, expect
+about 40 minutes** — see §7, which explains why and how to confirm it is
+working rather than stuck.
 
 ### Whole suite — 16 stages, 27 minutes
 
@@ -255,6 +279,9 @@ several minutes if the pipeline has not run yet.
 Two measured runs took 28.1 and 26.8 minutes, with derived artifacts cleared
 each time. Most of it is three stages: architecture routing, binder discovery
 and the multi-indication check, at roughly 3 to 10 minutes each.
+
+**Both figures are from a machine whose cache was already complete.** On a
+freshly provisioned one, add the 40 minutes §7 describes, once.
 
 **Expected:** every stage reports `clear` except stages 3, 4, 4a and 6, whose
 trips are the eight named in §7. The last measured run was **217 of 225
