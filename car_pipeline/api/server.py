@@ -1203,12 +1203,32 @@ def _adapter_refusal():
 class Handler(BaseHTTPRequestHandler):
     server_version = "car-platform/1"
 
+    def _cors(self) -> None:
+        """Headers that let a locally-opened page call a local server.
+
+        Origin-open on purpose and only defensible on a loopback binding: the
+        dashboard is a file opened from disk, so its origin is null and no
+        narrower allow-list would admit it. Anything served to a network
+        interface needs a real origin policy, and this is not one.
+        """
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        """Answer the preflight a cross-origin POST sends first."""
+        self.send_response(204)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _send(self, code: int, payload: dict) -> None:
         """Write one JSON response."""
         body = json.dumps(payload, indent=2, default=str).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self._cors()
         self.end_headers()
         self.wfile.write(body)
 
