@@ -31,6 +31,8 @@ STAGES = [
     ("API2", "HTTP surface, breast", "verify_api.py",
      ["--indication", "Invasive Breast Carcinoma"]),
     ("MULTI", "Multi-indication", "verify_indications.py"),
+    ("ADAPT", "Dashboard surface", "verify_adapter.py"),
+    ("BENCH", "Binder benchmark", "verify_benchmark.py"),
 ]
 
 
@@ -320,6 +322,59 @@ def preflight() -> str | None:
             f"    {venv} run_all.py --fresh")
 
 
+def cache_fingerprint() -> dict[str, tuple[int, int]]:
+    """Size and modification time of every raw cache file.
+
+    Taken before the run and again after it. The raw caches are pinned
+    immutable releases, so a stage that writes to one has done something the
+    pins say it must not, and comparing the two is evidence rather than an
+    assurance.
+    """
+    out: dict[str, tuple[int, int]] = {}
+    data = ROOT / "data"
+    if not data.exists():
+        return out
+    for directory in sorted(data.iterdir()):
+        if not directory.is_dir() or directory.name in DERIVED:
+            continue
+        for path in sorted(directory.rglob("*")):
+            if path.is_file():
+                stat = path.stat()
+                out[path.relative_to(ROOT).as_posix()] = (stat.st_size,
+                                                          int(stat.st_mtime))
+    return out
+
+
+def verify_caches() -> tuple[bool, list[str]]:
+    """Check every raw cache payload against the manifest that declares it."""
+    problems: list[str] = []
+    checked = 0
+    data = ROOT / "data"
+    for directory in sorted(data.iterdir()) if data.exists() else []:
+        if not directory.is_dir() or directory.name in DERIVED:
+            continue
+        for manifest in sorted(directory.glob("*.manifest.json")):
+            try:
+                meta = json.loads(manifest.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                problems.append(f"{manifest.name} unreadable: {exc}")
+                continue
+            filename = meta.get("filename")
+            if not filename:
+                continue
+            payload = directory / filename
+            if not payload.exists():
+                problems.append(f"{filename} is declared and absent")
+                continue
+            checked += 1
+            declared = meta.get("bytes")
+            if isinstance(declared, int) and payload.stat().st_size != declared:
+                problems.append(
+                    f"{filename} is {payload.stat().st_size} bytes against "
+                    f"{declared} declared")
+    return checked, problems
+
+
 def main() -> int:
     """Run every stage and write the report."""
     parser = argparse.ArgumentParser(description="Run every stage end to end.")
@@ -354,6 +409,19 @@ def main() -> int:
     raw = sorted(p.name for p in (ROOT / "data").iterdir()
                  if p.is_dir() and p.name not in DERIVED)
     print(f"  raw caches read, not rebuilt: {', '.join(raw)}")
+
+    checked, problems = verify_caches()
+    if problems:
+        print(f"  raw cache integrity: {len(problems)} problem(s)")
+        for detail in problems[:6]:
+            print(f"    {detail}")
+        print("\n  STOPPING. The raw caches are pinned immutable releases; a "
+              "payload that disagrees with its manifest means the run would "
+              "not be reproducible.")
+        return 4
+    print(f"  raw cache integrity: {checked} payload(s) match their manifests")
+    before = cache_fingerprint()
+    print(f"  raw cache fingerprint taken over {len(before)} file(s)")
     print()
 
     logs = ROOT / "reports" / "run-logs"
@@ -374,6 +442,20 @@ def main() -> int:
         print(f"{stage.clear:3d}/{stage.total:<3d} {verdict:16s} "
               f"{stage.seconds:6.1f}s")
     elapsed = time.monotonic() - started
+
+    after = cache_fingerprint()
+    touched = sorted(k for k in before if before.get(k) != after.get(k))
+    added = sorted(set(after) - set(before))
+    removed = sorted(set(before) - set(after))
+    print()
+    if touched or added or removed:
+        print(f"  RAW CACHES WERE MODIFIED: {len(touched)} changed, "
+              f"{len(added)} added, {len(removed)} removed")
+        for name in (touched + added + removed)[:8]:
+            print(f"    {name}")
+    else:
+        print(f"  raw caches unchanged: {len(before)} file(s) identical in "
+              f"size and modification time after the run")
 
     report = render(stages, elapsed, fresh=args.fresh)
     print()
