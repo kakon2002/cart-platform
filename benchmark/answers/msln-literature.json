@@ -1,0 +1,49 @@
+{
+  "benchmark_id": "MSLN-LITERATURE-001",
+  "target": "MSLN",
+  "revealed_after_freeze": "160f4b250a325894",
+  "note": "Held-out validation answers, transcribed from the client's benchmark document. Read only after the blind output was frozen and committed. No module reachable from the algorithm may import or name this file.",
+  "caveat": "Exact dissociation constants are assay- and construct-dependent. The source, assay format and construct format are stored with every value, and no single literature value is treated as universal ground truth.",
+  "panel": [
+    {
+      "binder": "SS1",
+      "target": "MSLN",
+      "aliases": ["SS1P", "SS1 scFv", "MORAb-009", "amatuximab"],
+      "alias_basis": "MORAb-009 (amatuximab) is the chimeric antibody built on the SS1 Fv. Recorded as an alias so recall can be judged on the molecule rather than on the name a source happens to use.",
+      "affinity_nM": null,
+      "affinity_note": "reported as a high-affinity binder; the reported value varies by assay and construct format, so no single number is held here",
+      "assay": null,
+      "role": "positive-control strong binder and retrieval benchmark"
+    },
+    {
+      "binder": "M5",
+      "target": "MSLN",
+      "aliases": [],
+      "affinity_nM": 26.9,
+      "affinity_note": "~26.9 nM in one cited SPR comparison",
+      "assay": "SPR",
+      "role": "intermediate-affinity comparator"
+    },
+    {
+      "binder": "M11",
+      "target": "MSLN",
+      "aliases": [],
+      "affinity_nM": 64.7,
+      "affinity_note": "~64.7 nM in the same cited SPR comparison",
+      "assay": "SPR",
+      "role": "lower-affinity comparator"
+    },
+    {
+      "binder": "15B6",
+      "target": "MSLN",
+      "aliases": ["h15B6"],
+      "affinity_nM": null,
+      "affinity_note": "no value held; the panel cites this binder for epitope context rather than affinity",
+      "assay": null,
+      "epitope_context": "membrane-proximal / juxtamembrane",
+      "role": "tests whether the algorithm considers epitope location and CAR suitability rather than affinity alone"
+    }
+  ],
+  "expected_affinity_ordering": ["M5", "M11"],
+  "expected_ordering_note": "Only M5 and M11 carry values from a comparable assay context. An ordering over the full panel is not available, and mixing incomparable assays would need flagging rather than silently combining them."
+}
