@@ -20,7 +20,14 @@ ARCHIVE_NAME = "cart-platform-cache.tar.gz"
 CHECKSUM_SUFFIX = ".sha256"
 
 
-RELEASE_TAG = "data-v1"
+# data-v1 is left published so anyone who provisioned from it can tell
+# which payload they have. It is missing eight malignant-cell digests
+# -- including the one a standard run of each indication asks for, which
+# costs a 2.6 GB rebuild on first run -- and the anti-tag binder.
+# Replacing it in place would have been silent staleness: same name,
+# different bytes, no way for a reader to know which they hold.
+RELEASE_TAG = "data-v2"
+PREVIOUS_TAGS = ("data-v1",)
 RELEASE_REPO = "kakon2002/cart-platform"
 
 
@@ -393,7 +400,10 @@ def from_release() -> int:
         print("  then:  python bootstrap.py --from-archive <path>")
         return 1
 
-    print(f"downloading {ARCHIVE_NAME} (298 MB) from {RELEASE_TAG}")
+    # No size is printed. The literal here read 298 MB while the asset
+    # was 471.7 MB, and a number nothing checks is how this repository
+    # keeps finding stale claims. The download tool reports progress.
+    print(f"downloading {ARCHIVE_NAME} from {RELEASE_TAG}")
     result = subprocess.run(
         ["gh", "release", "download", RELEASE_TAG, "-R", RELEASE_REPO,
          "--pattern", f"{ARCHIVE_NAME}*", "--clobber"],
