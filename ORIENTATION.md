@@ -136,8 +136,11 @@ operational companion to this document. Use the
 virtual environment's interpreter for everything; a bare `python` is the system
 interpreter and has none of the three dependencies.
 
-**Testing.** Sixteen stages, **216 criteria**, ~28 minutes from cleared derived
-artifacts. Each verifier prints its criteria and stops on the first trip.
+**Testing.** Sixteen stages, ~28 minutes from cleared derived artifacts. The
+criteria total is printed at the end of every run and written to
+`reports/full-run.md` — read it there rather than from a number in prose, which
+goes stale the moment a criterion is added. Three trips are expected;
+`RUNBOOK.md` names them.
 
 **Adding an indication.** Add a module under `car_pipeline/configs/` declaring
 a tumour cohort, a single-cell atlas, a dependency lineage and a normal-tissue

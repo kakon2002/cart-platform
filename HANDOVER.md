@@ -3,7 +3,8 @@
 Everything needed to stand this up on a clean machine. Read §1 first — it says
 what the platform will and will not tell you, and every figure below assumes it.
 
-**If you are new to the project, read `ORIENTATION.md` before this file.**
+**If you are new to the project, read `ORIENTATION.md` before this file — or
+`RUNBOOK.md` instead of both, if you only want to get it running.**
 This one is operational: install, provision, run, connect the dashboard. That
 one is what the platform is, why each decision was taken, and the failure
 shapes this project keeps producing — including the two families of check
@@ -57,8 +58,16 @@ python -m venv .venv
 `requirements.txt` is `numpy`, `h5py` and `pydantic`. Everything else is the
 standard library, including the HTTP server.
 
-**Use the virtual environment's interpreter for everything.** A bare `python`
-or `py -3.13` is the system interpreter and has none of the three.
+**Use the virtual environment's interpreter for everything**, written out in
+full. What a bare `python` resolves to depends on the machine and this document
+cannot know it — on at least one machine it was already a virtual environment.
+Check rather than assume:
+
+```
+.venv\Scripts\python.exe -c "import sys; print(sys.version); print(sys.prefix)"
+```
+
+`sys.prefix` must be the `.venv` you just created, and the version must be 3.13.
 
 ---
 
@@ -74,13 +83,14 @@ build time and not at serve time. `bootstrap.py` provisions it three ways:
 .venv\Scripts\python.exe bootstrap.py --from-sources      # rebuild from origin, ~3 hours
 ```
 
-**Start with `--from-archive`** if a cache archive came with this package: it is
-the fastest path and it excludes the heavy build-time inputs. Run the bare
-command first either way — it prints what is present, what is missing, and the
+**No cache archive ships with this package.** Use `--from-release`, which is the
+normal path and took **106 seconds** when last measured from an empty directory.
+Run the bare command first — it prints what is present, what is missing, and the
 release each source is pinned to.
 
-`--from-sources` re-fetches from the public sources and takes about three hours.
-It is the fallback when no archive is available, not the normal path.
+`--from-archive` exists for a cache someone hands you directly. `--from-sources`
+re-fetches from the public sources and takes about three hours; that is the
+fallback when nothing else is reachable, not the normal path.
 
 ---
 
@@ -92,8 +102,9 @@ It is the fallback when no archive is available, not the normal path.
 .venv\Scripts\python.exe run_all.py
 ```
 
-Runs all stages for both indications and writes to `reports/`. Roughly 22
-minutes on a warm cache.
+Runs every stage for both indications and writes to `reports/`. **27 minutes**,
+with derived artifacts cleared — two measured runs took 28.1 and 26.8. An
+earlier figure of 22 minutes predated two verifiers being added to the run.
 
 ### The server
 
@@ -114,14 +125,25 @@ to a network.
 ### The verifiers
 
 ```
-.venv\Scripts\python.exe verify_adapter.py      # the dashboard surface, 14 criteria
-.venv\Scripts\python.exe verify_api.py          # the HTTP contract, 12
-.venv\Scripts\python.exe verify_benchmark.py    # the binder benchmark, 19
-.venv\Scripts\python.exe verify_package.py      # the candidate package, 9
+.venv\Scripts\python.exe verify_adapter.py      # dashboard surface, 14 criteria
+.venv\Scripts\python.exe verify_api.py          # HTTP contract, 12
+.venv\Scripts\python.exe verify_benchmark.py    # binder benchmark, 19
+.venv\Scripts\python.exe verify_package.py      # candidate package, 9
 ```
 
-Each prints its criteria and stops on the first that trips. A verifier that
-reports `TRIPPED` is telling you something is wrong, and the message says what.
+**Those four are a subset.** The whole suite is sixteen stages, run together by
+`run_all.py`. Its criteria total is printed at the end of every run and written to
+`reports/full-run.md` — read it there rather than from a number in prose, which
+goes stale the moment a criterion is added.
+
+**Measured times, so a long one does not read as a hang.** `verify_adapter.py`
+takes about **33 minutes on a cold cache**, because it runs the whole pipeline
+through the adapter; about 5 minutes once derived artifacts exist. The other
+three are seconds to a few minutes each.
+
+Each prints its criteria and stops on the first that trips. **Three trips are
+expected and are not failures** — `RUNBOOK.md` lists what a correct first run
+looks like when it looks wrong.
 
 ---
 

@@ -2,67 +2,76 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**208/216 criteria clear across 16 stages**, 28.1 minutes.
+**217/225 criteria clear across 16 stages**, 26.8 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
-| 1 | Design spec | 31/31 | clear | 1s |
-| 2 | Surface proteome | 2/2 | clear | 1s |
+| 1 | Design spec | 34/34 | clear | 1s |
+| 2 | Surface proteome | 8/8 | clear | 1s |
 | 3 | Target discovery | 26/27 | **TRIPPED** | 22s |
-| 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 249s |
-| 5 | Binder discovery | 7/7 | clear | 235s |
-| 6 | Construct assembly | 8/9 | **TRIPPED** | 1s |
+| 4 | Target pairing | 10/15 | **TRIPPED** | 10s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 218s |
+| 5 | Binder discovery | 7/7 | clear | 205s |
+| 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 16/16 | clear | 4s |
 | 12 | Candidate package | 9/9 | clear | 8s |
 | API | HTTP surface, pancreatic | 12/12 | clear | 12s |
-| API2 | HTTP surface, breast | 12/12 | clear | 268s |
-| MULTI | Multi-indication | 11/11 | clear | 578s |
+| API2 | HTTP surface, breast | 12/12 | clear | 237s |
+| MULTI | Multi-indication | 11/11 | clear | 591s |
 | ADAPT | Dashboard surface | 14/14 | clear | 283s |
 | BENCH | Binder benchmark | 19/19 | clear | 9s |
 
 ## Every criterion
 
-### Stage 1 — Design spec (31/31)
+### Stage 1 — Design spec (34/34)
 
-- clear `check 1` — discovery_mode — got 'B', expected 'B'
-- clear `check 2` — target_antigen — got None, expected None
-- clear `check 3` — cancer_type — got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'
-- clear `check 4` — malignancy_type — got 'solid', expected 'solid'
-- clear `check 5` — product_type — got 'autologous', expected 'autologous'
-- clear `check 6` — car_format — got 'auto', expected 'auto'
-- clear `check 7` — safety_tolerance — got 'conservative', expected 'conservative'
-- clear `check 8` — vector_payload_limit_kb — got 4.7, expected 4.7
-- clear `check 9` — max_genetic_edits — got 2, expected 2
-- clear `check 10` — pancreas override tier — got 2, expected 2
-- clear `check 11` — mistyped field rejected — got True, expected True
-- clear `check 12` — blank antigen -> None — got None, expected None
-- clear `check 13` — blank antigen -> mode B — got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>
-- clear `check 14` — supplied antigen -> mode A — got 'A', expected 'A'
-- clear `check 15` — blank cancer_type rejected — got True, expected True
-- clear `check 16` — override without rationale rejected — got True, expected True
-- clear `check 17` — spec discovery_mode — got 'B', expected 'B'
-- clear `check 18` — datasets — got 10, expected 10
-- clear `check 19` — blocking datasets — got 8, expected 8
-- clear `check 20` — construct budget kb — got 3.5, expected 3.5
-- clear `check 21` — safety switch required — got True, expected True
-- clear `check 22` — risk ceiling — got 0.15, expected 0.15
-- clear `check 23` — allowed formats — got 5, expected 5
-- clear `check 24` — auto excluded — got True, expected True
-- clear `check 25` — spec target_antigen — got None, expected None
-- clear `check 26` — unresolved availability score — got 0.0, expected 0.0
-- clear `check 27` — resolved availability score — got 0.75, expected 0.75
-- clear `check 28` — validation datasets — got 7, expected 7
-- clear `check 29` — validation blocking — got 5, expected 5
-- clear `check 30` — input not mutated by build — got None, expected None
-- clear `check 31` — project id unique — got True, expected True
+- clear `C1` — discovery_mode: got 'B', expected 'B'
+- clear `C2` — target_antigen: got None, expected None
+- clear `C3` — cancer_type: got 'Pancreatic Ductal Adenocarcinoma', expected 'Pancreatic Ductal Adenocarcinoma'
+- clear `C4` — malignancy_type: got 'solid', expected 'solid'
+- clear `C5` — product_type: got 'autologous', expected 'autologous'
+- clear `C6` — car_format: got 'auto', expected 'auto'
+- clear `C7` — safety_tolerance: got 'conservative', expected 'conservative'
+- clear `C8` — vector_payload_limit_kb: got 4.7, expected 4.7
+- clear `C9` — max_genetic_edits: got 2, expected 2
+- clear `C10` — pancreas override tier: got 2, expected 2
+- clear `C11` — mistyped field rejected: got True, expected True
+- clear `C12` — blank antigen -> None: got None, expected None
+- clear `C13` — blank antigen -> mode B: got <DiscoveryMode.DISCOVER: 'B'>, expected <DiscoveryMode.DISCOVER: 'B'>
+- clear `C14` — supplied antigen -> mode A: got 'A', expected 'A'
+- clear `C15` — blank cancer_type rejected: got True, expected True
+- clear `C16` — override without rationale rejected: got True, expected True
+- clear `C17` — spec discovery_mode: got 'B', expected 'B'
+- clear `C18` — datasets: got 10, expected 10
+- clear `C19` — blocking datasets: got 8, expected 8
+- clear `C20` — construct budget kb: got 3.5, expected 3.5
+- clear `C21` — safety switch required: got True, expected True
+- clear `C22` — risk ceiling: got 0.15, expected 0.15
+- clear `C23` — allowed formats: got 5, expected 5
+- clear `C24` — auto excluded: got True, expected True
+- clear `C25` — spec target_antigen: got None, expected None
+- clear `C26` — unresolved availability score: got 0.0, expected 0.0
+- clear `C27` — availability score within [0, 1]: got True, expected True
+- clear `C28` — availability score reflects some resolved dataset: got True, expected True
+- clear `C29` — availability score is zero when nothing resolves: got 0.0, expected 0.0
+- clear `C30` — availability score responds to status: got True, expected True
+- clear `C31` — validation datasets: got 7, expected 7
+- clear `C32` — validation blocking: got 5, expected 5
+- clear `C33` — input not mutated by build: got None, expected None
+- clear `C34` — project id unique: got True, expected True
 
-### Stage 2 — Surface proteome (2/2)
+### Stage 2 — Surface proteome (8/8)
 
-- clear `validation sets` — pass
-- clear `count drift` — yes
+- clear `S1` — 28 of 28 known surface targets survive the filter
+- clear `S2` — 12 of 12 negative controls are rejected
+- clear `S3` — 3 control(s) rejected on topology rather than on absence of an anchor, so the topology arm is exercised
+- clear `S4` — the note-only rejects are exactly ['GOLM1', 'MTLN']
+- clear `S5` — CALR is present in the surface record set to be judged
+- clear `S6` — CALR reads outward: it carries plasma-membrane evidence
+- clear `S7` — CALR is not attached, so it is held out despite reading outward -- the case the anchor requirement exists for
+- clear `S8` — filter decisions are within 3% of the reference counts
 
 ### Stage 3 — Target discovery (26/27)
 
@@ -210,7 +219,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 07866cc1ca9d rather than blocking
+- clear `A3` — a run returns 202 with job afed610c0236 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 7 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -225,7 +234,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 0f2f69c59484 rather than blocking
+- clear `A3` — a run returns 202 with job da047f7ae3d7 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
 - clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
