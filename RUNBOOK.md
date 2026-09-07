@@ -115,6 +115,30 @@ path here — it exists for a cache someone hands you directly. `--from-sources`
 rebuilds everything from the public sources in about three hours and is the
 fallback when nothing else is reachable.
 
+### If it does not complete
+
+**This step downloads about 300 MB and can fail transiently.** It failed once
+in three measured attempts, running for 89 seconds and leaving the cache
+empty. **Re-run the same command.** It is safe to repeat: an unfinished file
+is written beside the real one and never renamed over it, so a failed attempt
+cannot corrupt a good cache.
+
+A failed attempt does leave an unfinished download behind. `bootstrap.py`
+names it at the top of its report:
+
+```
+  1 unfinished download(s), left by an attempt that did not complete:
+    data/uniprot/human_reviewed.tsv.partial  11.5 MB
+    They are not counted in the sizes below and are never packaged.
+```
+
+That is a note, not a problem. Re-running `--from-release` replaces it.
+
+**Do not proceed past this step until the report reads `8/8 shared sources
+usable`.** Everything downstream depends on the cache, and a half-provisioned
+one produces failures that look unrelated to provisioning — a run that reaches
+`FAILED` in under two minutes, and a `candidates/rank` that answers 500.
+
 ---
 
 ## 6. Start the server  ·  ~2 seconds
@@ -313,6 +337,8 @@ Then follow §9 with the returned `project_id`.
 | A verifier trips something not in §7 | a genuine regression. The message says what; the criterion id maps to a specification in `specs/` |
 | A stage reads `no criteria, exit N` | the verifier crashed before reporting. Its full transcript is in `reports/run-logs/` |
 | `bootstrap.py` reports `BROKEN` | a payload disagrees with its manifest. Re-run `--from-release`; the caches are pinned releases and a drifted one makes the run unreproducible |
+| Provisioning ends without `The cache is complete` | a transient download failure. Re-run the same command; it is safe to repeat and cannot corrupt a good cache |
+| A run reaches `FAILED` in under two minutes, or `candidates/rank` answers 500 | almost always an incomplete cache. Run `bootstrap.py` and check for `8/8 shared sources usable` before looking anywhere else |
 | The run says `RAW CACHES WERE MODIFIED` | a stage wrote to a pinned cache. That is a defect worth reporting, not something to work around |
 
 ---

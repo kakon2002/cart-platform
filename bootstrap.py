@@ -26,6 +26,14 @@ RELEASE_REPO = "kakon2002/cart-platform"
 
 HEAVY = ("*.h5ad", "*.h5ad.gz")
 
+# A download that failed part way leaves one of these behind. The
+# payload beside it is correct -- an unfinished file is never renamed
+# over a finished one -- but a leftover was being counted in the size
+# report and would have been packaged into a handover archive, so the
+# claim that it is never mistaken for a finished file was true of the
+# data and false of the accounting.
+PARTIAL = "*.partial"
+
 
 BUILD_ONLY = {"singlecell": {"archive", "matrix"}}
 
@@ -70,7 +78,8 @@ def _state(name: str) -> tuple[str, int, list[str]]:
     directory = DATA / name
     if not directory.exists():
         return "MISSING", 0, []
-    size = sum(f.stat().st_size for f in directory.rglob("*") if f.is_file())
+    size = sum(f.stat().st_size for f in directory.rglob("*")
+               if f.is_file() and not f.match(PARTIAL))
     found = sorted(directory.glob("*.manifest.json"))
     if not found:
         return "MISSING", size, []
@@ -112,8 +121,27 @@ def _tagged_present(namespace: str, tag: str) -> tuple[bool, int]:
     return bool(hits), sum(f.stat().st_size for f in hits)
 
 
+def stale_partials() -> list[Path]:
+    """Unfinished downloads left by an attempt that did not complete."""
+    if not DATA.exists():
+        return []
+    return [p for p in sorted(DATA.rglob("*"))
+            if p.is_file() and p.match(PARTIAL)]
+
+
 def report() -> int:
     """What is on this machine. Reads the cache only — never the network."""
+    leftovers = stale_partials()
+    if leftovers:
+        print(f"  {len(leftovers)} unfinished download(s), left by an "
+              f"attempt that did not complete:")
+        for path in leftovers[:4]:
+            print(f"    {path.relative_to(ROOT).as_posix()}  "
+                  f"{path.stat().st_size / 1e6:.1f} MB")
+        print("    They are not counted in the sizes below and are "
+              "never packaged. Re-running --from-release replaces "
+              "them.")
+        print()
     print(f"cache root: {DATA}")
     print()
     usable = 0
@@ -178,7 +206,8 @@ def report() -> int:
 def _members() -> list[Path]:
     """Every cache file the archive should carry, heavy artifacts excluded."""
     return [p for p in sorted(DATA.rglob("*"))
-            if p.is_file() and not any(p.match(pat) for pat in HEAVY)]
+            if p.is_file() and not any(p.match(pat) for pat in HEAVY)
+            and not p.match(PARTIAL)]
 
 
 def package(destination: Path) -> int:
