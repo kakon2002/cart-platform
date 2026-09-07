@@ -6,6 +6,13 @@ ordered sequence, with what each step should print and how long it should take.
 Every timing here was measured from an empty directory, not estimated. Where a
 step is untested, it says so.
 
+**On the numbers in this document.** A figure written into prose is a claim
+with nothing checking it, and this project has shipped three that went stale.
+So the counts here are checked: `verify_docs.py` reads them out of this file
+and compares them against the code and the last run, and it is part of the
+suite. Timings are measurements with a date, not claims, and are not checked —
+they will drift with the machine.
+
 If something looks wrong, check §7 before assuming it is. **A correct first run
 prints several things that read like failure.**
 
@@ -78,11 +85,12 @@ Now go back and run §1.
 .venv\Scripts\python.exe bootstrap.py
 ```
 
-**Expected on a first run: thirteen `MISSING` lines.** This is correct. The
+**Expected on a first run: fourteen `MISSING` lines** — nine shared caches
+and five per-indication ones, less the one deferred until the first run.** This is correct. The
 archive ships no data. The report ends:
 
 ```
-  1/8 shared sources usable
+  1/9 shared sources usable
   6 per-indication cache(s) missing:
     ...
 Missing: uniprot, hpa, gtex, depmap, genespan, antibodies, domains, ...
@@ -102,7 +110,7 @@ Read the per-source rebuild costs it prints; they are the real ones.
 **Expected, last three lines:**
 
 ```
-  8/8 shared sources usable
+  9/9 shared sources usable
   the 8.3 GB matrix and its 2.6 GB archive are build-time only and are not expected here
 The cache is complete. Nothing to do.
 ```
@@ -117,8 +125,8 @@ fallback when nothing else is reachable.
 
 ### If it does not complete
 
-**This step downloads about 300 MB and can fail transiently.** It failed once
-in three measured attempts, running for 89 seconds and leaving the cache
+**This step downloads about 490 MB and can fail transiently.** It failed twice
+in five measured attempts, once running for 89 seconds and leaving the cache
 empty. **Re-run the same command.** It is safe to repeat: an unfinished file
 is written beside the real one and never renamed over it, so a failed attempt
 cannot corrupt a good cache.
@@ -145,8 +153,8 @@ the caches, and the first run afterwards still rebuilds one single-cell
 artifact from raw at a cost of about 40 minutes. §7 explains why and how to
 tell it from a hang. On `data-v2` this does not happen.
 
-**Do not proceed past this step until the report reads `8/8 shared sources
-usable`.** Everything downstream depends on the cache, and a half-provisioned
+**Do not proceed past this step until the report reads `9/9 shared sources
+usable` and `The cache is complete`.** Everything downstream depends on the cache, and a half-provisioned
 one produces failures that look unrelated to provisioning — a run that reaches
 `FAILED` in under two minutes, and a `candidates/rank` that answers 500.
 
@@ -388,7 +396,7 @@ Then follow §9 with the returned `project_id`.
 | A stage reads `no criteria, exit N` | the verifier crashed before reporting. Its full transcript is in `reports/run-logs/` |
 | `bootstrap.py` reports `BROKEN` | a payload disagrees with its manifest. Re-run `--from-release`; the caches are pinned releases and a drifted one makes the run unreproducible |
 | Provisioning ends without `The cache is complete` | a transient download failure. Re-run the same command; it is safe to repeat and cannot corrupt a good cache |
-| A run reaches `FAILED` in under two minutes, or `candidates/rank` answers 500 | almost always an incomplete cache. Run `bootstrap.py` and check for `8/8 shared sources usable` before looking anywhere else |
+| A run reaches `FAILED` in under two minutes, or `candidates/rank` answers 500 | almost always an incomplete cache. Run `bootstrap.py` and check for `9/9 shared sources usable` before looking anywhere else |
 | The run says `RAW CACHES WERE MODIFIED` | a stage wrote to a pinned cache. That is a defect worth reporting, not something to work around |
 
 ---

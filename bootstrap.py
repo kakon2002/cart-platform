@@ -411,8 +411,19 @@ def from_release() -> int:
         cwd=ROOT,
     )
     if result.returncode != 0:
-        print("\nDownload failed. If this is an authentication error, run:")
-        print("    gh auth login")
+        # This asserted an authentication cause it had no way to know,
+        # and once sent a reader checking credentials for what was a
+        # transient network failure. Report the fact, offer the retry.
+        print(f"\nDownload failed: gh exited {result.returncode}. Any error it\n"
+              "printed is above this line.")
+        print("  --from-release has failed transiently twice in five measured runs.")
+        print("  Re-running is safe: an unfinished file is written beside the real")
+        print("  one and never renamed over it, so a failed attempt cannot corrupt")
+        print("  a good cache. Try the same command again.")
+        print("  If it fails twice the same way, check the release exists")
+        print(f"    gh release view {RELEASE_TAG} -R {RELEASE_REPO}")
+        print("  and that you are authenticated")
+        print("    gh auth status")
         return 1
 
     return from_archive(ROOT / ARCHIVE_NAME, require_checksum=True)

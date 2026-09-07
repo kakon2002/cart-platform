@@ -33,6 +33,7 @@ STAGES = [
     ("MULTI", "Multi-indication", "verify_indications.py"),
     ("ADAPT", "Dashboard surface", "verify_adapter.py"),
     ("BENCH", "Binder benchmark", "verify_benchmark.py"),
+    ("DOCS", "Documented numbers", "verify_docs.py"),
 ]
 
 
