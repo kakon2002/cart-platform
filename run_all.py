@@ -98,8 +98,6 @@ _SCHEMA = re.compile(r"^checks passed: (\d+)/(\d+)")
 _CHECK = re.compile(r"^\s{2}(ok|FAIL)\s+(.+?): got (.+?)\s{2,}expected (.+)$")
 
 
-_SETS = re.compile(r"^validation sets: (pass|FAIL)", re.M)
-_DRIFT = re.compile(r"^filter decisions within .*: (yes|NO)", re.M)
 
 
 class Stage:
@@ -153,16 +151,10 @@ class Stage:
             if hit:
                 self.clear, self.total = int(hit.group(1)), int(hit.group(2))
 
-        sets = _SETS.search(self.output)
-        drift = _DRIFT.search(self.output)
-        if sets and drift:
-            for label, value, good in (
-                ("validation sets", sets.group(1), "pass"),
-                ("count drift", drift.group(1), "yes"),
-            ):
-                self.criteria.append((label, value != good, value))
-            self.total = 2
-            self.clear = sum(1 for c in self.criteria if not c[1])
+        # The surface verifier used to report two compound booleans as prose,
+        # parsed here by _SETS and _DRIFT. It now reports eight named criteria
+        # in the shared shape, so the special case is gone and the generic
+        # parser above handles it like every other stage.
 
     def run(self, logs: Path, timeout: float) -> None:
         """Run the stage as its own process and parse its criteria."""

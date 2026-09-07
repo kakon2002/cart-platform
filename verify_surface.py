@@ -25,6 +25,18 @@ TOPOLOGY_REJECTS = ["CANX", "SEC61A1", "RPN1"]
 NOTE_ONLY_REJECTS = ["GOLM1", "MTLN"]
 
 
+CHECKED: list[str] = []
+TRIPPED: list[str] = []
+
+
+def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+    """Report one criterion and record it if it tripped."""
+    print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+    CHECKED.append(cid)
+    if is_tripped:
+        TRIPPED.append(cid)
+
+
 def main() -> int:
     """Run the surface-filter criteria."""
     records = UniProtSource().load()
@@ -146,21 +158,49 @@ def main() -> int:
             "   expected outward=True attached=False"
         )
 
-    sets_ok = (
-        passed == len(KNOWN_TARGETS)
-        and rejected == len(NEGATIVE_CONTROLS)
-        and bool(on_topology)
-        and sorted(note_only) == sorted(NOTE_ONLY_REJECTS)
-        and calr is not None
-        and calr.outward
-        and not calr.attached
-    )
-    print(f"\nvalidation sets: {'pass' if sets_ok else 'FAIL'}")
-    print(
-        f"filter decisions within {COUNT_TOLERANCE_PCT:.0f}% of the reference: "
-        f"{'yes' if drift_ok else 'NO'}"
-    )
-    return 0 if (drift_ok and sets_ok) else 1
+    # Reported as separate criteria rather than one compound boolean. The
+    # previous version ANDed six assertions into `sets_ok`, so a failure said
+    # only that something in the validation sets was wrong and never which --
+    # and the suite counted the whole conjunction as a single criterion.
+    print()
+    print("=" * 72)
+    print("REJECTION CRITERIA")
+    print("=" * 72)
+
+    criterion("S1", passed != len(KNOWN_TARGETS),
+              f"{passed} of {len(KNOWN_TARGETS)} known surface targets survive "
+              f"the filter")
+    criterion("S2", rejected != len(NEGATIVE_CONTROLS),
+              f"{rejected} of {len(NEGATIVE_CONTROLS)} negative controls are "
+              f"rejected")
+    criterion("S3", not on_topology,
+              f"{len(on_topology)} control(s) rejected on topology rather than "
+              f"on absence of an anchor, so the topology arm is exercised")
+    criterion("S4", sorted(note_only) != sorted(NOTE_ONLY_REJECTS),
+              f"the note-only rejects are exactly {sorted(NOTE_ONLY_REJECTS)}")
+    criterion("S5", calr is None,
+              "CALR is present in the surface record set to be judged"
+              if calr is not None else "CALR is absent, so S6 and S7 have "
+              "nothing to test")
+    criterion("S6", calr is None or not calr.outward,
+              "CALR reads outward: it carries plasma-membrane evidence"
+              if calr is not None and calr.outward else
+              "CALR does not read outward")
+    criterion("S7", calr is None or calr.attached,
+              "CALR is not attached, so it is held out despite reading outward "
+              "-- the case the anchor requirement exists for"
+              if calr is not None and not calr.attached else
+              "CALR reads as attached")
+    criterion("S8", not drift_ok,
+              f"filter decisions are within {COUNT_TOLERANCE_PCT:.0f}% of the "
+              f"reference counts")
+
+    print("=" * 72)
+    print(f"  {len(CHECKED) - len(TRIPPED)}/{len(CHECKED)} criteria clear")
+    if TRIPPED:
+        print(f"\n  STOPPING: {', '.join(TRIPPED)} tripped.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

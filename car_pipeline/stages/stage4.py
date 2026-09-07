@@ -422,6 +422,25 @@ SPAN_BUCKETS = 5
 PARTNER_MIN_TUMOUR_TPM = 5.0
 
 
+def eligible_partner(tumour_tpm: dict | None, gene: str) -> bool:
+    """Whether a gene is expressed enough in tumour to serve as a partner.
+
+    Module level so that anything reporting on partner eligibility calls this
+    rather than restating it. A restatement agrees until the rule changes, and
+    then disagrees silently -- which is how a report comes to describe a
+    threshold the stage no longer applies.
+
+    With no tumour map at all the rule cannot discriminate, so it does not
+    gate: every gene is eligible. That is different from a gene missing from a
+    map that exists, which is not eligible, and different again from a
+    measured zero, which is measured and below the floor.
+    """
+    if tumour_tpm is None:
+        return True
+    value = tumour_tpm.get(gene)
+    return value is not None and value >= PARTNER_MIN_TUMOUR_TPM
+
+
 SELECTION_RULE = (
     "risk-cleared-and-measured;partner_min_tumour_tpm;"
     "order:combined_risk,partner_name;v3"
@@ -493,19 +512,16 @@ def decide(
 
     tol = tolerances
 
-    def eligible_partner(gene: str) -> bool:
-        """Whether the gene is expressed enough in tumour to serve as a partner."""
-        if tumour_tpm is None:
-            return True
-        value = tumour_tpm.get(gene)
-        return value is not None and value >= PARTNER_MIN_TUMOUR_TPM
+    def _eligible(gene: str) -> bool:
+        """This run's tumour map, bound to the module-level rule."""
+        return eligible_partner(tumour_tpm, gene)
 
     out: list[Decision] = []
     for index, r in enumerate(pool):
         mine = by_gene[r.gene]
         admissible = [
             p for p in mine
-            if p.admissible and eligible_partner(_other(p, r.gene))
+            if p.admissible and _eligible(_other(p, r.gene))
         ]
 
         admissible.sort(key=lambda p: (p.risk.combined, _other(p, r.gene)))
