@@ -210,11 +210,115 @@ def _members() -> list[Path]:
             and not p.match(PARTIAL)]
 
 
+def required_digests() -> dict:
+    """The malignant-cell digest a standard run of each indication asks for.
+
+    The single-cell malignant-cell cache is keyed by a digest of the exact gene
+    set the run requests. That is a content key, so any change upstream of the
+    pool silently invalidates a shipped artifact: the lookup misses, the source
+    rebuilds from raw, and a 2.5 MB file costs a 2.6 GB download and an 8.3 GB
+    expansion. Nothing checked it, which is why a release shipped seven digests
+    and none of the one a standard run produces.
+
+    Computing this needs the screening stages, so it is imported here rather
+    than at module scope -- bootstrap must stay runnable before dependencies
+    are installed.
+    """
+    from car_pipeline.configs.registry import INDICATIONS, PROJECTS
+    from car_pipeline.data.coverage import build_coverage
+    from car_pipeline.data.depmap import DepMapSource, gene_index
+    from car_pipeline.data.gtex import GTExSource
+    from car_pipeline.data.hpa import HPASource, index as atlas_index
+    from car_pipeline.data.singlecell import (
+        SingleCellSource, _gene_digest, match_surface as cell_match)
+    from car_pipeline.data.tcga import TCGASource, match_surface as tcga_match
+    from car_pipeline.data.uniprot import load_surface
+    from car_pipeline.stages import stage3, stage4
+    from car_pipeline.stages.stage1 import build_spec
+
+    surface, _ = load_surface()
+    by_acc, by_sym = atlas_index(HPASource().load())
+    gtex_profiles, gtex_tissues, _ = GTExSource().match_surface(surface, by_acc)
+
+    out = {}
+    for key, indication in sorted(INDICATIONS.items()):
+        if indication.atlas is None:
+            continue
+        project = PROJECTS[key]
+        spec = build_spec(project)
+        ceiling = spec.design_constraints.normal_tissue_risk_ceiling
+        overrides = {o: ov.tier for o, ov
+                     in spec.inputs.tissue_criticality_overrides.items()}
+        cohort = TCGASource(indication.tcga_project).load()
+        cohort_join = tcga_match(cohort, surface, by_acc)
+        atlas = SingleCellSource(indication.atlas).load()
+        cell_index = cell_match(atlas, surface, by_acc)
+        dependency, _ = DepMapSource(indication.depmap_lineage).load()
+        rows = build_coverage(surface, by_acc, by_sym, gtex_profiles, cohort_join)
+        calibration = stage3.calibrate_atlas_levels(
+            surface, by_acc, by_sym, gtex_profiles, gtex_tissues,
+            stage3.RiskModel(overrides=overrides))
+        ranked, _model, _ = stage3.rank(
+            rows, {r.accession: r for r in surface}, by_acc, by_sym, atlas,
+            cell_index, gtex_profiles, gtex_tissues, cohort, cohort_join,
+            dependency, gene_index(dependency), overrides, ceiling, calibration,
+            margin_label=indication.gtex_bulk_label)
+        pool = stage4.build_pool(ranked)
+        genes = sorted({r.gene for r in pool})
+        out[indication.cancer_type] = {
+            "slug": indication.atlas.slug,
+            "digest": _gene_digest(genes),
+            "genes": len(genes),
+        }
+    return out
+
+
+def check_digests() -> tuple[bool, list[str]]:
+    """Whether the cache holds the digest each indication's run will ask for."""
+    try:
+        wanted = required_digests()
+    except Exception as exc:
+        return False, [f"could not compute the required digests: "
+                       f"{type(exc).__name__}: {exc}"]
+    problems = []
+    for cancer_type, want in sorted(wanted.items()):
+        path = (DATA / "singlecell"
+                / f"malignant_cells__{want['slug']}_{want['digest']}.npz")
+        if not path.exists():
+            have = sorted(
+                q.name.split("_")[-1].removesuffix(".npz")
+                for q in (DATA / "singlecell").glob(
+                    f"malignant_cells__{want['slug']}_*.npz"))
+            problems.append(
+                f"{cancer_type}: a standard run asks for digest "
+                f"{want['digest']} over {want['genes']} genes, and the cache "
+                f"holds {len(have)} digest(s) for this atlas, none of them "
+                f"that one")
+    return not problems, problems
+
+
 def package(destination: Path) -> int:
     """Build the archive to hand to whoever is deploying next."""
     if not DATA.exists():
         print(f"No cache at {DATA}; nothing to package.")
         return 1
+    print("checking the cache's content keys against what a run will ask for")
+    ok, problems = check_digests()
+    if not ok:
+        for detail in problems:
+            print(f"  STALE  {detail}")
+        print()
+        print("  REFUSING to package. A cache whose malignant-cell digest does")
+        print("  not match the pool the code produces looks complete and is")
+        print("  not: the lookup misses, the source rebuilds from raw, and")
+        print("  whoever unpacks this waits for a 2.6 GB download and an")
+        print("  8.3 GB expansion to regenerate a file of about 2.5 MB.")
+        print()
+        print("  Run the pipeline once against this cache so the digest is")
+        print("  built, then package again.")
+        return 2
+    print("  every registered indication's digest is present")
+
     files = _members()
     raw = sum(f.stat().st_size for f in files)
     print(f"packaging {len(files)} files, {raw / 1e6:.0f} MB uncompressed")

@@ -207,12 +207,28 @@ different from the rule being broken. It is enforced where the work is done.
 What travels with the archive is the frozen fingerprint, not the history that
 ordered it.
 
-### `verify_adapter.py` appears to hang for half an hour
+### The first verifier to touch the pipeline may run for half an hour
 
-It does not. It runs the whole pipeline through the adapter, and on a **cold
-cache that takes about 33 minutes**. Once derived artifacts exist it is about
-five. It prints nothing between its criteria; that is the shape of the
-verifier, not a stall.
+It is not stalled, and the reason is not the verifier.
+
+**What it is doing:** the single-cell malignant-cell cache is keyed by a digest
+of the exact gene set the run asks for. If the release shipped a digest built
+from a different pool, the lookup misses and the source rebuilds it from raw —
+**a 2.6 GB download and an 8.3 GB expansion, to regenerate a file of about
+2.5 MB.** Measured once at 2,003 seconds.
+
+**This is a stale release, not a property of the verifier.** With a release
+carrying the right digest the step is minutes, and the packager now refuses to
+build one that does not (§5). If you see it, the cache you provisioned is
+older than the pool the code produces.
+
+You can tell which is happening: look for a growing `.partial` under
+`data/singlecell/`. If one is there, it is downloading.
+
+> **Retraction.** An earlier version of this section said the wait was because
+> the verifier "runs the whole pipeline through the adapter". That was written
+> without being established and is wrong: it named the wrong cause and told a
+> reader to expect a delay that a packaging fix removes entirely.
 
 ---
 
