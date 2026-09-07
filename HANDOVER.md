@@ -92,7 +92,7 @@ minutes on a warm cache.
 ### The server
 
 ```
-.venv\Scripts\python.exe -m car_pipeline.api.server --port 8080
+.venv\Scripts\python.exe serve.py --port 8080
 ```
 
 Serves two shapes on the same port:
