@@ -7,11 +7,33 @@ from car_pipeline.schemas.project import DiscoveryMode, ProjectInput
 from car_pipeline.stages.stage1 import build_spec
 
 CHECKS: list[tuple[str, object, object]] = []
+TRIPPED: list[str] = []
+
+
+def criterion(cid: str, is_tripped: bool, detail: str) -> None:
+    """Report one criterion and record it if it tripped.
+
+    The same shape every other verifier uses. This file previously used a
+    check(label, got, expected) idiom of its own, which kept its checks
+    outside the criterion inventory every audit reads while still counting
+    towards the suite total -- so the total meant two different things at
+    once.
+    """
+    print(f"  {'TRIPPED ' if is_tripped else 'clear   '} {cid}: {detail}")
+    CHECKS.append((cid, is_tripped, detail))
+    if is_tripped:
+        TRIPPED.append(cid)
 
 
 def check(label: str, got: object, expected: object) -> None:
-    """Report one check and record it if it failed."""
-    CHECKS.append((label, got, expected))
+    """One equality criterion, reported in the shared shape.
+
+    The id is assigned in order rather than written at each call site: the
+    ids exist so the run driver can itemise and exempt criteria, and the label
+    is what a reader needs. Both are carried.
+    """
+    criterion(f"C{len(CHECKS) + 1}", got != expected,
+              f"{label}: got {got!r}, expected {expected!r}")
 
 
 def rejects(label: str, field: str, **kwargs) -> None:
@@ -38,6 +60,9 @@ def rejects(label: str, field: str, **kwargs) -> None:
 
 def main() -> int:
     """Run the schema criteria."""
+    print("=" * 72)
+    print("REJECTION CRITERIA")
+    print("=" * 72)
     p = PDAC_PROJECT
 
     check("discovery_mode", p.discovery_mode.value, "B")
@@ -134,16 +159,12 @@ def main() -> int:
 
     check("project id unique", build_spec(p).project_id != build_spec(p).project_id, True)
 
-    failed = 0
-    for label, got, expected in CHECKS:
-        ok = got == expected
-        failed += 0 if ok else 1
-        print(f"  {'ok  ' if ok else 'FAIL'}  {label}: got {got!r}  expected {expected!r}")
-
-    print()
-    print(f"discovery mode: {p.discovery_mode.value}   expected: B")
-    print(f"checks passed: {len(CHECKS) - failed}/{len(CHECKS)}")
-    return 1 if failed else 0
+    print("=" * 72)
+    print(f"  {len(CHECKS) - len(TRIPPED)}/{len(CHECKS)} criteria clear")
+    if TRIPPED:
+        print(f"\n  STOPPING: {', '.join(TRIPPED)} tripped.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

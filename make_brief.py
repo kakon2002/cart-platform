@@ -257,11 +257,18 @@ def main() -> int:
     blocked = {g for g, r in by_gene.items() if not r.cleared}
 
     def recommendable(pair, gene):
-        """Stage 4's own rule: measured coverage and an eligible partner."""
+        """Stage 4's own rule: measured coverage and an eligible partner.
+
+        Calls the stage's rule rather than restating it. The restatement it
+        replaces agreed on every input this brief can produce, and diverged on
+        two it cannot: a null value under an existing key, and no tumour map
+        at all. Both raised rather than answering wrongly, but the docstring's
+        claim to mirror the stage was false in each, and a rule copied into a
+        report drifts the moment the stage changes.
+        """
         return (
             pair.coverage.measured
-            and tumour_tpm.get(_partner(pair, gene), 0.0)
-            >= stage4.PARTNER_MIN_TUMOUR_TPM
+            and stage4.eligible_partner(tumour_tpm, _partner(pair, gene))
         )
 
     best_for: dict[str, object] = {}
@@ -307,7 +314,7 @@ def main() -> int:
         entry["partner_tumour_tpm"] = tumour_tpm.get(partner)
         entry["stage4_would_recommend"] = bool(
             best.coverage.measured
-            and tumour_tpm.get(partner, 0.0) >= stage4.PARTNER_MIN_TUMOUR_TPM
+            and stage4.eligible_partner(tumour_tpm, partner)
         )
         rows.append(entry)
     table(f"PAIRING-VIABLE SET — {len(rescued)} targets that cannot clear alone "

@@ -1,1 +1,119 @@
-[]
+[
+  {
+    "id": "S1",
+    "line": 170,
+    "setup_lines": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      79
+    ],
+    "comprehension_lines": [],
+    "cond": "passed != len(KNOWN_TARGETS)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S2",
+    "line": 173,
+    "setup_lines": [
+      15,
+      16,
+      17,
+      18,
+      100
+    ],
+    "comprehension_lines": [],
+    "cond": "rejected != len(NEGATIVE_CONTROLS)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S3",
+    "line": 176,
+    "setup_lines": [
+      124,
+      125,
+      126,
+      127,
+      128,
+      129,
+      130
+    ],
+    "comprehension_lines": [
+      126,
+      127,
+      128,
+      129,
+      130
+    ],
+    "cond": "not on_topology",
+    "reached": true,
+    "examined": 5
+  },
+  {
+    "id": "S4",
+    "line": 179,
+    "setup_lines": [
+      25,
+      137,
+      138,
+      139,
+      140
+    ],
+    "comprehension_lines": [
+      139,
+      140
+    ],
+    "cond": "sorted(note_only) != sorted(NOTE_ONLY_REJECTS)",
+    "reached": true,
+    "examined": 4
+  },
+  {
+    "id": "S5",
+    "line": 181,
+    "setup_lines": [
+      154
+    ],
+    "comprehension_lines": [],
+    "cond": "calr is None",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S6",
+    "line": 185,
+    "setup_lines": [
+      154
+    ],
+    "comprehension_lines": [],
+    "cond": "calr is None or not calr.outward",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S7",
+    "line": 189,
+    "setup_lines": [
+      154
+    ],
+    "comprehension_lines": [],
+    "cond": "calr is None or calr.attached",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S8",
+    "line": 194,
+    "setup_lines": [
+      63,
+      68
+    ],
+    "comprehension_lines": [],
+    "cond": "not drift_ok",
+    "reached": true,
+    "examined": null
+  }
+]
