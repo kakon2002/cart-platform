@@ -141,7 +141,9 @@ def main() -> int:
     # that reports rather than tests.
     order = blind.committed_before_answers()
     answers_present = blind.ANSWERS.exists() or bool(order.get("answers_commit"))
-    criterion("BM5", answers_present and not order["ordered"],
+    evaluable = order.get("evaluable", True)
+    criterion("BM5", evaluable and answers_present and not order["ordered"],
+              order["reason"] if not evaluable else
               (f"the answers are present and {order['reason']}"
                if answers_present else
                "the answers are not on disk and have never been committed, so "

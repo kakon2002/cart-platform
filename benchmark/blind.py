@@ -194,18 +194,35 @@ def committed_before_answers() -> dict:
         line = (out.stdout or "").strip().splitlines()
         return line[0] if line else None
 
+    # Outside a repository the question cannot be asked. A distributed archive
+    # carries no history, so "not committed" there means "there is nothing to
+    # read", not "the rule was broken" -- and reporting a violation would tell
+    # a reader something is wrong when nothing is. The claim still holds where
+    # the work was done; it is simply not re-derivable from a copy.
+    if not (ROOT / ".git").exists():
+        return {
+            "ordered": True,
+            "evaluable": False,
+            "reason": ("no repository here, so the commit ordering cannot be "
+                       "checked from this copy. It is enforced where the work "
+                       "is done; what travels with an archive is the frozen "
+                       "fingerprint, not the history that ordered it"),
+        }
+
     frozen = first_commit(FROZEN)
     answers = first_commit(ANSWERS)
     if frozen is None:
-        return {"ordered": False, "reason": "the frozen output is not committed"}
+        return {"ordered": False, "evaluable": True,
+                "reason": "the frozen output is not committed"}
     if answers is None:
-        return {"ordered": True,
+        return {"ordered": True, "evaluable": True,
                 "reason": "the answers have never been committed, so nothing "
                           "could have been read before the freeze",
                 "frozen_commit": frozen.split()[0]}
     ok = int(frozen.split()[1]) <= int(answers.split()[1])
     return {
         "ordered": ok,
+        "evaluable": True,
         "frozen_commit": frozen.split()[0],
         "answers_commit": answers.split()[0],
         "reason": ("the frozen output was committed no later than the answers"

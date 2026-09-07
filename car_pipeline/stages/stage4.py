@@ -658,7 +658,7 @@ def decide(
             "unmeasured": sum(1 for p in mine if not p.coverage.measured),
             "partner_ineligible": sum(
                 1 for p in mine
-                if p.admissible and not eligible_partner(_other(p, r.gene))
+                if p.admissible and not _eligible(_other(p, r.gene))
             ),
         }
 
@@ -669,7 +669,7 @@ def decide(
             and p.risk.optimistic is not None
             and p.risk.optimistic <= p.ceiling
             and p.coverage.measured
-            and eligible_partner(_other(p, r.gene))
+            and _eligible(_other(p, r.gene))
         ]
         out.append(
             Decision(
