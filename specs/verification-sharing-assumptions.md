@@ -392,8 +392,9 @@ failure and the question at the top of this document does not catch it.
 on every run that nothing has ever checked.** No criterion covers them because
 nobody thought of them as claims at all -- they read as description.
 
-Four were found in a single session, each by making the system prove something
-it had been asserting for months.
+Five are recorded, the first four found in a single session by making the
+system prove something it had been asserting for months, and the fifth by
+re-measuring a number that already had an explanation attached.
 
 **A. "Full run" ran thirteen verifiers of fifteen.** Two existed and were never
 added to the run driver's stage list. Every criteria total reported externally
@@ -420,6 +421,41 @@ stated that running a verifier leaves the repository as it found it. It wrote a
 probe to the real answers path and unlinked it in a `finally`, so every run of
 the benchmark verifier destroyed the literature panel, and the next `git add -A`
 committed the deletion.
+
+**E. An explanation written into documentation, never established.** A verifier
+took 2,003 seconds on a cold cache. The runbook was given a reason: *"it runs
+the whole pipeline through the adapter."* That was plausible, it was written by
+someone who had watched the run, and it was wrong. The wait was a stale content
+key: the single-cell cache is keyed by a digest of the exact gene set a run
+requests, the shipped release carried digests built from an older pool, so the
+lookup missed and the source rebuilt a 2.5 MB file from a 2.6 GB download and an
+8.3 GB expansion.
+
+Two things were wrong at once, and the second is worse. The cause was wrong.
+And the reassurance was wrong in a way that would have outlived the problem: a
+reader who fixed the packaging would still have been told to expect half an
+hour, because the document said the delay was inherent to the verifier.
+
+**This is the sharpest form the family takes.** The other four instances were
+claims the system printed. This one was a claim a person wrote down, and writing
+it down is what made it dangerous:
+
+> An explanation in documentation is more convincing than the bare assertion and
+> no better founded. Prose has no criterion, so nothing will ever check it. The
+> only thing that made this one detectable was that someone re-measured the
+> number it explained.
+
+A status line at least gets re-printed on every run, so a reader who watches
+long enough may notice it disagreeing with reality. A sentence in a document is
+written once, read many times, and never re-evaluated. It accretes authority
+purely by remaining on the page.
+
+The rule that follows: **an explanation is a claim, and a claim written into a
+document needs the same evidence as one written into a criterion.** If the
+reason for a number cannot be demonstrated, write the number and say the cause
+is not established. "Measured at 2,003 seconds, cause not yet determined" would
+have been worth more than a confident wrong answer, and would have invited
+exactly the investigation that eventually found it.
 
 ### The question that finds them
 

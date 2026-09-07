@@ -136,10 +136,13 @@ to a network.
 `reports/full-run.md` — read it there rather than from a number in prose, which
 goes stale the moment a criterion is added.
 
-**Measured times, so a long one does not read as a hang.** `verify_adapter.py`
-takes about **33 minutes on a cold cache**, because it runs the whole pipeline
-through the adapter; about 5 minutes once derived artifacts exist. The other
-three are seconds to a few minutes each.
+**Measured times, so a long one does not read as a hang.** The first verifier
+to touch the pipeline was measured once at 33 minutes. That was **not** the
+verifier: the release carried a stale single-cell digest, so the run rebuilt a
+2.5 MB cache from a 2.6 GB download and an 8.3 GB expansion. An earlier version
+of this note attributed it to the verifier running the whole pipeline, which
+was written without being checked and is wrong. With a current release the
+step is minutes; `RUNBOOK.md` §7 says how to tell the two apart.
 
 Each prints its criteria and stops on the first that trips. **Three trips are
 expected and are not failures** — `RUNBOOK.md` lists what a correct first run
