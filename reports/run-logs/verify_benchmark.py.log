@@ -1,0 +1,81 @@
+loading sources
+
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    BM1: no held-out value appears in any of the 6 modules reachable from the algorithm
+  clear    BM1b: blinded: three held-out literals injected into a reachable module are each caught, and an ordinary literal is not
+  clear    BM2: the answers are unreachable from the algorithm's import graph
+  clear    BM2b: blinded: a reachable module naming the answers path or package is caught either way
+  clear    BM3: blinded: the fingerprint moves when the output changes and holds when only key order does
+  clear    BM4: blinded: freezing while the answers file exists is refused, so an output cannot be frozen after the answers are on disk
+  clear    BM5: the answers are present and the frozen output was committed no later than the answers [frozen output committed: True]
+  clear    BM6: all 6 pinned verdicts hold: 4F3F=PASS, 7U8C=PASS, 8H8J=FAIL, 1P4B=FAIL, 7UED=UNKNOWN, 8CZ8=PASS
+  clear    BM6a: absent annotation reads UNKNOWN for every marker the source uses
+  clear    BM6b: per-element matching is load-bearing: 'Mesothelin, cleaved form|SULFATE ION' fails a whole-string test and passes per element
+  clear    BM6c: an unrelated antigen against the target's name set reads FAIL and raises wrong_antigen_flag
+  clear    BM7: 3 pinned entries record species NA and 7U8C, a genuine MSLN entry among them, still passes
+
+  running the pipeline
+  clear    BM9: 221 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis
+  clear    BM9b: blinded: a row naming a real deposited entry yields no entry, resolution or basis when its verdict is flipped to FAIL or to UNKNOWN
+  clear    BM9c: interface geometry is null on every row; no coordinate file is connected, so which residues contact which is not reported
+  clear    BM10: 0 binder(s) failed the gate and none is scored; no component among 190 carries a value while unmeasured
+  clear    BM11: the front holds at 14 member(s) under a different weight set, and the two rankings read 3 and 7 distinct components
+  clear    BM11b: the front reports whether it discriminated: discriminates=False, 14 member(s)
+  clear    BM12: affinity is NOT_CONNECTED on all 422 retrieved candidates; no connected release carries the column
+========================================================================
+  19/19 criteria clear
+
+========================================================================
+SOURCE COVERAGE, BEFORE ANY RESULT
+========================================================================
+    affinity values present: 0 of 422
+    No connected evidence release carries an affinity, KD or
+    free-energy column. Fold error against a literature value and
+    rank correlation against a literature ordering are therefore
+    structurally uncomputable rather than computed and failed.
+
+========================================================================
+B3 ACROSS THE POOL
+========================================================================
+    422 retrieved binder(s): 315 structure route, 107 sequence route
+    verdicts        {'UNKNOWN': 118, 'FAIL': 83, 'PASS': 221}
+    structure route {'FAIL': 83, 'PASS': 221, 'UNKNOWN': 11}
+    wrong_antigen_flag raised on 83 of 315 structure-route rows
+
+  MSLN, the benchmark target
+    19 row(s) {'PASS': 14, 'UNKNOWN': 5}
+      b_3aa53b4fdf  structure 4F3F:BA        PASS     ['Mesothelin']
+      b_6d4a3f255d  structure 7U8C:HL        PASS     ['Mesothelin, cleaved form']
+      b_88e4fc1a17  structure 7UED:HL        UNKNOWN  ['NA']
+      b_31f8641dfb  structure 8CXC:A2A1      PASS     ['Mesothelin, cleaved form']
+      b_f10bcc46b5  structure 8CXC:HL        PASS     ['Mesothelin, cleaved form']
+      b_4e6728f91d  structure 8CYH:HL        PASS     ['Mesothelin, cleaved form']
+      b_f0c5194953  structure 8CZ8:A2A1      PASS     ['Mesothelin, cleaved form']
+      b_d0157f784d  structure 8CZ8:B2B1      PASS     ['Mesothelin, cleaved form', 'SULFATE ION']
+      b_eacd283723  structure 8CZ8:C2C1      PASS     ['Mesothelin, cleaved form']
+      b_71411808d7  structure 8CZ8:D2D1      PASS     ['Mesothelin, cleaved form', 'SULFATE ION']
+      b_a83c4e5f62  structure 9P4C:HL        PASS     ['Mesothelin, cleaved form']
+      b_7af01b5ce8  structure 9Z3B:BA        PASS     ['Mesothelin']
+      b_893626d825  structure 9Z3B:DC        PASS     ['Mesothelin']
+      b_3c1565c05a  structure 9Z3B:FE        PASS     ['Mesothelin']
+      b_180c9281ef  structure 9Z3B:HG        PASS     ['Mesothelin']
+      b_1ff2d1a5ca  sequence  Amatuximab     UNKNOWN  []
+      b_e7111e535d  sequence  Anetumab       UNKNOWN  []
+      b_361ff9b5bd  sequence  Inezetamab     UNKNOWN  []
+      b_b8c97e79a2  sequence  Misitatug      UNKNOWN  []
+
+========================================================================
+SEQUENCE COVERAGE, WHICH BOUNDS B4 AND B5
+========================================================================
+    MSLN: 4 of 19 rows carry a binder sequence
+      structure route 0 of 15
+      sequence route  4 of 4
+    pool-wide: 107 of 422
+
+    Sanitation and antibody annotation therefore apply to the
+    sequence-route rows only. The structure route carries an
+    identifier and an annotation and no residues, which is what
+    the target-match and structural-evidence checks read and is
+    nothing for a sequence step to work on.

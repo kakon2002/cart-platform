@@ -1,0 +1,133 @@
+[
+  {
+    "id": "K0",
+    "line": 95,
+    "setup_lines": [
+      86
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(k0_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "K1",
+    "line": 105,
+    "setup_lines": [
+      62,
+      103,
+      104
+    ],
+    "comprehension_lines": [
+      62,
+      103,
+      104
+    ],
+    "cond": "bool(bad_round_trip) or not built",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "K2",
+    "line": 166,
+    "setup_lines": [
+      111,
+      112
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(k2_bad) or not owed_pairs",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "K3",
+    "line": 192,
+    "setup_lines": [
+      62,
+      181
+    ],
+    "comprehension_lines": [
+      62
+    ],
+    "cond": "bool(k3_bad) or not built",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "K4",
+    "line": 205,
+    "setup_lines": [
+      62,
+      198,
+      199,
+      200,
+      201,
+      202,
+      203
+    ],
+    "comprehension_lines": [
+      62,
+      199,
+      200,
+      201,
+      202,
+      203
+    ],
+    "cond": "bool(undescribed) or not built",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "K5",
+    "line": 220,
+    "setup_lines": [
+      62,
+      214
+    ],
+    "comprehension_lines": [
+      62
+    ],
+    "cond": "bool(k5_bad) or not built",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "K6",
+    "line": 228,
+    "setup_lines": [
+      226,
+      227
+    ],
+    "comprehension_lines": [
+      226,
+      227
+    ],
+    "cond": "bool(no_switch) or not buildable",
+    "reached": true,
+    "examined": 6
+  },
+  {
+    "id": "K7",
+    "line": 249,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "bool(k7_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "K8",
+    "line": 257,
+    "setup_lines": [
+      60,
+      255,
+      256
+    ],
+    "comprehension_lines": [
+      256
+    ],
+    "cond": "len(constructs) != expected_rows or len(out_genes) != expected_rows",
+    "reached": true,
+    "examined": 201
+  }
+]

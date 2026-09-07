@@ -38,6 +38,13 @@ STAGES = [
 
 DERIVED = ["stage4", "stage5"]
 
+# Not a pinned release and not a stage artifact: a per-antigen tally keyed by
+# the screened set, so it is rewritten whenever that set changes. It is checked
+# against its manifest like any other cache, and excluded from the read-only
+# comparison because rewriting it is correct rather than a violation. Deleting
+# it on --fresh would force a network fetch every run for no gain.
+QUERY_KEYED = ["trials"]
+
 
 OPEN_DECISIONS = {
     ("3", "R14"): "The staining arm vetoes on presence rather than amount: "
@@ -335,7 +342,8 @@ def cache_fingerprint() -> dict[str, tuple[int, int]]:
     if not data.exists():
         return out
     for directory in sorted(data.iterdir()):
-        if not directory.is_dir() or directory.name in DERIVED:
+        if (not directory.is_dir() or directory.name in DERIVED
+                or directory.name in QUERY_KEYED):
             continue
         for path in sorted(directory.rglob("*")):
             if path.is_file():
@@ -455,7 +463,9 @@ def main() -> int:
             print(f"    {name}")
     else:
         print(f"  raw caches unchanged: {len(before)} file(s) identical in "
-              f"size and modification time after the run")
+              f"size and modification time after the run "
+              f"({', '.join(QUERY_KEYED)} excluded: query-keyed, rebuilt when "
+              f"the screened set changes)")
 
     report = render(stages, elapsed, fresh=args.fresh)
     print()

@@ -1,0 +1,62 @@
+========================================================================
+REJECTION CRITERIA
+========================================================================
+  clear    D1: the adapter imports ['__future__', '__future__.annotations', 'car_pipeline.api', 'car_pipeline.api.constants', 'car_pipeline.api.server'] directly and reaches no deciding module
+  clear    D1b: blinded: adding an import of stage11 trips D1
+  clear    D2: none of the 13 decision, gate or design-class values appears as a literal in adapter source
+  clear    D2b: blinded: adding the literal ADVANCE trips D2
+  clear    D4: objective and delivery_mode are still refused by name through the adapter
+  clear    D5: binder_mode RETRIEVAL_FIRST is honoured and three other values are refused by name
+  clear    D12: a native POST still receives its body after the adapter is consulted (201, cancer_type 'Pancreatic Ductal Adenocarcinoma')
+  clear    D7: a reference shaped like a canonical id and a duplicate reference are both refused by name
+
+  project WM-CART-PDAC-001 = 69f44b8ec9ac
+  run d16f6dbcf997 RUNNING
+    RUNNING   sources  1/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+    RUNNING   binders  4/9
+  querying the trial registry for 200 antigens
+    RUNNING   safety  6/9
+    25/200
+    50/200
+    75/200
+    RUNNING   safety  6/9
+    100/200
+    125/200
+    150/200
+    RUNNING   safety  6/9
+    175/200
+    200/200
+  finished COMPLETE
+  clear    D3: progress is null with a reason; stage ranking at 8 of 9
+  clear    D6: an alias and its canonical id return byte-identical bodies from every view tried
+  clear    D9: all 19 documented paths answer
+  clear    D8: the three constants return their declared status through the adapter
+  clear    D10: logic mode OR is refused by name: logic mode 'OR' is not implemented: no OR-gate architecture is impleme
+  clear    D11: 200 candidate(s), every failed_gates carries at most one element
+========================================================================
+  14/14 criteria clear
+
+========================================================================
+WHAT THE DASHBOARD RECEIVES
+========================================================================
+    run_status RANKED_CANDIDATES, 5 eligible, 5 returned
+      CAR-PDAC-001  ['FER1L6']  ADAPTOR  ADVANCE  overall 0.4205141808636031
+      CAR-PDAC-002  ['GPR35']  ADAPTOR  ADVANCE  overall 0.3754369305940891
+      CAR-PDAC-003  ['TMEM92']  ADAPTOR  BACKUP  overall 0.456391721280569
+      CAR-PDAC-004  ['TNFSF9']  ADAPTOR  BACKUP  overall 0.19713636648796437
+      CAR-PDAC-005  ['BTNL8']  ADAPTOR  BACKUP  overall 0.2834364851052112
+    MSLN binders retrieved: 19
+      b_3aa53b4fdf  structure 4F3F:BA  match PASS  affinity NOT_CONNECTED
+      b_6d4a3f255d  structure 7U8C:HL  match PASS  affinity NOT_CONNECTED
+      b_88e4fc1a17  structure 7UED:HL  match UNKNOWN  affinity NOT_CONNECTED
+    constructs/generate for FER1L6 -> 200, 1 construct(s)
+      FER1L6  adaptor, anti-tag receptor, antigen on the adaptor  2868 bp  BUILDABLE

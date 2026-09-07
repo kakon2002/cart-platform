@@ -1,5 +1,7 @@
 """Checks for the project definition and the specification stage 1 builds."""
 
+from pydantic import ValidationError
+
 from car_pipeline.configs.pdac import PDAC_PROJECT
 from car_pipeline.schemas.project import DiscoveryMode, ProjectInput
 from car_pipeline.stages.stage1 import build_spec
@@ -10,6 +12,28 @@ CHECKS: list[tuple[str, object, object]] = []
 def check(label: str, got: object, expected: object) -> None:
     """Report one check and record it if it failed."""
     CHECKS.append((label, got, expected))
+
+
+def rejects(label: str, field: str, **kwargs) -> None:
+    """Assert the schema rejects these inputs, and rejects them for the field.
+
+    Catching bare Exception would pass on any failure at all -- a renamed
+    class, a typo in the test, an import error -- so it would report success
+    while proving nothing. Confirmed: replacing ProjectInput with a stub that
+    raises RuntimeError left the earlier version of these three checks
+    passing. This catches the validation error specifically and requires the
+    offending field to be named in it.
+    """
+    try:
+        ProjectInput(**kwargs)
+    except ValidationError as exc:
+        named = field in str(exc)
+        check(label, named, True)
+    except Exception as exc:
+        check(f"{label} [raised {type(exc).__name__}, not a validation error]",
+              False, True)
+    else:
+        check(label, False, True)
 
 
 def main() -> int:
@@ -27,14 +51,8 @@ def main() -> int:
     check("max_genetic_edits", p.manufacturing.max_genetic_edits, 2)
     check("pancreas override tier", p.tissue_criticality_overrides["pancreas"].tier, 2)
 
-    try:
-        ProjectInput(
-            cancer_type="x", malignancy_type="solid", target_antigens="MSLN"
-        )
-    except Exception:
-        check("mistyped field rejected", True, True)
-    else:
-        check("mistyped field rejected", False, True)
+    rejects("mistyped field rejected", "target_antigens",
+            cancer_type="x", malignancy_type="solid", target_antigens="MSLN")
 
     blank = ProjectInput(
         cancer_type="x", malignancy_type="solid", target_antigen="   "
@@ -47,23 +65,13 @@ def main() -> int:
     )
     check("supplied antigen -> mode A", supplied.discovery_mode.value, "A")
 
-    try:
-        ProjectInput(cancer_type="   ", malignancy_type="solid")
-    except Exception:
-        check("blank cancer_type rejected", True, True)
-    else:
-        check("blank cancer_type rejected", False, True)
+    rejects("blank cancer_type rejected", "cancer_type",
+            cancer_type="   ", malignancy_type="solid")
 
-    try:
-        ProjectInput(
-            cancer_type="x",
-            malignancy_type="solid",
-            tissue_criticality_overrides={"lung": {"tier": 3, "rationale": "short"}},
-        )
-    except Exception:
-        check("override without rationale rejected", True, True)
-    else:
-        check("override without rationale rejected", False, True)
+    rejects("override without rationale rejected", "rationale",
+            cancer_type="x", malignancy_type="solid",
+            tissue_criticality_overrides={
+                "lung": {"tier": 3, "rationale": "short"}})
 
     spec = build_spec(p)
     blocking = [d for d in spec.required_datasets if d.required]
@@ -87,16 +95,27 @@ def main() -> int:
 
     from car_pipeline.schemas.spec import DatasetStatus
 
-    available = sum(
-        1
-        for d in blocking
-        if d.status is DatasetStatus.AVAILABLE
-    )
-    check(
-        "resolved availability score",
-        round(spec.data_availability_score, 3),
-        round(available / len(blocking), 3),
-    )
+    # The earlier version recomputed available/len(blocking) from the same
+    # list and the same status field the implementation reads, so both sides
+    # moved together: forcing every blocking dataset to MISSING left it
+    # passing. It pinned the formula and could not notice a wrong status,
+    # which is what a reader would assume it covered.
+    #
+    # These assert properties of the score instead, each of which fails on a
+    # different mistake: the score must lie in [0, 1], it must be zero when
+    # nothing is resolved, and it must move when the statuses move.
+    available = sum(1 for d in blocking if d.status is DatasetStatus.AVAILABLE)
+    check("availability score within [0, 1]",
+          0.0 <= spec.data_availability_score <= 1.0, True)
+    check("availability score reflects some resolved dataset",
+          spec.data_availability_score > 0.0, available > 0)
+
+    none_available = build_spec(p, resolve_sources=False)
+    check("availability score is zero when nothing resolves",
+          none_available.data_availability_score, 0.0)
+    check("availability score responds to status",
+          spec.data_availability_score != none_available.data_availability_score,
+          available > 0)
 
     validate = build_spec(
         ProjectInput(
