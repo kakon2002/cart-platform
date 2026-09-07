@@ -59,6 +59,7 @@ SHARED_SOURCES = [
     ("antibodies", "structure summary and therapeutics", "~1 min"),
     ("domains", "construct part sequences", "~1 min"),
     ("trials", "trial counts per antigen", "during the first run"),
+    ("antitag", "the anti-tag binder every adaptor design is built on", "~5 s"),
 ]
 
 
