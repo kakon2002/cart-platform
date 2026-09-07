@@ -106,17 +106,29 @@ def main() -> int:
               "holds when only key order does"
               if moves and stable else f"moves {moves}, stable {stable}")
 
+    # The probe must never touch the real answers file. An earlier version
+    # wrote to it and unlinked it in a finally, which deleted the literature
+    # panel every time this verifier ran -- and a later `git add -A` committed
+    # the deletion. A criterion that destroys the data it tests is worse than
+    # no criterion. Existing bytes are preserved and restored exactly, and the
+    # file is only removed if it did not exist beforehand.
     refused = False
+    existed = blind.ANSWERS.exists()
+    saved = blind.ANSWERS.read_bytes() if existed else None
     try:
         blind.ANSWERS.parent.mkdir(parents=True, exist_ok=True)
-        blind.ANSWERS.write_text('{"probe": true}', encoding="utf-8")
+        blind.ANSWERS.write_bytes(b'{"probe": true}')
         try:
             blind.freeze({"probe": True})
         except blind.BlindViolation:
             refused = True
     finally:
-        if blind.ANSWERS.exists():
+        if existed:
+            blind.ANSWERS.write_bytes(saved)
+        elif blind.ANSWERS.exists():
             blind.ANSWERS.unlink()
+    if existed and blind.ANSWERS.read_bytes() != saved:
+        refused = False  # restoration failed; let BM4 trip rather than pass
     criterion("BM4", not refused,
               "blinded: freezing while the answers file exists is refused, so "
               "an output cannot be frozen after the answers are on disk"

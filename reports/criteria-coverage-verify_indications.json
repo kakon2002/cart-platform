@@ -1,0 +1,170 @@
+[
+  {
+    "id": "M1",
+    "line": 79,
+    "setup_lines": [
+      77,
+      78
+    ],
+    "comprehension_lines": [
+      77
+    ],
+    "cond": "bool(moved or vanished)",
+    "reached": true,
+    "examined": 54
+  },
+  {
+    "id": "M2",
+    "line": 86,
+    "setup_lines": [
+      84,
+      85
+    ],
+    "comprehension_lines": [
+      84,
+      85
+    ],
+    "cond": "bool(dupes)",
+    "reached": true,
+    "examined": 67
+  },
+  {
+    "id": "M3",
+    "line": 96,
+    "setup_lines": [
+      92,
+      93,
+      94,
+      95
+    ],
+    "comprehension_lines": [
+      92,
+      95
+    ],
+    "cond": "bool(leftovers)",
+    "reached": true,
+    "examined": 14
+  },
+  {
+    "id": "M4",
+    "line": 117,
+    "setup_lines": [
+      109,
+      110
+    ],
+    "comprehension_lines": [],
+    "cond": "crashed is not None or bare_run.get(\"usability\") != pipeline.NOT_USABLE or bare_run.get(\"final\")",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "M5",
+    "line": 125,
+    "setup_lines": [
+      124
+    ],
+    "comprehension_lines": [],
+    "cond": "\"malignant_vs_stroma\" not in reasons_text",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "M6",
+    "line": 130,
+    "setup_lines": [
+      129
+    ],
+    "comprehension_lines": [],
+    "cond": "not verdict.get(\"verdict\")",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "M7",
+    "line": 136,
+    "setup_lines": [
+      134
+    ],
+    "comprehension_lines": [],
+    "cond": "rank is None or rank <= 20",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "M8",
+    "line": 145,
+    "setup_lines": [
+      142,
+      143,
+      144
+    ],
+    "comprehension_lines": [],
+    "cond": "not agree",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "M9",
+    "line": 158,
+    "setup_lines": [
+      149,
+      155,
+      156,
+      157
+    ],
+    "comprehension_lines": [
+      157
+    ],
+    "cond": "actual_top != expected_top or ref[\"stage3_hash\"] != expected_hash or len(ref[\"pool\"]) != 200",
+    "reached": true,
+    "examined": 4
+  },
+  {
+    "id": "M10",
+    "line": 184,
+    "setup_lines": [
+      180,
+      181,
+      182,
+      183
+    ],
+    "comprehension_lines": [
+      181,
+      182,
+      183
+    ],
+    "cond": "not named",
+    "reached": true,
+    "examined": 3
+  },
+  {
+    "id": "M11",
+    "line": 193,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "True",
+    "reached": false,
+    "examined": null
+  },
+  {
+    "id": "M11",
+    "line": 210,
+    "setup_lines": [
+      203,
+      204,
+      205,
+      206,
+      207
+    ],
+    "comprehension_lines": [
+      203,
+      204,
+      205,
+      206,
+      207
+    ],
+    "cond": "bool(lost) or bool(blind)",
+    "reached": true,
+    "examined": 8481
+  }
+]

@@ -1,0 +1,204 @@
+[
+  {
+    "id": "P1",
+    "line": 261,
+    "setup_lines": [
+      260
+    ],
+    "comprehension_lines": [],
+    "cond": "rho1 > 0.95",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P2",
+    "line": 268,
+    "setup_lines": [
+      267
+    ],
+    "comprehension_lines": [],
+    "cond": "share < 0.01",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P3",
+    "line": 273,
+    "setup_lines": [
+      272
+    ],
+    "comprehension_lines": [
+      272
+    ],
+    "cond": "not rescued_genes",
+    "reached": true,
+    "examined": 20270
+  },
+  {
+    "id": "P4",
+    "line": 280,
+    "setup_lines": [
+      278,
+      279
+    ],
+    "comprehension_lines": [
+      278,
+      279
+    ],
+    "cond": "rho4 > 0.98",
+    "reached": true,
+    "examined": 19112
+  },
+  {
+    "id": "P5",
+    "line": 288,
+    "setup_lines": [
+      284,
+      285,
+      286,
+      287
+    ],
+    "comprehension_lines": [
+      284,
+      285,
+      286,
+      287
+    ],
+    "cond": "bool(p5)",
+    "reached": true,
+    "examined": 40389
+  },
+  {
+    "id": "P6",
+    "line": 293,
+    "setup_lines": [
+      292
+    ],
+    "comprehension_lines": [
+      292
+    ],
+    "cond": "bool(p6)",
+    "reached": true,
+    "examined": 31
+  },
+  {
+    "id": "P7",
+    "line": 299,
+    "setup_lines": [
+      295,
+      296
+    ],
+    "comprehension_lines": [
+      295,
+      296
+    ],
+    "cond": "bool(p7)",
+    "reached": true,
+    "examined": 20195
+  },
+  {
+    "id": "P8",
+    "line": 308,
+    "setup_lines": [
+      307
+    ],
+    "comprehension_lines": [],
+    "cond": "frac8 > 0.10",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P10",
+    "line": 322,
+    "setup_lines": [
+      320,
+      321
+    ],
+    "comprehension_lines": [
+      320,
+      321
+    ],
+    "cond": "bool(p10)",
+    "reached": true,
+    "examined": 431
+  },
+  {
+    "id": "P11",
+    "line": 329,
+    "setup_lines": [
+      328
+    ],
+    "comprehension_lines": [],
+    "cond": "top > 0.95",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P12",
+    "line": 338,
+    "setup_lines": [
+      336,
+      337
+    ],
+    "comprehension_lines": [
+      336
+    ],
+    "cond": "changed / base > 0.5",
+    "reached": true,
+    "examined": 32
+  },
+  {
+    "id": "P13",
+    "line": 346,
+    "setup_lines": [
+      345
+    ],
+    "comprehension_lines": [],
+    "cond": "worst > 0.5",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P17",
+    "line": 359,
+    "setup_lines": [
+      291,
+      356,
+      358
+    ],
+    "comprehension_lines": [
+      291,
+      356
+    ],
+    "cond": "bool(recommended) and forced_share > 0.5",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "P14",
+    "line": 366,
+    "setup_lines": [
+      354,
+      355
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(top_pair) and {top_pair.gene_a, top_pair.gene_b} == top_two",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "P15",
+    "line": 385,
+    "setup_lines": [
+      43,
+      383,
+      384
+    ],
+    "comprehension_lines": [
+      383
+    ],
+    "cond": "moved / denom > 0.5",
+    "reached": true,
+    "examined": 20
+  }
+]

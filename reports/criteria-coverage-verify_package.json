@@ -1,0 +1,122 @@
+[
+  {
+    "id": "Q1",
+    "line": 64,
+    "setup_lines": [
+      40,
+      62,
+      63
+    ],
+    "comprehension_lines": [
+      62,
+      63
+    ],
+    "cond": "not packages or packaged != expected",
+    "reached": true,
+    "examined": 6
+  },
+  {
+    "id": "Q2",
+    "line": 79,
+    "setup_lines": [
+      75,
+      76,
+      77,
+      78
+    ],
+    "comprehension_lines": [
+      76,
+      78
+    ],
+    "cond": "bool(q2_bad)",
+    "reached": true,
+    "examined": 7
+  },
+  {
+    "id": "Q3",
+    "line": 97,
+    "setup_lines": [
+      40,
+      84
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(q3_bad) or not packages",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "Q4",
+    "line": 118,
+    "setup_lines": [
+      40,
+      103
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(q4_bad) or not packages",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "Q5",
+    "line": 142,
+    "setup_lines": [
+      40,
+      125
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(q5_bad) or not packages",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "Q6",
+    "line": 162,
+    "setup_lines": [],
+    "comprehension_lines": [],
+    "cond": "bool(q6_bad) or executed == 0",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "Q7",
+    "line": 184,
+    "setup_lines": [
+      177
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(q7_bad)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "Q8",
+    "line": 198,
+    "setup_lines": [
+      193,
+      197
+    ],
+    "comprehension_lines": [
+      193,
+      197
+    ],
+    "cond": "bool(missing_pin) or bool(absent)",
+    "reached": true,
+    "examined": 10
+  },
+  {
+    "id": "Q9",
+    "line": 218,
+    "setup_lines": [
+      207,
+      216,
+      217
+    ],
+    "comprehension_lines": [
+      216,
+      217
+    ],
+    "cond": "bool(q9_bad) or len(absent_gaps) < 2",
+    "reached": true,
+    "examined": 65
+  }
+]

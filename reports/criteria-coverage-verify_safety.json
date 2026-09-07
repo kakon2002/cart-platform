@@ -1,0 +1,231 @@
+[
+  {
+    "id": "S1",
+    "line": 111,
+    "setup_lines": [
+      109,
+      110
+    ],
+    "comprehension_lines": [
+      109,
+      110
+    ],
+    "cond": "bool(empty)",
+    "reached": true,
+    "examined": 5
+  },
+  {
+    "id": "S2",
+    "line": 120,
+    "setup_lines": [
+      117,
+      118,
+      119
+    ],
+    "comprehension_lines": [
+      118,
+      119
+    ],
+    "cond": "bool(origin_bad)",
+    "reached": true,
+    "examined": 4
+  },
+  {
+    "id": "S3",
+    "line": 129,
+    "setup_lines": [
+      125,
+      126,
+      127,
+      128
+    ],
+    "comprehension_lines": [
+      125,
+      126,
+      127,
+      128
+    ],
+    "cond": "bool(missing_risk)",
+    "reached": true,
+    "examined": 630
+  },
+  {
+    "id": "S4",
+    "line": 149,
+    "setup_lines": [
+      137,
+      138,
+      140,
+      141,
+      142,
+      143,
+      144,
+      145,
+      146
+    ],
+    "comprehension_lines": [
+      138,
+      143,
+      144,
+      145,
+      146
+    ],
+    "cond": "bool(contradicts) or bool(unearned)",
+    "reached": true,
+    "examined": 10
+  },
+  {
+    "id": "S5",
+    "line": 160,
+    "setup_lines": [
+      158,
+      159
+    ],
+    "comprehension_lines": [
+      158,
+      159
+    ],
+    "cond": "bool(leaked)",
+    "reached": true,
+    "examined": 401
+  },
+  {
+    "id": "S6",
+    "line": 166,
+    "setup_lines": [
+      91,
+      92,
+      164,
+      165
+    ],
+    "comprehension_lines": [
+      165
+    ],
+    "cond": "len(gated) != expected_rows or len(out_genes) != expected_rows",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "S7",
+    "line": 173,
+    "setup_lines": [
+      171,
+      172
+    ],
+    "comprehension_lines": [
+      171,
+      172
+    ],
+    "cond": "bool(unflagged)",
+    "reached": true,
+    "examined": 456
+  },
+  {
+    "id": "S8",
+    "line": 183,
+    "setup_lines": [
+      180,
+      181,
+      182
+    ],
+    "comprehension_lines": [
+      180,
+      182
+    ],
+    "cond": "len(found) != 1 or \"5\" not in at[0] or bool(construct_safety.direct_repeats(clean))",
+    "reached": true,
+    "examined": 402
+  },
+  {
+    "id": "S9",
+    "line": 194,
+    "setup_lines": [
+      190,
+      191,
+      192
+    ],
+    "comprehension_lines": [],
+    "cond": "\"splice_donor\" not in {f.kind for f in donor} or \"splice_acceptor\" not in {f.kind for f in acceptor} or bool(quiet)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S10",
+    "line": 207,
+    "setup_lines": [
+      205,
+      206
+    ],
+    "comprehension_lines": [],
+    "cond": "not two or bool(zero)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S11",
+    "line": 236,
+    "setup_lines": [
+      213,
+      231,
+      232,
+      233,
+      234,
+      235
+    ],
+    "comprehension_lines": [
+      213,
+      231,
+      232,
+      234,
+      235
+    ],
+    "cond": "bool(drifted) or bool(unmoved) or bool(unlabelled) or not built",
+    "reached": true,
+    "examined": 250
+  },
+  {
+    "id": "S12",
+    "line": 254,
+    "setup_lines": [
+      249,
+      250,
+      251
+    ],
+    "comprehension_lines": [],
+    "cond": "len(duplicated) != 1 or bool(construct_safety.repeated_parts(once))",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "S13",
+    "line": 270,
+    "setup_lines": [
+      264,
+      265,
+      268,
+      269
+    ],
+    "comprehension_lines": [
+      265,
+      269
+    ],
+    "cond": "before != after",
+    "reached": true,
+    "examined": 202
+  },
+  {
+    "id": "S14",
+    "line": 276,
+    "setup_lines": [
+      274,
+      275
+    ],
+    "comprehension_lines": [
+      274,
+      275
+    ],
+    "cond": "carried != assembled",
+    "reached": true,
+    "examined": 201
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "B1",
+    "line": 125,
+    "setup_lines": [
+      120,
+      121,
+      122,
+      124
+    ],
+    "comprehension_lines": [
+      120,
+      121,
+      122,
+      124
+    ],
+    "cond": "not partial or len(echoed) == len(with_entries) or len(partial) == len(with_entries)",
+    "reached": true,
+    "examined": 522
+  },
+  {
+    "id": "B3",
+    "line": 152,
+    "setup_lines": [
+      137,
+      138,
+      139,
+      140,
+      141,
+      142,
+      143,
+      144,
+      146,
+      147,
+      148,
+      150
+    ],
+    "comprehension_lines": [
+      143,
+      144,
+      147,
+      148,
+      150
+    ],
+    "cond": "b3_bad",
+    "reached": true,
+    "examined": 29
+  },
+  {
+    "id": "B8",
+    "line": 162,
+    "setup_lines": [
+      160,
+      161
+    ],
+    "comprehension_lines": [
+      160,
+      161
+    ],
+    "cond": "len(knowns) < len(KNOWN_TARGETS)",
+    "reached": true,
+    "examined": 11
+  },
+  {
+    "id": "B5",
+    "line": 168,
+    "setup_lines": [
+      166,
+      167
+    ],
+    "comprehension_lines": [
+      166,
+      167
+    ],
+    "cond": "bool(numeric_affinity)",
+    "reached": true,
+    "examined": 1045
+  },
+  {
+    "id": "B7",
+    "line": 173,
+    "setup_lines": [
+      172
+    ],
+    "comprehension_lines": [
+      172
+    ],
+    "cond": "ordered != sorted(ordered)",
+    "reached": true,
+    "examined": 201
+  },
+  {
+    "id": "B13",
+    "line": 181,
+    "setup_lines": [
+      47,
+      63,
+      79,
+      179,
+      180
+    ],
+    "comprehension_lines": [],
+    "cond": "bool(missing or extra) or len(records) != len(decisions)",
+    "reached": true,
+    "examined": null
+  },
+  {
+    "id": "B11",
+    "line": 187,
+    "setup_lines": [
+      185,
+      186
+    ],
+    "comprehension_lines": [
+      185,
+      186
+    ],
+    "cond": "bool(unresolved)",
+    "reached": true,
+    "examined": 1045
+  }
+]

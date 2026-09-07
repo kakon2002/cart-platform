@@ -192,27 +192,50 @@ def rank(rows: list[dict]) -> dict:
                     axes.append(c["key"])
 
     front: list[str] = []
-    if axes:
-        def point(entry):
-            values = {}
-            for block in ("binding", "suitability"):
-                for c in entry[block]["components"]:
-                    if c["state"] == scoring.MEASURED:
-                        values[c["key"]] = c["value"]
-            return tuple(values.get(a, 0.0) for a in axes)
+    def measured_values(entry) -> dict:
+        """Every component this binder actually measured, by key."""
+        values = {}
+        for block in ("binding", "suitability"):
+            for c in entry[block]["components"]:
+                if c["state"] == scoring.MEASURED:
+                    values[c["key"]] = c["value"]
+        return values
 
-        points = [point(e) for e in scored]
-        front = [scored[i]["binder_id"] for i in stage11.pareto_front(points)]
+    incomparable = []
+    if axes:
+        # A binder is comparable only if it measured every axis the front is
+        # computed over. Substituting 0.0 for an axis it did not measure would
+        # impute missing evidence as the worst possible value and make it
+        # dominated by anything that did measure it -- which is the imputation
+        # this platform refuses everywhere else, in the one place that is
+        # supposed to be free of it.
+        comparable = []
+        for entry in scored:
+            values = measured_values(entry)
+            if all(a in values for a in axes):
+                comparable.append((entry, tuple(values[a] for a in axes)))
+            else:
+                missing = [a for a in axes if a not in values]
+                incomparable.append({"binder_id": entry["binder_id"],
+                                     "unmeasured_axes": missing})
+
+        points = [pt for _e, pt in comparable]
+        front = [comparable[i][0]["binder_id"]
+                 for i in stage11.pareto_front(points)] if points else []
         for entry in scored:
             entry["on_front"] = entry["binder_id"] in front
+            entry["front_comparable"] = not any(
+                x["binder_id"] == entry["binder_id"] for x in incomparable)
         # A front whose members are all the same point has not discriminated
         # between them: it is the shape of an answer without being one, and
         # reporting membership alone would read as a result.
-        on_front_points = {point(e) for e in scored if e["on_front"]}
+        on_front_points = {tuple(measured_values(e)[a] for a in axes)
+                           for e in scored if e["on_front"]}
         discriminates = len(on_front_points) > 1
     else:
         for entry in scored:
             entry["on_front"] = False
+            entry["front_comparable"] = False
         discriminates = False
 
     return {
@@ -234,6 +257,7 @@ def rank(rows: list[dict]) -> dict:
         "front_axes": axes,
         "front": front,
         "front_discriminates": discriminates,
+        "front_incomparable": incomparable,
         "front_note": (
             f"{len(front)} binder(s) are on the front over {len(axes)} measured "
             f"axis/axes, and they are all the same point. Every one is tied at "
@@ -259,5 +283,11 @@ def rank(rows: list[dict]) -> dict:
             "own rule is that highest affinity must not equal best CAR binder.",
             "A binder whose recorded antigen names a different protein is "
             "excluded before scoring rather than scored badly. Level A first.",
+            "A binder that did not measure every axis the front is computed "
+            "over is reported as incomparable rather than placed on the front "
+            "with zeros standing in for what it did not measure. Substituting "
+            "a value for missing evidence would make it dominated by anything "
+            "that measured that axis, which is imputation deciding the "
+            "comparison.",
         ],
     }
