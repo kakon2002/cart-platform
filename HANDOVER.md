@@ -3,6 +3,12 @@
 Everything needed to stand this up on a clean machine. Read §1 first — it says
 what the platform will and will not tell you, and every figure below assumes it.
 
+**If you are new to the project, read `ORIENTATION.md` before this file.**
+This one is operational: install, provision, run, connect the dashboard. That
+one is what the platform is, why each decision was taken, and the failure
+shapes this project keeps producing — including the two families of check
+that look like verification and are not.
+
 ---
 
 ## 0. What you are receiving

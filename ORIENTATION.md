@@ -131,7 +131,8 @@ is the audit trail — the binder benchmark's blind rule depends on it literally
 .venv\Scripts\python.exe serve.py --port 8080  # the HTTP surface
 ```
 
-Setup, data provisioning and dashboard wiring are in `HANDOVER.md`. Use the
+Setup, data provisioning and dashboard wiring are in `HANDOVER.md`, the
+operational companion to this document. Use the
 virtual environment's interpreter for everything; a bare `python` is the system
 interpreter and has none of the three dependencies.
 
