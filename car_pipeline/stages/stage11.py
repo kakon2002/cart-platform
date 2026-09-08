@@ -333,6 +333,7 @@ def configuration_hash(stage9_hash: str, genes: list[str]) -> str:
                "decisions": list(DECISIONS),
                "gate_status": [GATE_STATUS[g] for g in GATES],
                "binder_count_basis": BINDER_COUNT_BASIS,
+               "match_basis": binder_check.MATCH_BASIS,
                "scoring": scoring.configuration_hash()}
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]

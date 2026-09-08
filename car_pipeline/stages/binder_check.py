@@ -27,16 +27,85 @@ VERDICTS = (PASS, FAIL, UNKNOWN)
 # reader needs to see which one admitted a binder to the count. Parsing the
 # reason prose for that would make the rule depend on wording.
 MATCHED = "matched"
+MATCHED_TOLERANT = "matched_tolerant"
 WRONG_ANTIGEN = "wrong_antigen"
 NO_ANNOTATION = "no_annotation"
 SEQUENCE_ROUTE = "sequence_route"
 NO_RECORD = "no_record"
 
-PATHS = (MATCHED, WRONG_ANTIGEN, NO_ANNOTATION, SEQUENCE_ROUTE, NO_RECORD)
+PATHS = (MATCHED, MATCHED_TOLERANT, WRONG_ANTIGEN, NO_ANNOTATION,
+         SEQUENCE_ROUTE, NO_RECORD)
 
 # The paths that admit a binder to the objective. One clause: count a binder
 # unless its recorded antigen names something else.
-COUNTED_PATHS = (MATCHED, NO_ANNOTATION, SEQUENCE_ROUTE, NO_RECORD)
+COUNTED_PATHS = (MATCHED, MATCHED_TOLERANT, NO_ANNOTATION, SEQUENCE_ROUTE,
+                 NO_RECORD)
+
+# What the matcher will accept, in the configuration hash. A run under a
+# different matching rule counts different binders and must not compare equal
+# to one under this rule.
+MATCH_BASIS = (
+    "exact name, or the target name appearing in order inside a longer label "
+    "that adds only form qualifiers and short isoform designators; "
+    "comma-joined fusion partners separated first")
+
+# The surplus a tolerant match will tolerate, and nothing else.
+#
+# A blacklist of dangerous words was tried first and is not sufficient. The
+# words that separate two proteins are ordinary content words: CELSR2 is
+# recorded as "EGF-like protein 2" and CELSR3 as "Multiple EGF-like domains
+# protein 2", so the first is carried inside the second with "multiple" and
+# "domains" left over. Nothing marks those two words as dangerous except that
+# they name a different protein.
+#
+# So the rule is inverted. A longer label matches only when everything it adds
+# is a qualifier -- a word that describes which form of the target is present,
+# not which protein it is. Anything else declines, which withholds credit from
+# a real binder rather than inventing evidence for one.
+QUALIFIER_WORDS = frozenset({
+    "isoform", "isoforms", "variant", "variants", "form", "of", "the",
+    "peptide", "peptides", "fragment", "fragments", "epitope",
+    "construct", "inactive", "recombinant", "synthetic", "soluble",
+    "mature", "precursor", "truncated", "tagged", "full", "length",
+    "ecto", "ectodomain", "extracellular",
+})
+
+# Isoform designators -- the A2 of "Isoform A2 of Claudin-18", the CRA_a of a
+# submitted-name isoform. They are labels rather than words, and they are
+# admitted by length: a surplus word of one or two characters cannot be the
+# name of a different protein.
+#
+# A bare number is never admitted, whatever its length. Numbering is what
+# separates one family member from another -- APLP-1 from APLP-2, and the
+# bestrophins from each other -- and the reference set carries bare stems that
+# sit inside every member of such a family.
+MAXIMUM_DESIGNATOR_LENGTH = 2
+
+
+def _admissible_surplus(word: str) -> bool:
+    """Whether one leftover word still lets a longer label name the target."""
+    if word.isdigit():
+        return False
+    return word in QUALIFIER_WORDS or len(word) <= MAXIMUM_DESIGNATOR_LENGTH
+
+# A reference name shorter than this, or carrying no letter, is not used for
+# tolerant matching. The derived name set contains degenerate entries -- a bare
+# "+" appears on 115 targets, pulled out of constructions such as
+# Na(+)/K(+)-transporting ATPase, and bare single letters on others. Exact
+# equality is accidentally immune to these because no recorded antigen is ever
+# the single character "+". Containment is not: an empty or one-character token
+# set is contained in nearly everything. The immunity was an accident of the
+# old rule and this guard replaces it with an intended one.
+MINIMUM_NAME_LENGTH = 4
+
+# A reference name carrying more than one digit-only word is a structured
+# identifier, not a protein name -- an enzyme classification code, a catalogue
+# number. Containment compares word SETS, which is exactly what lets a
+# word-order variant match, and is exactly what makes these unsafe: the codes
+# 7.6.2.1 and 6.2.1.7 have identical word sets and name different enzymes.
+# Order-insensitivity cannot be had for prose and refused for codes, so the
+# codes are excluded instead.
+MAXIMUM_NUMERIC_WORDS = 1
 
 # Values the source uses for "nothing recorded". They are absence, not a name,
 # and they must not be matched against or treated as a mismatch.
@@ -88,6 +157,137 @@ def antigen_elements(antigen_name: str | None) -> list[str]:
             if part.strip()]
 
 
+def name_tokens(text: str) -> frozenset[str]:
+    """The lowercased alphanumeric words of a name.
+
+    Nothing is discarded. Dropping words that look generic is what makes a
+    tolerant matcher dangerous: drop "receptor" and the hepatocyte growth
+    factor beta chain becomes a match for the hepatocyte growth factor
+    receptor, which is a different molecule and the antibody against one is not
+    evidence about the other.
+
+    Splitting on alphanumeric runs is also what keeps the trailing numbers
+    apart. Claudin-1 and Claudin-18 differ only in that number, and both are
+    carried in the same pool.
+    """
+    out: list[str] = []
+    current: list[str] = []
+    for character in text.lower():
+        if character.isalnum():
+            current.append(character)
+        elif current:
+            out.append("".join(current))
+            current = []
+    if current:
+        out.append("".join(current))
+    return frozenset(out)
+
+
+def name_words(text: str) -> list[str]:
+    """The words of a name in the order written, keeping repeats.
+
+    The set form loses both, and both carry meaning: "lectin-like 1" and
+    "lectin 1" differ only by a repeated word, and "System N" and "N-system"
+    differ only by order. Each pair names a different protein.
+    """
+    out: list[str] = []
+    current: list[str] = []
+    for character in text.lower():
+        if character.isalnum():
+            current.append(character)
+        elif current:
+            out.append("".join(current))
+            current = []
+    if current:
+        out.append("".join(current))
+    return out
+
+
+def ordered_surplus(reference: list[str], candidate: list[str]) -> list[str] | None:
+    """The words left over when the reference appears in order, else None.
+
+    The reference name must be recoverable from the candidate by deleting
+    words, never by reordering them.
+    """
+    position = 0
+    surplus: list[str] = []
+    for word in candidate:
+        if position < len(reference) and word == reference[position]:
+            position += 1
+        else:
+            surplus.append(word)
+    return surplus if position == len(reference) else None
+
+
+def usable_names(names: set[str]) -> list[tuple[str, frozenset[str]]]:
+    """The reference names admissible for tolerant matching, with their words.
+
+    Two exclusions, both applied here rather than at the point of use so that
+    every caller of the tolerant path gets them: names too short or carrying no
+    letter, and names whose meaning depends on the order of several numbers.
+    """
+    usable = []
+    for name in names:
+        stripped = name.strip()
+        if len(stripped) < MINIMUM_NAME_LENGTH:
+            continue
+        if not any(c.isalpha() for c in stripped):
+            continue
+        tokens = name_tokens(stripped)
+        if not tokens:
+            continue
+        if sum(1 for t in tokens if t.isdigit()) > MAXIMUM_NUMERIC_WORDS:
+            continue
+        usable.append((stripped, tokens))
+    return usable
+
+
+def fusion_fragments(element: str) -> list[str]:
+    """One recorded antigen split at the comma the source joins partners with.
+
+    An expression construct is recorded as a single antigen naming both the
+    fusion partner and the protein -- "Ubiquitin-like protein SMT3,Cadherin-1".
+    The protein is present under its exact reference name; it is only the
+    partner beside it that hides it. Separating them first means the fusion
+    case is settled by exact equality rather than by tolerance.
+    """
+    parts = [part.strip() for part in element.split(",") if part.strip()]
+    return parts if len(parts) > 1 else []
+
+
+def match_element(element: str, lowered: set[str],
+                  usable: list[tuple[str, frozenset[str]]]) -> str | None:
+    """How this recorded antigen names the target, or None if it does not.
+
+    Returns MATCHED for exact equality, MATCHED_TOLERANT where the target's
+    name is carried inside a longer label, and None where the element names
+    something else.
+    """
+    candidates = [element] + fusion_fragments(element)
+
+    for candidate in candidates:
+        if candidate.strip().lower() in lowered:
+            return MATCHED
+
+    for candidate in candidates:
+        words = name_words(candidate)
+        if not words:
+            continue
+        for name, _tokens in usable:
+            surplus = ordered_surplus(name_words(name), words)
+            if surplus is None:
+                continue
+            # Everything the longer label adds must be a qualifier or a short
+            # designator. One unrecognised word is enough to decline: the
+            # reference name set carries bracket-truncated stems such as
+            # "Amine oxidase", derived from "Amine oxidase [copper-containing]
+            # 2", and such a stem sits inside every member of its family.
+            if not all(_admissible_surplus(w) for w in surplus):
+                continue
+            return MATCHED_TOLERANT
+    return None
+
+
 def _is_absent(element: str) -> bool:
     """Whether this element records nothing rather than something."""
     return element.strip().lower() in ABSENT
@@ -110,9 +310,12 @@ def evaluate(antigen_name: str | None, names: set[str],
     """
     elements = antigen_elements(antigen_name)
     lowered = {n.strip().lower() for n in names}
+    usable = usable_names(names)
 
     informative = [e for e in elements if not _is_absent(e)]
-    matched = [e for e in informative if e.strip().lower() in lowered]
+    how = {e: match_element(e, lowered, usable) for e in informative}
+    matched = [e for e in informative if how[e] is not None]
+    tolerant = [e for e in informative if how[e] == MATCHED_TOLERANT]
     reagents = [e for e in informative if _is_reagent(e)]
     others = [e for e in informative if e not in matched and e not in reagents]
 
@@ -121,6 +324,7 @@ def evaluate(antigen_name: str | None, names: set[str],
         "wrong_antigen_flag": None,
         "recorded_antigens": elements,
         "matched_antigens": matched,
+        "tolerantly_matched_antigens": tolerant,
         "unmatched_antigens": others,
         "reagent_antigens": reagents,
         "antigen_type": antigen_type or None,
@@ -142,15 +346,20 @@ def evaluate(antigen_name: str | None, names: set[str],
         }
 
     if matched:
+        exact = [e for e in matched if how[e] == MATCHED]
         return {
             **payload,
             "target_match": PASS,
-            "match_path": MATCHED,
+            "match_path": MATCHED if exact else MATCHED_TOLERANT,
             "target_match_score": 1.0,
             "wrong_antigen_flag": False,
             "reason": (
                 f"The entry's own annotation names this target: "
-                f"{', '.join(matched)}. That is a claim about what the "
+                f"{', '.join(matched)}"
+                + ("" if exact else
+                   ", carried inside a longer label rather than recorded under "
+                   "the reference name exactly")
+                + ". That is a claim about what the "
                 f"depositors recorded, not about what the antibody was "
                 f"observed to contact"
                 + (f"; {', '.join(reagents)} recorded alongside is a "
@@ -191,6 +400,7 @@ def check(rows: list[dict], record) -> list[dict]:
                 "wrong_antigen_flag": None,
                 "recorded_antigens": [],
                 "matched_antigens": [],
+                "tolerantly_matched_antigens": [],
                 "unmatched_antigens": [],
                 "reagent_antigens": [],
                 "antigen_type": None,
@@ -207,6 +417,7 @@ def check(rows: list[dict], record) -> list[dict]:
                 "wrong_antigen_flag": None,
                 "recorded_antigens": [],
                 "matched_antigens": [],
+                "tolerantly_matched_antigens": [],
                 "unmatched_antigens": [],
                 "reagent_antigens": [],
                 "antigen_type": None,

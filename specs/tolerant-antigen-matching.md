@@ -1,8 +1,11 @@
 # Specification: tolerant antigen-name matching
 
-**Status: specified, not implemented. No code has been changed.** Criteria are
-fixed here before anything can be checked against an observation, and the
-predicted outcome is written down before the run that would produce it.
+**Status: implemented. Everything above the amendment at the foot of this
+document was written before any code existed and is left exactly as it was**,
+including the parts it got wrong. Criteria were fixed before anything could be
+checked against an observation, and the predicted outcome was written down
+before the run that produced it. The amendment records what happened, which of
+these predictions held, and which did not.
 
 This is a separate change from the binder-count correction in
 `binder-count-correction.md`, deliberately. That correction was reviewed and
@@ -168,3 +171,119 @@ clear by finding nothing.
 **If the run lands anywhere else — and in particular if any ranking decision
 moves — that is reported before anything else, and this specification is amended
 and the run repeated rather than the result explained.**
+
+---
+
+# Amendment, written after implementation
+
+**Status: implemented. This section records what the specification above got
+wrong, and is appended rather than folded in, so the prediction and the outcome
+stay separately readable.**
+
+## The predicted outcome against what happened
+
+| | predicted | measured |
+| --- | ---: | ---: |
+| flagged structural rows | 83 to approximately **57** | 83 to **64** |
+| affected candidate targets | 25 to approximately **21** | 25 to **21** |
+| rows reclassified | approximately 26 | **19** |
+| ranking decisions moved | none | **none** |
+| Pareto front | unchanged | unchanged |
+
+**The target-level prediction was exact. The row-level prediction was wrong by
+seven rows, in the direction that understated the problem.**
+
+The screening test that produced the estimate of 26 discarded the words
+*protein* and *isoform* before comparing. The specification above already said
+that discarding words is unsafe as an implementation, and the implementation
+does not do it. Seven rows the screen had reclassified therefore stay flagged:
+
+- four on ERBB2, including the word-order case discussed below;
+- two on MUC1, recorded as *MUC1 Glycopeptide* and *Synthetic MUC1 glycopepide*,
+  where the surplus word is not a form qualifier;
+- one on TREM2, recorded as *TREM-2 stalk peptide*, where *stalk* is not one.
+
+The genuine wrong-antigen rate is therefore **64 of 315 rows**, not 57. Any
+document quoting 57 needs correcting, and the case study is the one that does.
+
+## What the specification got wrong
+
+### Word-order variants cannot be accepted
+
+The specification named three shapes a tolerant match must accept. One of them
+is withdrawn.
+
+Accepting a word-order variant means comparing names as unordered word sets.
+Applied to the full reference set that conflates paralogues across whole
+families, because their names use the same words differently:
+
+| one protein | a different protein |
+| --- | --- |
+| `System N amino acid transporter 1` (SLC38A1) | `N-system amino acid transporter 1` (SLC38A3) |
+| `Leucine-rich repeat neuronal protein 2` (LRRN2) | `Leucine-rich repeat neuronal 2 protein` (LRRTM2) |
+| `Sialic acid-binding Ig-like lectin-like 1` (SIGLEC12) | `Sialic acid-binding Ig-like lectin 1` (SIGLEC1) |
+
+Each pair has an identical word set and names a different gene. The reference
+name must therefore appear as an **ordered** subsequence, and the word-order
+shape is given up. It costs four rows on ERBB2, whose entries record
+`Receptor protein-tyrosine kinase erbB-2` against a reference name of
+`Receptor tyrosine-protein kinase erbB-2`. Those rows stay flagged, which is
+the safe direction, and a criterion asserts they stay flagged so the shape
+cannot return unreviewed.
+
+### A blacklist of dangerous surplus words does not work
+
+The specification proposed refusing a match whose surplus contains a relational
+word. That is not sufficient. CELSR2 is recorded as `EGF-like protein 2` and
+CELSR3 as `Multiple EGF-like domains protein 2`; the first sits inside the
+second with `multiple` and `domains` left over. Neither word is relational and
+both change which protein is named.
+
+No blacklist can work, because the words that separate two proteins are
+ordinary content words. The rule is inverted: a longer label matches only when
+**everything it adds is a form qualifier** — isoform, fragment, peptide,
+construct, precursor and so on — or a designator of one or two characters. A
+bare number is never admissible, whatever its length, because numbering is what
+separates one family member from another.
+
+### Two guards the specification did not anticipate
+
+- **Structured identifiers.** Enzyme classification codes are in the reference
+  set, and `EC 7.6.2.1` and `EC 6.2.1.7` have identical word sets. A reference
+  name carrying more than one digit-only word is now excluded from tolerant
+  matching.
+- **Bracket-truncated stems.** The reference set derives `Amine oxidase` from
+  `Amine oxidase [copper-containing] 2`, and that stem sits inside every member
+  of its family. The qualifier whitelist and the bare-number rule together
+  refuse it.
+
+## The criteria that caught this, and the two that had to be rewritten
+
+M2 and M4 did the work. Five refusal cases now in M2 were discovered by M4's
+sweep rather than written down in advance: the three paralogue pairs above,
+CELSR2 against CELSR3, and AOC2 against AOC3.
+
+**M4's own probe was wrong twice before it was right, and both faults are
+recorded rather than removed.** It first treated enzyme classification codes as
+sibling names. It then still did, because two enzymes may legitimately share a
+code, so the probe was testing a target against its own name and calling the
+correct answer a failure. Narrowing a criterion after it trips is the move that
+most deserves suspicion, so the sweep is pinned three ways: a shared stem must
+be a real word, a candidate name must not belong to the target, and the
+claudins and the mucins must remain inside the sweep. It now sweeps 134,075
+sibling pairs across 2,485 targets with no cross-match.
+
+M5's probe was rewritten once. It appended a relational word to one of a
+target's own names and required a refusal, which tripped where the constructed
+string was a legitimate other name of the same target — the
+gonadotropin-releasing hormone receptor is recorded as both `GnRH-R` and
+`GnRH receptor`, so `GnRH-R receptor` is the target and matching it is correct.
+The sweep now skips targets whose names already contain the word, and asserts
+the live case by name so the narrowing cannot hollow it out.
+
+## Final state
+
+**31 of 31 criteria clear.** The ranking is unchanged: the front is
+`['FER1L6']`, GPR35 remains `BACKUP`, and no decision moved — which the
+specification predicted, and which was the prediction most worth being right
+about.

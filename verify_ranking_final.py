@@ -513,6 +513,321 @@ def main() -> int:
               f"binder and each names the path"
               if not w18_bad else "; ".join(w18_bad))
 
+    # ------------------------------------------------------------------
+    # M1-M8: tolerant antigen matching. Criteria fixed in
+    # specs/tolerant-antigen-matching.md before the implementation existed.
+    # Most of them assert what the matcher must REFUSE, because a tolerant
+    # matcher that over-matches is worse than the error it fixes.
+    # ------------------------------------------------------------------
+
+    def exact_only(element, lowered, _usable):
+        """The superseded rule: exact equality on the whole element."""
+        return (binder_check.MATCHED
+                if element.strip().lower() in lowered else None)
+
+    def verdict(gene, antigen, tolerant=True):
+        """One verdict for one target, under either matching rule."""
+        record = surface_by_gene.get(gene)
+        if record is None:
+            return None
+        if tolerant:
+            return binder_check.evaluate(antigen, binder_check.name_set(record))
+        original = binder_check.match_element
+        try:
+            binder_check.match_element = exact_only
+            return binder_check.evaluate(antigen, binder_check.name_set(record))
+        finally:
+            binder_check.match_element = original
+
+    ACCEPT = [
+        ("CLDN18", "Isoform A2 of Claudin-18"),
+        ("NT5E", "5'-nucleotidase, ecto (CD73), isoform CRA_a"),
+        ("CDH1", "Ubiquitin-like protein SMT3,Cadherin-1"),
+        ("MUC16", "Maltose/maltodextrin-binding periplasmic protein,Mucin-16"),
+        ("MUC1", "MUC1 Peptide Fragment"),
+        ("TMPRSS2", "Inactive TMPRSS2 construct"),
+    ]
+    REFUSE = [
+        ("MET", "Hepatocyte growth factor beta chain",
+         "the ligand, not the receptor"),
+        ("ERBB3", "Receptor tyrosine-protein kinase erbB-2", "a sibling receptor"),
+        ("ITGB6", "Integrin alpha-V heavy chain", "the partner chain"),
+        ("ITGA6", "Integrin beta-1", "the partner chain"),
+        ("CLDN18", "Claudin-1", "a different claudin in the same pool"),
+        ("MUC1", "Mucin-16", "a different mucin in the same pool"),
+        ("GPR35", "Guanine nucleotide-binding protein subunit alpha-13",
+         "the stabilising G-protein"),
+        # Found by the sibling sweep below, and the reason word-order
+        # tolerance was given up: each has the same word set as one of the
+        # target own names and belongs to a different protein.
+        ("SLC38A1", "N-system amino acid transporter 1",
+         "a paralogue whose name reorders the same words"),
+        ("LRRN2", "Leucine-rich repeat neuronal 2 protein",
+         "a paralogue whose name reorders the same words"),
+        ("SIGLEC12", "Sialic acid-binding Ig-like lectin 1",
+         "a paralogue whose name drops a repeated word"),
+        ("CELSR2", "Multiple EGF-like domains protein 2",
+         "a paralogue with offset family numbering"),
+        ("AOC2", "Amine oxidase [copper-containing] 3",
+         "a family member reached through a bracket-truncated stem"),
+    ]
+
+    # M1: every accept-case moves, and was genuinely failing before. Asserting
+    # only that they pass now would clear against a matcher that always passes.
+    m1_bad = []
+    for gene, antigen in ACCEPT:
+        before = verdict(gene, antigen, tolerant=False)
+        after = verdict(gene, antigen)
+        if before is None or after is None:
+            m1_bad.append(f"{gene}: no reference record")
+        elif before["target_match"] != binder_check.FAIL:
+            m1_bad.append(f"{gene}: was {before['target_match']}, not FAIL, so "
+                          "this case proves nothing")
+        elif after["target_match"] != binder_check.PASS:
+            m1_bad.append(f"{gene}: still {after['target_match']}")
+    # Word-order variants were an accepted shape in the specification and are
+    # no longer one. Set-based matching bought them at the cost of conflating
+    # paralogues across whole families, so the shape was given up rather than
+    # the conflation tolerated. The case is asserted as still failing, so the
+    # limitation stays visible and cannot quietly reverse.
+    word_order = verdict("ERBB2", "Receptor protein-tyrosine kinase erbB-2")
+    if word_order and word_order["target_match"] != binder_check.FAIL:
+        m1_bad.append("the word-order shape matches again; it was given up "
+                      "deliberately and its return needs review, not silence")
+
+    criterion("M1", bool(m1_bad),
+              f"all {len(ACCEPT)} label shapes move FAIL -> PASS: isoform, "
+              f"fusion partner, fragment and construct labels; the word-order "
+              f"shape stays FAIL by decision"
+              if not m1_bad else "; ".join(m1_bad))
+
+    # M2: the refusals. This is the criterion the change exists to satisfy.
+    m2_bad = [f"{gene} now matches {antigen!r} ({why})"
+              for gene, antigen, why in REFUSE
+              if (verdict(gene, antigen) or {}).get("target_match")
+              != binder_check.FAIL]
+    criterion("M2", bool(m2_bad),
+              f"all {len(REFUSE)} near-miss cases stay FAIL, the ligand of a "
+              f"receptor and two sibling receptors among them"
+              if not m2_bad else "; ".join(m2_bad))
+
+    # M3: degenerate reference names are excluded, and the guard is shown to
+    # fire. Without the pin this clears on a pool that happens to have none.
+    excluded_total, excluded_example = 0, None
+    for gene, record in surface_by_gene.items():
+        names = binder_check.name_set(record)
+        usable = {n for n, _t in binder_check.usable_names(names)}
+        dropped = {n.strip() for n in names} - usable
+        if dropped:
+            excluded_total += len(dropped)
+            if excluded_example is None:
+                excluded_example = (gene, sorted(dropped)[0])
+    leaked = [n for _g, r in surface_by_gene.items()
+              for n, t in binder_check.usable_names(binder_check.name_set(r))
+              if len(n) < binder_check.MINIMUM_NAME_LENGTH
+              or not any(c.isalpha() for c in n)]
+    m3_bad = []
+    if leaked:
+        m3_bad.append(f"{len(leaked)} degenerate name(s) reached the matcher, "
+                      f"e.g. {leaked[0]!r}")
+    if not excluded_total:
+        m3_bad.append("no reference name was excluded anywhere in the pool, so "
+                      "the guard is untested")
+    criterion("M3", bool(m3_bad),
+              f"{excluded_total} degenerate reference name(s) excluded from "
+              f"tolerant matching across the pool, e.g. {excluded_example[1]!r} "
+              f"on {excluded_example[0]}; none reached the matcher"
+              if not m3_bad else "; ".join(m3_bad))
+
+    # M4: sibling names differing only by a trailing number. Found in the pool
+    # rather than written down, so the criterion cannot go stale against it.
+    def digitless(tokens):
+        return frozenset(t for t in tokens if not t.isdigit())
+
+    by_shape = {}
+    for gene, record in surface_by_gene.items():
+        for name in binder_check.name_set(record):
+            tokens = binder_check.name_tokens(name)
+            digits = frozenset(t for t in tokens if t.isdigit())
+            if not digits or len(tokens) < 2:
+                continue
+            by_shape.setdefault(digitless(tokens), []).append(
+                (gene, name.strip(), digits))
+
+    # This probe was wrong twice before it was right, and both faults are
+    # recorded rather than quietly removed.
+    #
+    # It first paired enzyme classification codes -- "EC 7.6.2.1" against
+    # "EC 6.2.1.7" -- as sibling names. They are not names differing by a
+    # trailing number, they are structured codes, and the matcher was fixed for
+    # that: a reference name carrying more than one digit-only word is no
+    # longer usable for tolerant matching.
+    #
+    # It then still paired them, because two enzymes may legitimately share a
+    # classification code. "EC 7.6.2.1" is ABCB1's OWN name, so the probe was
+    # testing a target against itself and calling the correct answer a failure.
+    #
+    # Narrowing a criterion after it trips is the move that deserves the most
+    # suspicion, so the sweep is pinned twice below: a shared stem must be a
+    # real word, a candidate name must not belong to the target, and the sweep
+    # must still find the claudins and the mucins it exists for.
+    def real_stem(shape):
+        return any(len(t) >= 4 and t.isalpha() for t in shape)
+
+    siblings = []
+    for shape, members in by_shape.items():
+        if len({g for g, _n, _d in members}) < 2 or not real_stem(shape):
+            continue
+        for gene_a, _name_a, dig_a in members:
+            own = {n.strip().lower() for n in
+                   binder_check.name_set(surface_by_gene[gene_a])}
+            for gene_b, name_b, dig_b in members:
+                if gene_a == gene_b or dig_a == dig_b:
+                    continue
+                if name_b.lower() in own:
+                    continue
+                siblings.append((gene_a, gene_b, name_b))
+
+    m4_bad = []
+    for gene_a, _gene_b, name_b in siblings:
+        got = verdict(gene_a, name_b)
+        if got and got["target_match"] == binder_check.PASS:
+            m4_bad.append(f"{gene_a} matched {name_b!r}, a sibling name")
+
+    swept = {g for g, _b, _n in siblings}
+    if len(siblings) < 20:
+        m4_bad.append(f"only {len(siblings)} sibling pair(s) found, too few "
+                      "for the sweep to mean anything")
+    for wanted in ("CLDN18", "MUC1"):
+        if wanted not in swept:
+            m4_bad.append(f"{wanted} is not in the sweep, so the narrowing has "
+                          "removed a case this criterion exists for")
+    criterion("M4", bool(m4_bad),
+              f"{len(siblings)} sibling-name pair(s) across {len(swept)} "
+              f"target(s), none cross-matching; the claudins and the mucins "
+              f"are among them"
+              if not m4_bad else "; ".join(sorted(set(m4_bad))[:3]))
+
+    # M5: a relational word in the surplus refuses the match. Constructed on
+    # every pool target from its own reference name, not just on MET.
+    # The first version of this probe appended a relational word to one of the
+    # target's own names and required a refusal. It tripped on targets where
+    # the constructed string was a legitimate name of that same target: the
+    # gonadotropin-releasing hormone receptor is recorded as both "GnRH-R" and
+    # "GnRH receptor", so "GnRH-R receptor" is the target and matching it is
+    # correct. It also tripped where the chosen name already contained a comma,
+    # which made the probe a fusion label rather than a modified name. Both
+    # were faults in the probe, not in the matcher, and the probe is narrowed
+    # rather than the result explained. The live case it exists for -- a
+    # receptor and its own ligand -- is asserted by name so the narrowing
+    # cannot quietly remove what the criterion is for.
+    m5_bad = []
+    m5_tested = []
+    for gene, record in surface_by_gene.items():
+        names = binder_check.name_set(record)
+        usable = binder_check.usable_names(names)
+        if not usable:
+            continue
+        for word in ("receptor", "ligand", "binding"):
+            if any(word in n.lower() for n in names):
+                continue
+            name, tokens = next(
+                ((n, t) for n, t in usable if "," not in n), (None, None))
+            if name is None:
+                continue
+            m5_tested.append(gene)
+            got = verdict(gene, f"{name} {word}")
+            if got and got["target_match"] == binder_check.PASS:
+                m5_bad.append(f"{gene} matched {name + ' ' + word!r}")
+            break
+
+    # The named instance, which is why this criterion exists at all.
+    met = verdict("MET", "Hepatocyte growth factor beta chain")
+    if met is None:
+        m5_bad.append("MET is absent, so the receptor-and-its-ligand case "
+                      "could not be tested")
+    elif met["target_match"] != binder_check.FAIL:
+        m5_bad.append("MET matched its own ligand, hepatocyte growth factor "
+                      "beta chain")
+    if len(m5_tested) < 50:
+        m5_bad.append(f"only {len(m5_tested)} target(s) reached the sweep, too "
+                      "few for it to mean anything")
+    criterion("M5", bool(m5_bad),
+              f"a relational word added to a target's own reference name "
+              f"refuses the match across all {len(m5_tested)} target(s) swept, "
+              f"and MET does not match hepatocyte growth factor beta chain, "
+              f"which is its ligand rather than the receptor"
+              if not m5_bad else "; ".join(m5_bad[:3]))
+
+    # M6/M7: over the whole pool, under both rules.
+    def survey(tolerant):
+        """Verdicts for every structural binder row in the pool."""
+        original = binder_check.match_element
+        if not tolerant:
+            binder_check.match_element = exact_only
+        try:
+            out = {}
+            for row in decisions:
+                gene = row["gene"]
+                record = binders.get(gene)
+                if record is None:
+                    continue
+                out[gene] = binder_check.check(
+                    [{"route": "structure", "identifier": c.identifier,
+                      "antigen_name": c.antigen_name} for c in record.structure],
+                    surface_by_gene.get(gene))
+            return out
+        finally:
+            binder_check.match_element = original
+
+    before_survey = survey(False)
+    after_survey = survey(True)
+    flat_before = [r for rows_ in before_survey.values() for r in rows_]
+    flat_after = [r for rows_ in after_survey.values() for r in rows_]
+    fail_before = sum(1 for r in flat_before if r["target_match"] == binder_check.FAIL)
+    fail_after = sum(1 for r in flat_after if r["target_match"] == binder_check.FAIL)
+    genes_before = sum(1 for rows_ in before_survey.values()
+                       if any(r["target_match"] == binder_check.FAIL for r in rows_))
+    genes_after = sum(1 for rows_ in after_survey.values()
+                      if any(r["target_match"] == binder_check.FAIL for r in rows_))
+
+    # M6: monotonicity. Tolerance may only add matches.
+    lost = []
+    for gene, rows_ in before_survey.items():
+        for i, row in enumerate(rows_):
+            if row["target_match"] != binder_check.PASS:
+                continue
+            now = after_survey[gene][i]
+            if now["target_match"] != binder_check.PASS:
+                lost.append(f"{gene} {row['identifier']} "
+                            f"PASS -> {now['target_match']}")
+    criterion("M6", bool(lost),
+              f"every one of the {sum(1 for r in flat_before if r['target_match'] == binder_check.PASS)} "
+              f"row(s) matching under exact equality still matches; tolerance "
+              f"only adds"
+              if not lost else "; ".join(lost[:3]))
+
+    # M7: the flagged count moved, reported against the prediction.
+    PREDICTED_ROWS, PREDICTED_GENES = 57, 21
+    m7_bad = []
+    if fail_after == fail_before:
+        m7_bad.append(f"the flagged count stayed at {fail_before}, so the rule "
+                      "did not take effect")
+    criterion("M7", bool(m7_bad),
+              f"flagged rows {fail_before} -> {fail_after} "
+              f"(predicted {PREDICTED_ROWS}), affected targets "
+              f"{genes_before} -> {genes_after} (predicted {PREDICTED_GENES})"
+              if not m7_bad else "; ".join(m7_bad))
+
+    # M8: nothing moves a decision without carrying both.
+    m8_bad = [f"{r.gene} carries no superseded decision"
+              for r in rows if r.decision_changed
+              and not r.decision_under_retrieved_count]
+    moved_now = [r.gene for r in rows if r.decision_changed]
+    criterion("M8", bool(m8_bad),
+              f"every decision that moved carries both: {moved_now}"
+              if not m8_bad else "; ".join(m8_bad))
+
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
     if tripped:
