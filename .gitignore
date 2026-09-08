@@ -1,7 +1,14 @@
 .venv/
 __pycache__/
 *.pyc
-.claude/
+# Session state here is local and stays ignored, with one exception: the
+# co-authorship setting has to travel with the repository rather than with
+# the machine, or a fresh clone starts adding the trailer again. Ignoring
+# the directory itself would stop git descending into it and no negation
+# could reach inside, so the contents are ignored and the one shared file
+# is named back in.
+.claude/*
+!.claude/settings.json
 .env
 
 # Anchored to the repository root on purpose. Without the leading slash this
