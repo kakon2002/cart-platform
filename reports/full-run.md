@@ -1,25 +1,25 @@
 # Full run
 
-Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
+Derived artifacts reused; raw sources read from `data/` unchanged.
 
-**225/233 criteria clear across 17 stages**, 26.3 minutes.
+**232/240 criteria clear across 17 stages**, 23.6 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Design spec | 34/34 | clear | 1s |
-| 2 | Surface proteome | 8/8 | clear | 0s |
-| 3 | Target discovery | 26/27 | **TRIPPED** | 21s |
-| 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 209s |
-| 5 | Binder discovery | 7/7 | clear | 204s |
+| 2 | Surface proteome | 8/8 | clear | 1s |
+| 3 | Target discovery | 26/27 | **TRIPPED** | 23s |
+| 4 | Target pairing | 10/15 | **TRIPPED** | 10s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 10s |
+| 5 | Binder discovery | 7/7 | clear | 205s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
-| 11 | Final ranking | 16/16 | clear | 4s |
-| 12 | Candidate package | 9/9 | clear | 8s |
+| 11 | Final ranking | 23/23 | clear | 4s |
+| 12 | Candidate package | 9/9 | clear | 9s |
 | API | HTTP surface, pancreatic | 12/12 | clear | 12s |
-| API2 | HTTP surface, breast | 12/12 | clear | 232s |
-| MULTI | Multi-indication | 11/11 | clear | 584s |
+| API2 | HTTP surface, breast | 12/12 | clear | 242s |
+| MULTI | Multi-indication | 11/11 | clear | 605s |
 | ADAPT | Dashboard surface | 14/14 | clear | 283s |
 | BENCH | Binder benchmark | 19/19 | clear | 9s |
 | DOCS | Documented numbers | 8/8 | clear | 1s |
@@ -185,7 +185,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `D5` — 107 rows against 107 binders carrying a sequence
 - clear `D6` — no liability is summed into a single score; flags are counted and listed
 
-### Stage 11 — Final ranking (16/16)
+### Stage 11 — Final ranking (23/23)
 
 - clear `N1` — a dominated point is excluded from the front
 - clear `N2` — both non-dominated points are on the front
@@ -194,15 +194,22 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `N5` — status RANKED matches the survivor count 5
 - clear `N6` — 200 rows against the 200 the Stage 4 manifest records
 - clear `W8` — 4 decision value(s) all declared, and none overlaps either design class by substring
-- clear `W9` — every decision recomputes from gate status and the front alone; 2 of 5 survivors are on the front and the decisions distinguish them
+- clear `W9` — every decision recomputes from gate status and the front alone; 1 of 5 survivors are on the front and the decisions distinguish them
 - clear `W1` — nine weights sum to 1, all eleven components carry a declared coefficient, version wm-scoring-1
 - clear `W2` — 5 scorecard(s): every component is exactly one of the three states, every non-measured one names its reason and carries no value, and the denominator is the measured weight alone
 - clear `W3` — 5 score(s) recompute from the components, weights and adjustment recorded on the candidate, to within 1e-12
 - clear `W4` — 195 gate failure(s) carry neither a score nor a scorecard; scoring is reached by survivors only, which is what makes the weighted sum safe
 - clear `W5` — every candidate above the 0.5 floor carries a number and every candidate below it carries null (5 scored of 5)
 - clear `W6` — confidence moved 1.0 -> 0.5 and the safety component held at 0.1769; risk moved the safety component to 0.5884 and the adjustment held at 1.0
-- clear `W7` — the front is ['FER1L6', 'GPR35'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
-- clear `W11` — changing one weight moves the Stage 11 hash 2591188b434f185d -> ae2e71d87dcff90a
+- clear `W7` — the front is ['FER1L6'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
+- clear `W11` — changing one weight moves the Stage 11 hash 92bd0becdfd22fa5 -> 773aab11eaf8fc4e
+- clear `W12` — retrieved = counted + wrong-antigen on all 200 candidate(s), with 25 carrying a wrong-antigen binder: ITGB6 5=1+4, CLDN18 15=11+4, CDH1 4=3+1
+- clear `W13` — changing the binder-count basis moves the Stage 11 hash 92bd0becdfd22fa5 -> a3b7f96467536691
+- clear `W14` — GPR35 ADVANCE -> BACKUP -- both decisions carried on the record
+- clear `W15` — the gate did not move: attrition identical and all 200 gate statuses identical, while the front moved ['FER1L6', 'GPR35'] -> ['FER1L6']
+- clear `W16` — Level B did not move: overall, scored fraction, applicable and measured weight identical across all 5 survivor(s) under both counting rules
+- clear `W17` — no binder carries a numeric affinity; every one reads the not-connected token, and fold error and correlation are not computed from it
+- clear `W18` — the path breakdown sums to the counted total on all 200 candidate(s); 49 count at least one binder and each names the path
 
 ### Stage 12 — Candidate package (9/9)
 
@@ -220,7 +227,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job 55f087105659 rather than blocking
+- clear `A3` — a run returns 202 with job fdc5bb9936a1 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 7 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -229,13 +236,13 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
 - clear `W10` — 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
-- clear `W12` — the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 2591188b434f185d
+- clear `W12` — the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 92bd0becdfd22fa5
 
 ### Stage API2 — HTTP surface, breast (12/12)
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job ac5a30129e6d rather than blocking
+- clear `A3` — a run returns 202 with job 2c1eb37d19b8 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
 - clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
@@ -244,7 +251,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `A10` — an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
 - clear `A9` — evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
 - clear `W10` — 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
-- clear `W12` — the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 5b0c8d78ee5e7be7
+- clear `W12` — the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 820dde6d79efa8b1
 
 ### Stage MULTI — Multi-indication (11/11)
 
@@ -304,7 +311,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `V1` — every 'n/n shared sources usable' in the runbook uses 9, matching bootstrap.SHARED_SOURCES
 - clear `V2` — the runbook says fourteen MISSING lines and the code yields 14 (9 shared - 1 deferred + 3x2 per-indication)
 - clear `V3` — the runbook says Three direct dependencies and requirements.txt pins 3
-- clear `V4` — no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (217/225 as last written)
+- clear `V4` — no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (225/233 as last written)
 - clear `V5` — every open trip ['3/R14', '4/P17', '6/K2'] is named in the runbook
 - clear `V6` — all 5 accepted exemptions are named in the runbook
 - clear `V7` — the runbook's stages_total 9 matches pipeline.STAGES
@@ -321,7 +328,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
       - 5 innovative design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.
-      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
+      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
     GET /result     -> RANKED
       blocked on normal tissue risk      - 192     8 remain
       no design recommended              -   0     8 remain
@@ -336,7 +343,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
       - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.
       - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
-      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
+      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
     GET /result     -> NO_DESIGN_REACHES_THE_END
       blocked on normal tissue risk      - 196     4 remain
       no design recommended              -   0     4 remain

@@ -10,17 +10,24 @@ REJECTION CRITERIA
   clear    N5: status RANKED matches the survivor count 5
   clear    N6: 200 rows against the 200 the Stage 4 manifest records
   clear    W8: 4 decision value(s) all declared, and none overlaps either design class by substring
-  clear    W9: every decision recomputes from gate status and the front alone; 2 of 5 survivors are on the front and the decisions distinguish them
+  clear    W9: every decision recomputes from gate status and the front alone; 1 of 5 survivors are on the front and the decisions distinguish them
   clear    W1: nine weights sum to 1, all eleven components carry a declared coefficient, version wm-scoring-1
   clear    W2: 5 scorecard(s): every component is exactly one of the three states, every non-measured one names its reason and carries no value, and the denominator is the measured weight alone
   clear    W3: 5 score(s) recompute from the components, weights and adjustment recorded on the candidate, to within 1e-12
   clear    W4: 195 gate failure(s) carry neither a score nor a scorecard; scoring is reached by survivors only, which is what makes the weighted sum safe
   clear    W5: every candidate above the 0.5 floor carries a number and every candidate below it carries null (5 scored of 5)
   clear    W6: confidence moved 1.0 -> 0.5 and the safety component held at 0.1769; risk moved the safety component to 0.5884 and the adjustment held at 1.0
-  clear    W7: the front is ['FER1L6', 'GPR35'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
-  clear    W11: changing one weight moves the Stage 11 hash 2591188b434f185d -> ae2e71d87dcff90a
+  clear    W7: the front is ['FER1L6'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
+  clear    W11: changing one weight moves the Stage 11 hash 92bd0becdfd22fa5 -> 773aab11eaf8fc4e
+  clear    W12: retrieved = counted + wrong-antigen on all 200 candidate(s), with 25 carrying a wrong-antigen binder: ITGB6 5=1+4, CLDN18 15=11+4, CDH1 4=3+1
+  clear    W13: changing the binder-count basis moves the Stage 11 hash 92bd0becdfd22fa5 -> a3b7f96467536691
+  clear    W14: GPR35 ADVANCE -> BACKUP -- both decisions carried on the record
+  clear    W15: the gate did not move: attrition identical and all 200 gate statuses identical, while the front moved ['FER1L6', 'GPR35'] -> ['FER1L6']
+  clear    W16: Level B did not move: overall, scored fraction, applicable and measured weight identical across all 5 survivor(s) under both counting rules
+  clear    W17: no binder carries a numeric affinity; every one reads the not-connected token, and fold error and correlation are not computed from it
+  clear    W18: the path breakdown sums to the counted total on all 200 candidate(s); 49 count at least one binder and each names the path
 ========================================================================
-  16/16 criteria clear
+  23/23 criteria clear
 
 ========================================================================
 WHERE THE TWO HUNDRED WENT
@@ -32,8 +39,7 @@ WHERE THE TWO HUNDRED WENT
     construct over budget              -   0       5 remain
     reached the end                              5
 
-  Pareto front: 2 design(s), no weighted total
+  Pareto front: 1 design(s), no weighted total
     FER1L6     attractiveness 0.5023  margin -0.1381  binders 0  cleanliness 0
-    GPR35      attractiveness 0.5022  margin -0.1627  binders 1  cleanliness 0
 
-  configuration hash 2591188b434f185d
+  configuration hash 92bd0becdfd22fa5

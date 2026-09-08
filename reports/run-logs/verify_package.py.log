@@ -21,7 +21,7 @@ WHAT A READER RECEIVES
 ========================================================================
     5 candidate package(s), status PACKAGED
       FER1L6     rank 1/5  front=yes  INNOVATIVE_DESIGN   2868 bp  FLAGGED
-      GPR35      rank 2/5  front=yes  INNOVATIVE_DESIGN   2868 bp  FLAGGED
+      GPR35      rank 2/5  front=no   INNOVATIVE_DESIGN   2868 bp  FLAGGED
       TMEM92     rank 3/5  front=no   INNOVATIVE_DESIGN   2868 bp  FLAGGED
       TNFSF9     rank 4/5  front=no   INNOVATIVE_DESIGN   2868 bp  FLAGGED
       BTNL8      rank 5/5  front=no   INNOVATIVE_DESIGN   2868 bp  FLAGGED
@@ -56,4 +56,4 @@ WHAT A READER RECEIVES
     GDC TCGA                   TCGA-PAAD              tumour cohort
     DepMap                     24Q4 / Pancreas        dependency lineage
     Single-cell tumour atlas   GSE202051              single-cell tumour atlas
-    hash chain  a91c696f2e1318f7 -> 5d097e05887e5b28 -> 6418657ed85a4dc6 -> 859cfd24c21ddd81 -> 7b703a7cc4a2d0d6 -> 518e1ef6953ee5fb -> 2591188b434f185d
+    hash chain  a91c696f2e1318f7 -> 5d097e05887e5b28 -> 6418657ed85a4dc6 -> 859cfd24c21ddd81 -> 7b703a7cc4a2d0d6 -> 518e1ef6953ee5fb -> 92bd0becdfd22fa5

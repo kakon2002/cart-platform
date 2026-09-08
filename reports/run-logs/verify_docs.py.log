@@ -4,7 +4,7 @@ REJECTION CRITERIA
   clear    V1: every 'n/n shared sources usable' in the runbook uses 9, matching bootstrap.SHARED_SOURCES
   clear    V2: the runbook says fourteen MISSING lines and the code yields 14 (9 shared - 1 deferred + 3x2 per-indication)
   clear    V3: the runbook says Three direct dependencies and requirements.txt pins 3
-  clear    V4: no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (217/225 as last written)
+  clear    V4: no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (225/233 as last written)
   clear    V5: every open trip ['3/R14', '4/P17', '6/K2'] is named in the runbook
   clear    V6: all 5 accepted exemptions are named in the runbook
   clear    V7: the runbook's stages_total 9 matches pipeline.STAGES

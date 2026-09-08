@@ -6,7 +6,7 @@ REJECTION CRITERIA
 ========================================================================
   clear    A1: project created (201), target_antigen None and discovery mode B
   clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-  clear    A3: a run returns 202 with job ac5a30129e6d rather than blocking
+  clear    A3: a run returns 202 with job 2c1eb37d19b8 rather than blocking
 
   polling
     running   sources  loading cached sources
@@ -31,7 +31,7 @@ REJECTION CRITERIA
   clear    A10: an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
   clear    A9: evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
   clear    W10: 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
-  clear    W12: the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 5b0c8d78ee5e7be7
+  clear    W12: the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 820dde6d79efa8b1
 ========================================================================
   12/12 criteria clear
 
@@ -44,7 +44,7 @@ WHAT THE API RETURNS FOR THIS INDICATION
       - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.
       - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
-      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
+      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
 
     GET /result     -> NO_DESIGN_REACHES_THE_END
       blocked on normal tissue risk      - 196     4 remain

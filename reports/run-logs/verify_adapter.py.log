@@ -10,8 +10,8 @@ REJECTION CRITERIA
   clear    D12: a native POST still receives its body after the adapter is consulted (201, cancer_type 'Pancreatic Ductal Adenocarcinoma')
   clear    D7: a reference shaped like a canonical id and a duplicate reference are both refused by name
 
-  project WM-CART-PDAC-001 = d89a2331b4e7
-  run 613fb14927eb RUNNING
+  project WM-CART-PDAC-001 = 1a626be2c45e
+  run d297070fd117 RUNNING
     RUNNING   sources  1/9
     RUNNING   binders  4/9
     RUNNING   binders  4/9
@@ -24,15 +24,15 @@ REJECTION CRITERIA
     RUNNING   binders  4/9
     RUNNING   binders  4/9
   querying the trial registry for 200 antigens
-    RUNNING   safety  6/9
     25/200
+    RUNNING   safety  6/9
     50/200
     75/200
-    RUNNING   safety  6/9
     100/200
-    125/200
     RUNNING   safety  6/9
+    125/200
     150/200
+    RUNNING   safety  6/9
     175/200
     200/200
   finished COMPLETE
@@ -50,7 +50,7 @@ WHAT THE DASHBOARD RECEIVES
 ========================================================================
     run_status RANKED_CANDIDATES, 5 eligible, 5 returned
       CAR-PDAC-001  ['FER1L6']  ADAPTOR  ADVANCE  overall 0.4205141808636031
-      CAR-PDAC-002  ['GPR35']  ADAPTOR  ADVANCE  overall 0.3754369305940891
+      CAR-PDAC-002  ['GPR35']  ADAPTOR  BACKUP  overall 0.3754369305940891
       CAR-PDAC-003  ['TMEM92']  ADAPTOR  BACKUP  overall 0.456391721280569
       CAR-PDAC-004  ['TNFSF9']  ADAPTOR  BACKUP  overall 0.19713636648796437
       CAR-PDAC-005  ['BTNL8']  ADAPTOR  BACKUP  overall 0.2834364851052112
