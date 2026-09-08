@@ -10,8 +10,8 @@ REJECTION CRITERIA
   clear    D12: a native POST still receives its body after the adapter is consulted (201, cancer_type 'Pancreatic Ductal Adenocarcinoma')
   clear    D7: a reference shaped like a canonical id and a duplicate reference are both refused by name
 
-  project WM-CART-PDAC-001 = a07712440780
-  run fad60c7f2cf7 RUNNING
+  project WM-CART-PDAC-001 = d89a2331b4e7
+  run 613fb14927eb RUNNING
     RUNNING   sources  1/9
     RUNNING   binders  4/9
     RUNNING   binders  4/9

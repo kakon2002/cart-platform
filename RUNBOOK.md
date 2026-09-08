@@ -299,9 +299,11 @@ and the multi-indication check, at roughly 3 to 10 minutes each.
 freshly provisioned one, add the 40 minutes §7 describes, once.
 
 **Expected:** every stage reports `clear` except stages 3, 4, 4a and 6, whose
-trips are the eight named in §7. The last measured run was **217 of 225
-criteria clear**, with an `unexpected` list containing exactly `3/R14`,
-`4/P17`, `6/K2`, and:
+trips are the eight named in §7, and an `unexpected` list containing exactly
+`3/R14`, `4/P17`, `6/K2`. The criteria total is printed at the end of the
+run and written to `reports/full-run.md` — read it there. **No total is written
+into this document**, because every run changes it and a figure in prose has
+nothing to keep it honest. You should also see:
 
 ```
   raw caches unchanged: 80 file(s) identical in size and modification time

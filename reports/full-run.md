@@ -2,26 +2,27 @@
 
 Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
-**217/225 criteria clear across 16 stages**, 26.8 minutes.
+**225/233 criteria clear across 17 stages**, 26.3 minutes.
 
 | Stage | | Criteria | | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Design spec | 34/34 | clear | 1s |
-| 2 | Surface proteome | 8/8 | clear | 1s |
-| 3 | Target discovery | 26/27 | **TRIPPED** | 22s |
-| 4 | Target pairing | 10/15 | **TRIPPED** | 10s |
-| 4a | Architecture routing | 11/12 | **TRIPPED** | 218s |
-| 5 | Binder discovery | 7/7 | clear | 205s |
+| 2 | Surface proteome | 8/8 | clear | 0s |
+| 3 | Target discovery | 26/27 | **TRIPPED** | 21s |
+| 4 | Target pairing | 10/15 | **TRIPPED** | 9s |
+| 4a | Architecture routing | 11/12 | **TRIPPED** | 209s |
+| 5 | Binder discovery | 7/7 | clear | 204s |
 | 6 | Construct assembly | 8/9 | **TRIPPED** | 0s |
 | 9 | Safety gate | 14/14 | clear | 4s |
 | 10 | Developability | 6/6 | clear | 1s |
 | 11 | Final ranking | 16/16 | clear | 4s |
 | 12 | Candidate package | 9/9 | clear | 8s |
 | API | HTTP surface, pancreatic | 12/12 | clear | 12s |
-| API2 | HTTP surface, breast | 12/12 | clear | 237s |
-| MULTI | Multi-indication | 11/11 | clear | 591s |
+| API2 | HTTP surface, breast | 12/12 | clear | 232s |
+| MULTI | Multi-indication | 11/11 | clear | 584s |
 | ADAPT | Dashboard surface | 14/14 | clear | 283s |
 | BENCH | Binder benchmark | 19/19 | clear | 9s |
+| DOCS | Documented numbers | 8/8 | clear | 1s |
 
 ## Every criterion
 
@@ -219,7 +220,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job afed610c0236 rather than blocking
+- clear `A3` — a run returns 202 with job 55f087105659 rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'ranking']
 - clear `A5` — 200 BUILDABLE: 5 buildable = 5 complete + 0 awaiting a binder; 0 over budget, 7 reasons
 - clear `A6` — end state RANKED, attrition accounts for 195 + 5 of 200; 5 reached = 5 complete + 0 awaiting
@@ -234,7 +235,7 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 
 - clear `A1` — project created (201), target_antigen None and discovery mode B
 - clear `A2` — a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-- clear `A3` — a run returns 202 with job da047f7ae3d7 rather than blocking
+- clear `A3` — a run returns 202 with job ac5a30129e6d rather than blocking
 - clear `A4` — job finished complete after stages ['sources', 'pairing', 'binders', 'safety', 'ranking']
 - clear `A5` — 200 NO_BUILDABLE_CONSTRUCT: 0 buildable = 0 complete + 0 awaiting a binder; 0 over budget, 6 reasons
 - clear `A6` — end state NO_DESIGN_REACHES_THE_END, attrition accounts for 200 + 0 of 200; 0 reached = 0 complete + 0 awaiting
@@ -297,6 +298,17 @@ Derived artifacts deleted and rebuilt; raw sources read from `data/` unchanged.
 - clear `BM11` — the front holds at 14 member(s) under a different weight set, and the two rankings read 3 and 7 distinct components
 - clear `BM11b` — the front reports whether it discriminated: discriminates=False, 14 member(s)
 - clear `BM12` — affinity is NOT_CONNECTED on all 422 retrieved candidates; no connected release carries the column
+
+### Stage DOCS — Documented numbers (8/8)
+
+- clear `V1` — every 'n/n shared sources usable' in the runbook uses 9, matching bootstrap.SHARED_SOURCES
+- clear `V2` — the runbook says fourteen MISSING lines and the code yields 14 (9 shared - 1 deferred + 3x2 per-indication)
+- clear `V3` — the runbook says Three direct dependencies and requirements.txt pins 3
+- clear `V4` — no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (217/225 as last written)
+- clear `V5` — every open trip ['3/R14', '4/P17', '6/K2'] is named in the runbook
+- clear `V6` — all 5 accepted exemptions are named in the runbook
+- clear `V7` — the runbook's stages_total 9 matches pipeline.STAGES
+- clear `V8` — neither ORIENTATION nor HANDOVER writes a suite total into prose; both point at reports/full-run.md
 
 ## What the platform returns for this indication
 

@@ -98,17 +98,23 @@ def main() -> int:
               if stated == len(reqs) else
               f"the runbook says {stated}, requirements.txt pins {len(reqs)}")
 
-    # --- V4: the suite total, against the last recorded run ----------------
+    # --- V4: no document pins a suite total --------------------------------
+    # An earlier version compared the runbook's stated total against the last
+    # recorded run. That could not hold: run_all writes the report after every
+    # stage, so a suite run changed the total the criterion had just passed
+    # against and guaranteed a trip on the following run. A number every run
+    # invalidates does not want a tighter check, it wants removing.
     run = json.loads((ROOT / "reports/full-run.json").read_text(encoding="utf-8"))
-    m = re.search(r"\*\*(\d+) of (\d+)\s*\n?criteria clear\*\*", runbook)
-    if not m:
-        m = re.search(r"\*\*(\d+) of (\d+)", runbook)
-    stated = (int(m.group(1)), int(m.group(2))) if m else None
-    actual = (run["clear"], run["total"])
-    criterion("V4", stated != actual,
-              f"the runbook's {stated[0]} of {stated[1]} matches the last "
-              f"recorded run" if stated == actual else
-              f"the runbook says {stated}, the last run was {actual}")
+    pinned = re.findall(r"\*\*\d+ of \d+\s*\n?criteria clear\*\*",
+                        runbook + orientation + handover)
+    points_at_report = "reports/full-run.md" in runbook
+    criterion("V4", bool(pinned) or not points_at_report,
+              f"no document pins a suite total, and the runbook points at "
+              f"reports/full-run.md, where the live figure is "
+              f"({run['clear']}/{run['total']} as last written)"
+              if not pinned and points_at_report else
+              f"pinned totals found: {pinned}" if pinned else
+              "the runbook does not say where the live total lives")
 
     # --- V5: the expected trips, by name -----------------------------------
     unexpected = {f"{u['stage']}/{u['id']}" for u in run["unexpected"]}

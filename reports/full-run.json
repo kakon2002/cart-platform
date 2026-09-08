@@ -1,7 +1,7 @@
 {
-  "clear": 217,
-  "total": 225,
-  "minutes": 26.8,
+  "clear": 225,
+  "total": 233,
+  "minutes": 26.3,
   "fresh": true,
   "report": "reports/full-run.md",
   "accepted": {
@@ -68,7 +68,7 @@
       "clear": 34,
       "total": 34,
       "ok": true,
-      "seconds": 0.8,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -300,7 +300,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 22.1,
+      "seconds": 20.9,
       "exit": 1,
       "criteria": [
         {
@@ -446,7 +446,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 9.5,
+      "seconds": 8.7,
       "exit": 2,
       "criteria": [
         {
@@ -532,7 +532,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 218.2,
+      "seconds": 209.0,
       "exit": 2,
       "criteria": [
         {
@@ -603,7 +603,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 204.9,
+      "seconds": 204.1,
       "exit": 0,
       "criteria": [
         {
@@ -649,7 +649,7 @@
       "clear": 8,
       "total": 9,
       "ok": false,
-      "seconds": 0.5,
+      "seconds": 0.4,
       "exit": 2,
       "criteria": [
         {
@@ -705,7 +705,7 @@
       "clear": 14,
       "total": 14,
       "ok": true,
-      "seconds": 4.0,
+      "seconds": 3.7,
       "exit": 0,
       "criteria": [
         {
@@ -786,7 +786,7 @@
       "clear": 6,
       "total": 6,
       "ok": true,
-      "seconds": 0.7,
+      "seconds": 0.6,
       "exit": 0,
       "criteria": [
         {
@@ -827,7 +827,7 @@
       "clear": 16,
       "total": 16,
       "ok": true,
-      "seconds": 4.1,
+      "seconds": 3.8,
       "exit": 0,
       "criteria": [
         {
@@ -918,7 +918,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 7.8,
+      "seconds": 7.5,
       "exit": 0,
       "criteria": [
         {
@@ -974,7 +974,7 @@
       "clear": 12,
       "total": 12,
       "ok": true,
-      "seconds": 11.7,
+      "seconds": 11.6,
       "exit": 0,
       "criteria": [
         {
@@ -990,7 +990,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job afed610c0236 rather than blocking"
+          "detail": "a run returns 202 with job 55f087105659 rather than blocking"
         },
         {
           "id": "A4",
@@ -1045,7 +1045,7 @@
       "clear": 12,
       "total": 12,
       "ok": true,
-      "seconds": 237.2,
+      "seconds": 232.4,
       "exit": 0,
       "criteria": [
         {
@@ -1061,7 +1061,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job da047f7ae3d7 rather than blocking"
+          "detail": "a run returns 202 with job ac5a30129e6d rather than blocking"
         },
         {
           "id": "A4",
@@ -1116,7 +1116,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 591.2,
+      "seconds": 583.9,
       "exit": 0,
       "criteria": [
         {
@@ -1182,7 +1182,7 @@
       "clear": 14,
       "total": 14,
       "ok": true,
-      "seconds": 283.0,
+      "seconds": 283.2,
       "exit": 0,
       "criteria": [
         {
@@ -1263,7 +1263,7 @@
       "clear": 19,
       "total": 19,
       "ok": true,
-      "seconds": 9.5,
+      "seconds": 9.1,
       "exit": 0,
       "criteria": [
         {
@@ -1360,6 +1360,57 @@
           "id": "BM12",
           "tripped": false,
           "detail": "affinity is NOT_CONNECTED on all 422 retrieved candidates; no connected release carries the column"
+        }
+      ]
+    },
+    {
+      "number": "DOCS",
+      "name": "Documented numbers",
+      "clear": 8,
+      "total": 8,
+      "ok": true,
+      "seconds": 0.5,
+      "exit": 0,
+      "criteria": [
+        {
+          "id": "V1",
+          "tripped": false,
+          "detail": "every 'n/n shared sources usable' in the runbook uses 9, matching bootstrap.SHARED_SOURCES"
+        },
+        {
+          "id": "V2",
+          "tripped": false,
+          "detail": "the runbook says fourteen MISSING lines and the code yields 14 (9 shared - 1 deferred + 3x2 per-indication)"
+        },
+        {
+          "id": "V3",
+          "tripped": false,
+          "detail": "the runbook says Three direct dependencies and requirements.txt pins 3"
+        },
+        {
+          "id": "V4",
+          "tripped": false,
+          "detail": "no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (217/225 as last written)"
+        },
+        {
+          "id": "V5",
+          "tripped": false,
+          "detail": "every open trip ['3/R14', '4/P17', '6/K2'] is named in the runbook"
+        },
+        {
+          "id": "V6",
+          "tripped": false,
+          "detail": "all 5 accepted exemptions are named in the runbook"
+        },
+        {
+          "id": "V7",
+          "tripped": false,
+          "detail": "the runbook's stages_total 9 matches pipeline.STAGES"
+        },
+        {
+          "id": "V8",
+          "tripped": false,
+          "detail": "neither ORIENTATION nor HANDOVER writes a suite total into prose; both point at reports/full-run.md"
         }
       ]
     }
