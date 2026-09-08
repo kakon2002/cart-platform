@@ -1,0 +1,1139 @@
+<title>Target-Specific Binder Validation</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground:      #F6F8F9;
+    --panel:       #FFFFFF;
+    --ink:         #16202A;
+    --ink-soft:    #586673;
+    --ink-faint:   #8794A0;
+    --rule:        #DCE3E8;
+    --rule-strong: #C3CDD5;
+    --accent:      #1B6E77;
+    --accent-soft: #E4EFF0;
+    --matched:     #2E6B4F;
+    --flagged:     #A8523A;
+    --flagged-bg:  #F7EAE6;
+    --unknown:     #6F7C88;
+    --measure:     68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0E141A;
+      --panel:       #161E26;
+      --ink:         #E4EBF1;
+      --ink-soft:    #9AA8B4;
+      --ink-faint:   #6B7883;
+      --rule:        #26313B;
+      --rule-strong: #36434F;
+      --accent:      #5FB6BE;
+      --accent-soft: #12292C;
+      --matched:     #6FBF95;
+      --flagged:     #DD9077;
+      --flagged-bg:  #2B1D18;
+      --unknown:     #8894A0;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0E141A;
+    --panel:       #161E26;
+    --ink:         #E4EBF1;
+    --ink-soft:    #9AA8B4;
+    --ink-faint:   #6B7883;
+    --rule:        #26313B;
+    --rule-strong: #36434F;
+    --accent:      #5FB6BE;
+    --accent-soft: #12292C;
+    --matched:     #6FBF95;
+    --flagged:     #DD9077;
+    --flagged-bg:  #2B1D18;
+    --unknown:     #8894A0;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 120px; }
+  .col  { max-width: var(--measure); }
+
+  /* ---------- masthead ---------- */
+  header.mast {
+    padding: 72px 0 40px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  h1 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(34px, 5.2vw, 54px);
+    line-height: 1.08;
+    letter-spacing: -.012em;
+    margin: 0 0 20px;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  .standfirst {
+    font-family: Newsreader, Georgia, serif;
+    font-size: clamp(18px, 2.3vw, 22px);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 58ch;
+    margin: 0;
+  }
+  .mast-meta {
+    display: flex; flex-wrap: wrap; gap: 28px 44px;
+    margin-top: 38px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+  .mast-meta div span { display: block; color: var(--ink); margin-top: 3px; }
+
+  /* ---------- sections ---------- */
+  section { margin: 0 0 68px; }
+  h2 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(25px, 3.2vw, 33px);
+    line-height: 1.2;
+    letter-spacing: -.008em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h2 + .kicker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0 0 26px;
+  }
+  h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-weight: 600; font-size: 16px;
+    letter-spacing: .002em;
+    margin: 36px 0 10px;
+  }
+  p { margin: 0 0 18px; }
+  .col p, .col ul, .col ol { max-width: var(--measure); }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: .88em;
+  }
+  code { background: var(--accent-soft); padding: .1em .35em; border-radius: 3px; }
+
+  ul, ol { padding-left: 1.25em; margin: 0 0 18px; }
+  li { margin-bottom: 9px; }
+
+  /* ---------- the limitation rail ---------- */
+  /* Used only for statements of what a result does not claim. The platform's
+     discipline is naming its own boundaries, so boundaries get their own form. */
+  .limit {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 18px 22px;
+    margin: 26px 0;
+    max-width: var(--measure);
+  }
+  .limit .label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); display: block; margin-bottom: 8px;
+  }
+  .limit p { margin: 0; font-size: 15.4px; }
+  .limit p + p { margin-top: 12px; }
+
+  /* ---------- figures and data ---------- */
+  figure { margin: 30px 0; }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14.2px;
+    font-variant-numeric: tabular-nums;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 16px 10px 0;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 400;
+    border-bottom: 1px solid var(--rule-strong);
+    padding-bottom: 8px;
+  }
+  td.num { text-align: right; padding-right: 22px; font-family: "IBM Plex Mono", monospace; }
+  th.num { text-align: right; padding-right: 22px; }
+  tbody tr:last-child td { border-bottom: none; }
+  td.gene { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  tr.highlight td { background: var(--flagged-bg); }
+  figcaption {
+    font-size: 13.2px; color: var(--ink-soft);
+    margin-top: 14px; max-width: var(--measure);
+  }
+
+  .verdict {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px; letter-spacing: .06em;
+    padding: 2px 7px; border-radius: 3px; white-space: nowrap;
+  }
+  .v-pass    { color: var(--matched); background: color-mix(in srgb, var(--matched) 12%, transparent); }
+  .v-fail    { color: var(--flagged); background: var(--flagged-bg); }
+  .v-unknown { color: var(--unknown); background: color-mix(in srgb, var(--unknown) 12%, transparent); }
+
+  /* ---------- headline figures ---------- */
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 34px 0;
+  }
+  .fig { background: var(--panel); padding: 22px 20px; }
+  .fig .n {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 38px; line-height: 1; font-weight: 500;
+    letter-spacing: -.02em;
+  }
+  .fig .n small { font-size: 20px; color: var(--ink-faint); font-weight: 400; }
+  .fig .cap {
+    font-size: 13px; color: var(--ink-soft); margin-top: 10px; line-height: 1.42;
+  }
+  .fig.flag .n { color: var(--flagged); }
+
+  /* ---------- the chain: order carries meaning here, so it is numbered ---- */
+  .chain { counter-reset: step; margin: 30px 0; max-width: var(--measure); }
+  .chain li {
+    list-style: none; counter-increment: step;
+    position: relative; padding-left: 46px; margin-bottom: 22px;
+  }
+  .chain li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute; left: 0; top: 1px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px; letter-spacing: .08em;
+    color: var(--accent);
+    border: 1px solid var(--rule-strong);
+    padding: 3px 7px; border-radius: 3px;
+  }
+  .chain .what { font-weight: 600; display: block; }
+  .chain .val { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--ink-soft); }
+
+  /* ---------- entry cards ---------- */
+  .entry {
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    padding: 24px 26px;
+    margin: 28px 0;
+  }
+  .entry h4 {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px; letter-spacing: .04em;
+    margin: 0 0 4px; font-weight: 500;
+  }
+  .entry .sub {
+    font-size: 13.4px; color: var(--ink-soft); margin: 0 0 18px;
+  }
+  .entry p { font-size: 15.4px; }
+  .entry p:last-child { margin-bottom: 0; }
+
+  .antigen {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.6px;
+    background: var(--flagged-bg);
+    border-left: 2px solid var(--flagged);
+    padding: 12px 14px;
+    margin: 14px 0;
+    line-height: 1.55;
+    overflow-x: auto;
+  }
+
+  hr.rule { border: none; border-top: 1px solid var(--rule); margin: 60px 0; }
+
+  footer.end {
+    border-top: 2px solid var(--ink);
+    padding-top: 26px; margin-top: 20px;
+    font-size: 13.4px; color: var(--ink-soft);
+    max-width: var(--measure);
+  }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 18px 80px; }
+    header.mast { padding-top: 46px; }
+    th, td { padding-right: 12px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">Wellmatix &middot; Platform Validation &middot; Case Study 01</div>
+  <h1>Target-Specific Binder Validation and Ranking Correction</h1>
+  <p class="standfirst">A blinded benchmark, built to score the platform against a literature panel,
+  was turned back on the platform itself. It found that a scoring objective had been
+  measuring the behaviour of a database search rather than a property of the design —
+  and changed which candidate the platform recommends.</p>
+  <div class="mast-meta">
+    <div>Indication<span>Pancreatic ductal adenocarcinoma</span></div>
+    <div>Pool<span>200 candidate targets</span></div>
+    <div>Outcome<span>One recommendation withdrawn</span></div>
+    <div>Status<span>Corrected, verified, in production</span></div>
+  </div>
+</header>
+
+<section class="col">
+  <h2>What this document reports</h2>
+  <p class="kicker">Summary</p>
+
+  <p>The platform screens a surface proteome, gates candidates on normal-tissue risk,
+  retrieves candidate binders, assembles constructs and ranks what survives. Binder
+  retrieval works by searching a structural database on the target's accession. A hit
+  means the deposited entry <em>contains</em> the target. It does not mean the antibody in
+  that entry was raised against it.</p>
+
+  <p>A validation check introduced for an independent benchmark was applied to the
+  platform's own pool. It compares the antigen a depositor recorded against every name the
+  reference proteome record gives the target. Across the pancreatic pool it flagged
+  <strong>83 of 315 structural binder rows</strong>, distributed across
+  <strong>25 of 200 candidate targets</strong>.</p>
+
+  <p>One of those candidates was a design the platform was recommending for advancement.
+  Its entire claim to that recommendation was a single retrieved binder — annotated
+  against a G-protein subunit rather than against the receptor. The scoring objective has
+  been corrected to count target-matched binders, and that recommendation has been
+  withdrawn.</p>
+
+  <div class="figures">
+    <div class="fig flag">
+      <div class="n">83<small> / 315</small></div>
+      <div class="cap"><strong>Binder rows flagged.</strong> An <em>upper bound</em> — the
+      raw output of the check, before its own error rate is subtracted.</div>
+    </div>
+    <div class="fig flag">
+      <div class="n">~57<small> / 315</small></div>
+      <div class="cap"><strong>Genuinely wrong antigen.</strong> The residue after removing
+      rows where the check itself misread the label. Derivation below.</div>
+    </div>
+    <div class="fig flag">
+      <div class="n">25<small> / 200</small></div>
+      <div class="cap"><strong>Candidate targets affected.</strong> Designs holding at least
+      one flagged binder — the rate that bears on what is recommended.</div>
+    </div>
+    <div class="fig">
+      <div class="n">2 <small>&rarr;</small> 1</div>
+      <div class="cap"><strong>Designs advanced.</strong> The non-dominated set went from
+      two candidates to one under the corrected objective.</div>
+    </div>
+  </div>
+
+  <div class="limit">
+    <span class="label">Three numbers, three different populations</span>
+    <p><strong>83 of 315</strong> counts <em>binder rows</em> and is the check's raw output.
+    <strong>Roughly 57 of 315</strong> is what survives once the rows the check itself
+    misread are removed — see <em>The check's own failure mode</em> below, which gives the
+    derivation. <strong>25 of 200</strong> counts <em>candidates</em>, and is the figure that
+    bears on what the platform recommends, because recommendations are made about targets
+    rather than about rows.</p>
+    <p>A single target can hold many binders, so the row-level rate is necessarily the higher
+    of the two. Each figure is quoted with its population named throughout. Quoting any one
+    of them alone would misstate the finding.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="col">
+  <h2>The blinded benchmark, and how the blind was enforced</h2>
+  <p class="kicker">Method</p>
+
+  <p>The check originated in a benchmark exercise: score the platform's binder retrieval
+  and ranking against a panel of literature-validated answers for a well-characterised
+  target. A benchmark scored after the answers are known measures nothing, so the blind
+  was enforced mechanically rather than by undertaking.</p>
+
+  <p>The comparison tool <strong>refuses to run</strong> unless the frozen platform output
+  was committed to version control before the answer panel was. Four independent layers
+  stand behind that refusal, each catching something the others would not:</p>
+
+  <ul>
+    <li><strong>The import graph is walked by parsing, not by importing.</strong> Reading a
+    module to see what it depends on must not execute it, or the act of checking could
+    itself pull the answers into scope.</li>
+    <li><strong>Held-out values are scanned for across every reachable module.</strong>
+    Catches an answer transcribed into code by hand, which an import graph cannot see.</li>
+    <li><strong>The frozen output is fingerprinted.</strong> Catches a result edited after
+    the fact to agree with the panel.</li>
+    <li><strong>The commit graph is the evidence of ordering.</strong> Catches the case the
+    other three cannot: output produced honestly, but only after the answers were visible.</li>
+  </ul>
+
+  <p>The ordering layer is the load-bearing one, and it is the one that cannot be satisfied
+  by assertion. The frozen output was committed on <span class="mono">2026-09-07</span>;
+  the answer panel was committed <em>after</em> it, in a later commit on the same day. The
+  guard resolves both commits and confirms the frozen artifact does not come later.</p>
+
+  <div class="limit">
+    <span class="label">What the ordering layer does not prove</span>
+    <p>It proves the frozen output existed before the answers entered the repository. It
+    does not prove nobody had seen the literature by other means. No mechanism can prove
+    that, and the check is written to say so rather than to imply otherwise.</p>
+    <p>Outside a version-controlled copy the question cannot be asked at all. In that
+    situation the guard reports that the ordering is <em>not evaluable</em> — it does not
+    report a pass. A distributed archive carries no history, and treating absent history as
+    a satisfied condition would turn the strongest layer into the weakest.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>What the platform was standing on</h2>
+    <p class="kicker">Source coverage</p>
+
+    <p>The pancreatic run screened a surface proteome and carried 200 candidate targets into
+    binder retrieval. Retrieval runs two independent routes, reported separately and never
+    summed: a structural route that searches deposited structures on the target's accession,
+    and a sequence route that matches named therapeutic antibodies recorded against the
+    target.</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Population</th>
+            <th class="num">Count</th>
+            <th>What it is</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Candidate targets in the pool</td>
+            <td class="num">200</td>
+            <td>Carried into binder retrieval after screening</td>
+          </tr>
+          <tr>
+            <td>Targets with any binder retrieved</td>
+            <td class="num">57</td>
+            <td>The remaining 143 returned nothing on either route</td>
+          </tr>
+          <tr>
+            <td>Structural binder rows</td>
+            <td class="num">315</td>
+            <td>Deposited entries containing the target</td>
+          </tr>
+          <tr>
+            <td>Sequence-route binder rows</td>
+            <td class="num">107</td>
+            <td>Named therapeutics recorded against the target</td>
+          </tr>
+          <tr>
+            <td>Designs reaching the end</td>
+            <td class="num">5</td>
+            <td>Survived every gate and were ranked</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Measured from the production run. The gap between 200 targets and 57 with
+    any binder is a statement about the antibody literature, not a platform failure — it is
+    reported as an outcome rather than suppressed.</figcaption>
+  </figure>
+
+  <div class="col">
+    <p>Of the 200, <strong>192 were blocked on normal-tissue risk</strong> before binder
+    retrieval mattered, and 3 more were dropped for retrieving no binder at all. Five
+    designs reached the ranking.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>The finding, and what causes it</h2>
+    <p class="kicker">Validation result</p>
+
+    <p>The check asks a deliberately narrow question: <em>does the antigen the depositors
+    recorded name the target we searched for?</em> It does not ask what the antibody binds.
+    Answering that needs the deposited coordinates, which the platform does not have
+    connected, and the check is explicit that it is not answering it.</p>
+
+    <p>Across 315 structural rows the verdicts divide cleanly, and the three states sum to
+    the population:</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Verdict</th><th class="num">Rows</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="verdict v-pass">MATCHED</span></td>
+            <td class="num">221</td>
+            <td>The entry's own annotation names the target</td>
+          </tr>
+          <tr class="highlight">
+            <td><span class="verdict v-fail">FLAGGED</span></td>
+            <td class="num">83</td>
+            <td>The recorded antigen is not the target under any name the reference gives it</td>
+          </tr>
+          <tr>
+            <td><span class="verdict v-unknown">UNKNOWN</span></td>
+            <td class="num">11</td>
+            <td>The entry records no antigen at all — absence, not disagreement</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Absence of annotation is reported as its own state and never folded into
+    either of the other two. Treating it as a mismatch would manufacture a finding;
+    treating it as a match would manufacture evidence.</figcaption>
+  </figure>
+
+  <div class="col">
+    <h3>The dominant cause is structural, and systematic</h3>
+
+    <p>The largest group is not scattered error. G-protein-coupled receptors are frequently
+    crystallised as a receptor–G-protein complex, often with an antibody fragment used to
+    stabilise the assembly. A search on the receptor's accession finds that entry correctly.
+    The antibody inside it is annotated against the G-protein subunits.</p>
+
+    <p><strong>21 of the flagged rows record the same G-protein beta-1 subunit</strong> as
+    their antigen, across seven unrelated receptor targets. Further groups record G-protein
+    alpha subunits. The pattern reproduces wherever the receptor class does.</p>
+
+    <p>A second, quite different group is crystallisation machinery: maltodextrin-binding
+    fusion partners, immunoglobulin-binding constructs, enterotoxin chains. These are
+    reagents that made an experiment possible, counted by a naive retrieval step as though
+    they were therapeutic candidates.</p>
+
+    <p>The pattern is not an artefact of one indication. Run against the platform's second
+    indication — invasive breast carcinoma, an entirely separate pool and screen — the same
+    check flags <strong>46 of 200 structural rows</strong>, a comparable proportion, with the
+    same two causes dominating. A retrieval step that counts entries containing the target
+    behaves this way wherever it is pointed.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">The 83 is an upper bound, not a result</span>
+    <p>Roughly 26 of the 83 flagged rows name the target itself, in a form the check's
+    comparison could not see. The genuine figure is approximately <strong>57 of 315</strong>.
+    The mechanism, the derivation and the consequences are set out in
+    <em>The check's own failure mode</em>, below, after the example that exposed it.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>Worked example: a recommendation that did not survive</h2>
+    <p class="kicker">GPR35</p>
+
+    <p>Of the five designs that reached the ranking, four retrieved no binder at all. The
+    fifth retrieved exactly one.</p>
+  </div>
+
+  <div class="entry col">
+    <h4>GPR35 &middot; Q9HC97</h4>
+    <p class="sub">G protein-coupled receptor 35 (kynurenic acid receptor)</p>
+    <p>One structural binder retrieved, from a single deposited entry. The entry records its
+    antigens as:</p>
+    <div class="antigen">Guanine nucleotide-binding protein subunit alpha-13<br>
+    Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1</div>
+    <p>GPR35 is not listed as an antigen anywhere in its own entry. The entry was found by
+    searching on the GPR35 accession and does contain the receptor; the antibody in it is a
+    fiducial against the G-protein heterotrimer. This is the receptor–G-protein pattern in
+    its purest form.</p>
+  </div>
+
+  <div class="col">
+    <p>This single binder was the entire reason GPR35 was being recommended. The ranking
+    compares candidates on four objectives simultaneously and advances those that no other
+    candidate beats on every axis. Against FER1L6, the other advancing design, GPR35 was:</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Objective</th><th>FER1L6</th><th>GPR35</th><th>Comparison</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Tumour attractiveness</td><td class="num">0.5023</td><td class="num">0.5022</td><td>FER1L6 ahead</td></tr>
+          <tr><td>Safety margin</td><td class="num">&minus;0.1381</td><td class="num">&minus;0.1627</td><td>FER1L6 ahead</td></tr>
+          <tr><td>Binder cleanliness</td><td class="num">0</td><td class="num">0</td><td>Tied</td></tr>
+          <tr class="highlight"><td>Binder count</td><td class="num">0</td><td class="num">1</td><td>GPR35 ahead — the only axis</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>FER1L6 beats GPR35 on attractiveness, beats it on safety margin, and ties on
+    cleanliness. GPR35 escaped domination on one axis only: a binder count of one.</figcaption>
+  </figure>
+
+  <div class="col">
+    <p>Stated plainly, the platform's recommendation amounted to: <em>this design is not
+    beaten on every axis, because one database row exists, and the antibody in that row is
+    against a different protein.</em> That is retrieval luck presented as evidence.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>Worked example: where the check itself reaches its limit</h2>
+    <p class="kicker">CLDN18</p>
+
+    <p>A single clean success would overstate what this check does. The second example is
+    chosen because it shows the opposite — a candidate where the check produces the wrong
+    verdict, and where knowing <em>why</em> matters more than the verdict itself.</p>
+  </div>
+
+  <div class="entry col">
+    <h4>CLDN18 &middot; P56856</h4>
+    <p class="sub">Claudin-18 &middot; 15 binders retrieved: 4 structural, 11 named therapeutics</p>
+    <p>All four structural entries record the identical antigen:</p>
+    <div class="antigen">Isoform A2 of Claudin-18</div>
+    <p>The check flags all four. The reference record for CLDN18 yields exactly two names —
+    <span class="mono">Claudin-18</span> and <span class="mono">CLDN18</span> — and
+    <span class="mono">Isoform A2 of Claudin-18</span> matches neither by exact comparison.</p>
+    <p><strong>The verdict is wrong.</strong> Isoform A2 is claudin-18.2, the clinically
+    validated form of this target and the antigen of an approved therapeutic antibody. These
+    four binders are against the target, in its most therapeutically relevant form, and the
+    matching rule cannot see it.</p>
+  </div>
+
+  <div class="col">
+    <p>The remaining 11 binders are named therapeutics recorded against CLDN18 by the
+    sequence route. They carry no deposited antigen annotation, so there is nothing for this
+    check to match, and each reads <span class="verdict v-unknown">UNKNOWN</span>. They
+    count toward the objective — but they count because the check does not apply to them,
+    not because they matched. The distinction is carried on every record for exactly this
+    reason.</p>
+
+    <p>CLDN18 did not reach the ranking on this run, so no recommendation turned on these
+    verdicts. The example is included because it is the clearest illustration of what the
+    check is and is not: <strong>agreement between two annotations, not an inspection of an
+    interface.</strong> When the two annotations use different vocabulary for the same
+    molecule, the check is wrong, and it is wrong in the direction of under-counting
+    evidence.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">Why an under-counting error is the tolerable direction</span>
+    <p>A missed match withholds credit from a real binder and can only make the platform
+    more conservative about what it recommends. A missed mismatch does the opposite: it
+    advances a design on evidence that does not exist. Both are errors and both are being
+    addressed, but only one of them can put a wrong recommendation in front of a reader.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>The check's own failure mode</h2>
+    <p class="kicker">Correction to the headline figure</p>
+
+    <p>CLDN18 is not an isolated case, and the honest reading of the headline number depends
+    on knowing how far it generalises.</p>
+
+    <h3>The mechanism</h3>
+
+    <p>The check derives a set of names for the target from the reference proteome record —
+    the recommended name, each parenthesised synonym, the note on each mature chain, and the
+    gene symbol — and compares each recorded antigen against that set by
+    <strong>exact string equality, after lowercasing</strong>. Anything not in the set is a
+    mismatch.</p>
+
+    <p>Exact equality is defeated by three label shapes that are common in deposited
+    structures, none of which indicates a different molecule:</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Shape</th><th>Recorded antigen</th><th>Target</th><th class="num">Rows</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Isoform label</td>
+            <td class="mono">Isoform A2 of Claudin-18</td>
+            <td class="gene">CLDN18</td><td class="num">4</td>
+          </tr>
+          <tr>
+            <td>Isoform label</td>
+            <td class="mono">5'-nucleotidase, ecto (CD73), isoform CRA_a</td>
+            <td class="gene">NT5E</td><td class="num">5</td>
+          </tr>
+          <tr>
+            <td>Word-order variant</td>
+            <td class="mono">Receptor protein-tyrosine kinase erbB-2</td>
+            <td class="gene">ERBB2</td><td class="num">3</td>
+          </tr>
+          <tr>
+            <td>Fusion-partner label</td>
+            <td class="mono">Ubiquitin-like protein SMT3,Cadherin-1</td>
+            <td class="gene">CDH1</td><td class="num">1</td>
+          </tr>
+          <tr>
+            <td>Fusion-partner label</td>
+            <td class="mono">Maltose/maltodextrin-binding periplasmic protein,Mucin-16</td>
+            <td class="gene">MUC16</td><td class="num">2</td>
+          </tr>
+          <tr>
+            <td>Fragment label</td>
+            <td class="mono">MUC1 Peptide Fragment</td>
+            <td class="gene">MUC1</td><td class="num">2</td>
+          </tr>
+          <tr>
+            <td>Construct label</td>
+            <td class="mono">Inactive TMPRSS2 construct</td>
+            <td class="gene">TMPRSS2</td><td class="num">1</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>Representative rows. The reference name is present in every one of them,
+    surrounded by additional words the comparison cannot see past. Nine targets are affected
+    in total: CDH1, CLDN18, ERBB2, F2RL1, MUC1, MUC16, NT5E, TMPRSS2 and TREM2.</figcaption>
+  </figure>
+
+  <div class="col">
+    <h3>How the 57 was derived</h3>
+
+    <p>Each flagged row's recorded antigen, and each of the target's own reference names,
+    were reduced to lowercased alphanumeric words, discarding the connectives
+    <em>of</em> and <em>the</em> and the generic words <em>isoform</em> and <em>protein</em>.
+    A row was reclassified as a matching error where <strong>every word of one of the
+    target's own names appears among the words of the recorded antigen</strong> — that is,
+    where the recorded antigen is the target's name with extra words around it.</p>
+
+    <p>26 of the 83 rows meet that test. The remaining <strong>57 name a genuinely different
+    molecule</strong>: G-protein subunits, enterotoxin chains, the partner chain of an
+    integrin heterodimer, crystallisation chaperones, unrelated antibody fragments.</p>
+
+    <p>This is a screening test over the flagged set, not an exhaustive manual review of 83
+    entries, and the figure is quoted as approximate for that reason. It is conservative in
+    one direction — it reclassifies only rows containing a complete reference name — and it
+    has a useful positive control in this pool. Two closely related receptors are both
+    present. Entries recording <span class="mono">erbB-2</span> are reclassified for the
+    target whose reference name is erbB-2, and <em>left flagged</em> for its neighbour
+    erbB-3, where erbB-2 genuinely is a different protein. A test that could not tell those
+    apart would be worthless here, and this one does.</p>
+
+    <h3>The sixth incident of this kind, and the first in this direction</h3>
+
+    <p>String matching against biological names is a documented recurring failure in this
+    project, and the record is kept precisely so that a new instance is recognised as a
+    pattern rather than treated as bad luck. Five prior incidents are on file, and every one
+    of them ran the <em>other</em> way — a match that was too permissive:</p>
+
+    <ul>
+      <li>Subcellular-localisation phrases matched as substrings of free-text notes, so
+      <em>&ldquo;not detected at the cell membrane&rdquo;</em> read as evidence that the
+      protein was at the cell membrane. The test admitted the negation of its own claim.</li>
+      <li>A compound antibody-target field matched as a substring, which put two unrelated
+      mucins into a third mucin's bucket and matched a claudin inside the name of a different
+      claudin carried separately in the same table.</li>
+      <li>Tissue names mapped to organs by substring, which put the adrenal gland at kidney
+      criticality and folded the kidney into the brain — each mistake moving an organ between
+      risk tiers and silently rewriting the safety gate for every protein screened.</li>
+      <li>A free-text name query against a sequence archive, which returned several hundred
+      entries whose top hits were a bacterial RNA chaperone, a sulfur transferase and a
+      photosystem supercomplex — a valid response carrying a plausible integer that was
+      entirely spurious.</li>
+      <li>A blinding guard that enumerated modules by name, behind which thirteen modules
+      went unexamined until it was changed to enumerate by path.</li>
+    </ul>
+
+    <p>The response to those five was a standing rule: match on exact values and explicit
+    token boundaries, never on substrings. <strong>This sixth incident is the first caused by
+    that rule itself.</strong> Exact equality does not admit the negation of a claim, and it
+    also does not admit an isoform of the target. The correction to the correction is not a
+    return to substring matching — which would reintroduce every failure above — but a
+    tolerant match that is specific about which transformations it will accept.</p>
+
+    <h3>What this does and does not change</h3>
+
+    <p>Two consequences follow, and they point in opposite directions:</p>
+
+    <ul>
+      <li><strong>The row-level headline figure is an upper bound.</strong> 83 of 315 is the
+      check's raw output. Roughly 57 of 315 is the rate at which retrieval returns an
+      antibody against a genuinely different molecule. The candidate-level figure of 25 of
+      200 is similarly an upper bound on affected candidates.</li>
+      <li><strong>The ranking correction is unaffected.</strong> Not by inference — this was
+      checked directly. Every flagged row belonging to each of the five designs that reached
+      the ranking was examined individually. Four of the five retrieved no binder at all.
+      GPR35's single flagged binder records two G-protein heterotrimer subunits, alpha-13 and
+      beta-1, and neither is claudin-like, isoform-labelled, fusion-tagged or a reordering of
+      the receptor's own name. It is a genuine mismatch, and the recommendation withdrawn on
+      the strength of it stays withdrawn.</li>
+    </ul>
+  </div>
+
+  <div class="limit">
+    <span class="label">Why this is in the document rather than fixed first</span>
+    <p>The matching error under-counts evidence on nine targets. It is safe in direction —
+    it can only make the platform more conservative — and it does not touch any current
+    recommendation. It is being specified as a separate change with its own acceptance
+    criteria, rather than folded into this one, because a correction that quietly acquires a
+    second correction stops being reviewable as either.</p>
+    <p>The figures in this document are the ones measured before that change. They will move
+    when it lands, and this section is what will let a reader tell the difference.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>The ranking, before and after</h2>
+    <p class="kicker">Effect</p>
+
+    <p>The objective now counts a binder unless its recorded antigen names a different
+    protein. Both the original and the corrected count are computed on every run and carried
+    on every record, together with the ranking each produces.</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Design</th>
+            <th class="num">Attractiveness</th>
+            <th class="num">Safety margin</th>
+            <th class="num">Retrieved</th>
+            <th class="num">Counted</th>
+            <th>Original</th>
+            <th>Corrected</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="gene">FER1L6</td><td class="num">0.5023</td><td class="num">&minus;0.1381</td>
+            <td class="num">0</td><td class="num">0</td>
+            <td><span class="verdict v-pass">ADVANCE</span></td>
+            <td><span class="verdict v-pass">ADVANCE</span></td>
+          </tr>
+          <tr class="highlight">
+            <td class="gene">GPR35</td><td class="num">0.5022</td><td class="num">&minus;0.1627</td>
+            <td class="num">1</td><td class="num">0</td>
+            <td><span class="verdict v-pass">ADVANCE</span></td>
+            <td><span class="verdict v-fail">BACKUP</span></td>
+          </tr>
+          <tr>
+            <td class="gene">TMEM92</td><td class="num">0.4959</td><td class="num">&minus;0.1381</td>
+            <td class="num">0</td><td class="num">0</td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+          </tr>
+          <tr>
+            <td class="gene">TNFSF9</td><td class="num">0.4114</td><td class="num">&minus;0.1391</td>
+            <td class="num">0</td><td class="num">0</td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+          </tr>
+          <tr>
+            <td class="gene">BTNL8</td><td class="num">0.4059</td><td class="num">&minus;0.1747</td>
+            <td class="num">0</td><td class="num">0</td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+            <td><span class="verdict v-unknown">BACKUP</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>One design moved. GPR35 leaves the non-dominated set and is recommended as a
+    backup rather than for advancement. Nothing else in the pool changed.</figcaption>
+  </figure>
+
+  <div class="col">
+    <p>The correction was scoped deliberately and narrowly, and three things were held fixed
+    and then verified to have held:</p>
+
+    <ul>
+      <li><strong>The gates did not move.</strong> A design holding one flagged binder still
+      passes the &ldquo;a binder was retrieved&rdquo; gate and is still ranked; it simply
+      stops scoring a point for it. Attrition and gate outcomes are identical across all 200
+      candidates. Moving the gate as well would have reclassified GPR35 as awaiting evidence
+      rather than as a backup — a materially larger claim, and not the one that was approved.</li>
+      <li><strong>The weighted scorecard did not move.</strong> Binder quality is scored from
+      the binder record, not from how many were retrieved, and no affinity measurement is
+      connected either way. Every component score is identical under both objectives.</li>
+      <li><strong>No estimated value was introduced.</strong> Nothing was imputed to make the
+      corrected ranking cleaner.</li>
+    </ul>
+
+    <p>Twenty-three checks govern the ranking stage, and all twenty-three passed against the
+    corrected pipeline. Seven of them were written specifically for this change and committed
+    <em>before</em> the code that implements it, including the prediction that GPR35 would
+    move from advance to backup and that nothing else in the pool would change. That
+    prediction was recorded first and then observed.</p>
+
+    <p>Across the whole platform the acceptance suite runs 240 checks over both indications.
+    After this change 232 pass — seven more than before it, which is exactly the number of
+    checks the change added. The eight that do not pass are pre-existing items, five of them
+    formally accepted with reasons on record and three open; none of them involves binder
+    counting, and none moved as a result of this work.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">A check that cannot fail proves nothing</span>
+    <p>Three of the seven assert that something did <em>not</em> change, and an unchanged
+    result is the easiest thing in the world to report without having looked. Each of those
+    three therefore re-ranks the same inputs with the counting rule swapped back to its old
+    behaviour, and refuses to pass unless that swap is first shown to have moved the
+    ranking. Without that guard they would pass on an identity that demonstrates nothing.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>What the platform will not tell you about affinity</h2>
+    <p class="kicker">Declared limitation</p>
+
+    <p>No connected data source carries a binding affinity, dissociation constant or
+    free-energy column for these binders. The platform therefore reports affinity as
+    <span class="verdict v-unknown">UNKNOWN</span> on every binder, and this correction did
+    not change that.</p>
+
+    <p>Two consequences follow, and both are stated rather than worked around:</p>
+
+    <ul>
+      <li><strong>Prediction error cannot be computed.</strong> A fold error compares a
+      predicted affinity against a measured one. There is no measured value to compare
+      against, so no error figure exists — it is reported as not computable, not as zero and
+      not as a wide interval.</li>
+      <li><strong>Correlation against experiment cannot be computed</strong>, for the same
+      reason. Any correlation coefficient the platform emitted would be a correlation with
+      something it had itself invented.</li>
+    </ul>
+
+    <p>The scoring frame carries binder quality as a weighted component and leaves it
+    unmeasured, rather than dropping it. Dropping it would silently redistribute its weight
+    across the components that <em>are</em> measured, making a design scored on part of the
+    frame look directly comparable to one scored on all of it. Instead the score is
+    normalised over the measured subset, the unmeasured components are named individually,
+    and no score is emitted at all where less than half the applicable frame was measured.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">What a matched verdict is worth</span>
+    <p>A match means the depositor's recorded antigen agrees with the reference record's
+    name for the target. It does not mean an interface has been inspected, a contact
+    residue identified, or a binding event observed. Establishing any of that requires the
+    deposited coordinates, which are not connected.</p>
+    <p>The corrected objective is therefore a better measurement than the one it replaced —
+    a property of the candidate rather than of the search that found it — and still a
+    weaker claim than <em>binders shown to bind</em>. The platform is explicit about which
+    of the three it is reporting.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>A claim in a document that testing caught</h2>
+    <p class="kicker">Secondary finding</p>
+
+    <p>Every stage in the pipeline emits a configuration fingerprint that incorporates the
+    fingerprint of the stage before it. The chain exists so that two runs under materially
+    different settings cannot be mistaken for the same experiment: change a parameter, and
+    every downstream fingerprint changes with it.</p>
+
+    <p>The approved decision document for this change stated that the ranking stage's
+    fingerprint would change under the new objective, so that no cached run under the old
+    objective could compare as equal to a new one. <strong>That statement was false against
+    the code.</strong></p>
+
+    <p>The fingerprint was computed from seven inputs — the upstream fingerprint, the
+    candidate list, the gate definitions, the recommendation set, the decision vocabulary,
+    the gate-status vocabulary and the scoring fingerprint. <em>None of them described how
+    any objective is computed.</em> Changing the binder objective from counting hits to
+    counting matches would have left all seven identical and the fingerprint unmoved.</p>
+
+    <p>The consequence is precise and serious: two experiments producing <em>different
+    recommendations</em> would have carried the same identity and compared as the same run.
+    That is the exact failure the chain exists to prevent, arriving inside the mechanism
+    meant to prevent it.</p>
+
+    <p>Two details make this worth reporting to anyone assessing the platform's engineering
+    discipline rather than only its biology:</p>
+
+    <ul>
+      <li><strong>It was found by testing a claim in a document, not by reading code.</strong>
+      The sentence asserting the fingerprint would change was treated as a hypothesis and
+      checked. Prose in a specification is the least-tested artifact in any project, because
+      nothing re-evaluates a sentence.</li>
+      <li><strong>The existing fingerprint check would never have caught it.</strong> That
+      check perturbs a scoring weight and confirms the fingerprint moves. It had no coverage
+      of the objective basis, so the pipeline could have shipped with a silent
+      cache-equality defect while a green check attested to the chain.</li>
+    </ul>
+
+    <p>The objective's definition is now itself an input to the fingerprint, and a check
+    written for this change computes the fingerprint under two different definitions and
+    requires them to differ — rather than inspecting the code and concluding they would.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section>
+  <div class="col">
+    <h2>The audit trail</h2>
+    <p class="kicker">Evidence</p>
+
+    <p>The requirement placed on this correction was that the record read as a chain rather
+    than as a corrected answer with its history removed. A record carrying only the
+    corrected number makes the first half of the story unreproducible from the platform, and
+    a reader would have to take the description of the error on trust.</p>
+
+    <p>Every candidate now carries all four links:</p>
+
+    <ol class="chain">
+      <li>
+        <span class="what">Original evidence</span>
+        <span class="val">retrieved binder count &mdash; every row the search returned</span>
+      </li>
+      <li>
+        <span class="what">Validation finding</span>
+        <span class="val">flagged count, with the recorded antigen and the path that produced each verdict</span>
+      </li>
+      <li>
+        <span class="what">Corrected evidence</span>
+        <span class="val">counted binders &mdash; the objective the ranking is computed from</span>
+      </li>
+      <li>
+        <span class="what">Ranking change</span>
+        <span class="val">the non-dominated set and the decision, recomputed under each of the two counts</span>
+      </li>
+    </ol>
+
+    <p>The superseded ranking is <em>recomputed on each run from that run's own inputs</em>,
+    not read back from a stored answer. A remembered result would drift away from the
+    corrected result printed beside it the first time anything upstream changed, and the
+    comparison would quietly stop being a comparison.</p>
+
+    <h3>What the commit history evidences</h3>
+
+    <p>The ordering below is the claim, and it is verifiable from the repository rather than
+    asserted in prose:</p>
+
+    <ul>
+      <li>The validation check and its first finding were committed together on
+      <span class="mono">2026-09-07</span>, in a commit whose message states the number of
+      flagged rows it caught.</li>
+      <li>The frozen benchmark output was committed <em>before</em> the literature answer
+      panel, later the same day. The ordering guard resolves both and confirms it.</li>
+      <li>The decision to change the objective was written up as a specification and
+      committed on <span class="mono">2026-09-07</span> — recording the predicted outcome and
+      the alternatives rejected, before any code changed.</li>
+      <li>The acceptance criteria for the change were committed on
+      <span class="mono">2026-09-09</span>, in a commit that contains no implementation. The
+      code implementing them is a <em>later</em> commit on the same day.</li>
+    </ul>
+
+    <p>That last ordering is the one worth checking, and it is deliberately made checkable.
+    Criteria written after a result are not criteria; they are a description of what
+    happened. Separating them into an earlier commit is what makes the distinction visible
+    to someone who was not present.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">One disclosure about the history itself</span>
+    <p>The repository's commit messages were rewritten on <span class="mono">2026-09-09</span>
+    to remove automated authorship trailers. The rewrite changed commit identifiers; it did
+    not change any file. Every content hash in the history is byte-identical before and
+    after, commit parentage and both timestamps are preserved, and the count of commits is
+    unchanged.</p>
+    <p>Ordering evidence — which is what the blind rule and the specification-first claim
+    rest on — is therefore intact, and the ordering guard was re-run afterwards to confirm
+    it still resolves. Identifiers quoted in documents written before that date will not
+    resolve, and this document quotes dates rather than identifiers for that reason.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="col">
+  <h2>The engineering correction</h2>
+  <p class="kicker">Change</p>
+
+  <p>The rule is one clause: <strong>count a binder unless its recorded antigen names
+  something else.</strong></p>
+
+  <p>It is written as a single negative test deliberately. The positive form — count a
+  binder whose annotation names the target — reads more naturally and is a different, worse
+  rule. It would discard every named therapeutic retrieved by the sequence route, whose
+  unknown verdict reflects a check that does not apply rather than any doubt about the
+  binder. It would also discard entries carrying no antigen annotation at all, treating an
+  absent record as evidence of a different antigen. Both are imputations against the binder,
+  and the platform's standing rule is that missing is a third state and is never filled in.</p>
+
+  <p>Because three unrelated situations all produce an unknown verdict, each verdict now
+  carries a token recording <em>which</em>, and the counted set is broken down by path on
+  every record. A count resting largely on absent annotation is a materially weaker claim
+  than one resting on annotations that matched, and the two are no longer indistinguishable
+  in the output. CLDN18 above is exactly this case: eleven counted binders, none of them
+  matched.</p>
+
+  <p>Two structural choices are worth naming for anyone evaluating how the platform is
+  built:</p>
+
+  <ul>
+    <li><strong>The reference records are a required input to the ranking, not an optional
+    one.</strong> Without them every binder reads unknown, which the counting rule admits —
+    so a permissive default would have silently restored the old behaviour of counting
+    everything the search returned. A caller that cannot supply them now fails loudly.</li>
+    <li><strong>The superseded decision is produced by the same function as the current
+    one</strong>, with front membership supplied as an argument, rather than by a second
+    implementation of the same logic. A parallel copy would be free to drift, and the entire
+    value of carrying both decisions is that they remain comparable.</li>
+  </ul>
+
+  <p>The correction did not make the platform's recommendation stronger. It made it smaller,
+  and the reason it is smaller is now stated on the record it came from.</p>
+</section>
+
+<footer class="end">
+  <p><strong>Wellmatix CAR-T Platform &middot; Validation Case Study 01.</strong> All figures
+  are measured from the production pancreatic run and re-derived from source for this
+  document. Where a number describes a population, the population is named beside it. Where
+  a measurement does not exist, no value is reported in its place.</p>
+</footer>
+
+</div>
