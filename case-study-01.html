@@ -329,9 +329,9 @@
       raw output of the check, before its own error rate is subtracted.</div>
     </div>
     <div class="fig flag">
-      <div class="n">~57<small> / 315</small></div>
-      <div class="cap"><strong>Genuinely wrong antigen.</strong> The residue after removing
-      rows where the check itself misread the label. Derivation below.</div>
+      <div class="n">64<small> / 315</small></div>
+      <div class="cap"><strong>Genuinely wrong antigen.</strong> Measured after the check's
+      own error was fixed. An earlier estimate of 57 was too low.</div>
     </div>
     <div class="fig flag">
       <div class="n">25<small> / 200</small></div>
@@ -348,11 +348,12 @@
   <div class="limit">
     <span class="label">Three numbers, three different populations</span>
     <p><strong>83 of 315</strong> counts <em>binder rows</em> and is the check's raw output.
-    <strong>Roughly 57 of 315</strong> is what survives once the rows the check itself
-    misread are removed — see <em>The check's own failure mode</em> below, which gives the
-    derivation. <strong>25 of 200</strong> counts <em>candidates</em>, and is the figure that
-    bears on what the platform recommends, because recommendations are made about targets
-    rather than about rows.</p>
+    <strong>64 of 315</strong> is what survives once the rows the check itself misread are
+    removed — see <em>The check's own failure mode</em> below, which gives the derivation and
+    corrects an earlier estimate of 57. <strong>25 of 200</strong> counts <em>candidates</em>,
+    and is the figure that bears on what the platform recommends, because recommendations are
+    made about targets rather than about rows; the corrected candidate figure is
+    <strong>21 of 200</strong>.</p>
     <p>A single target can hold many binders, so the row-level rate is necessarily the higher
     of the two. Each figure is quoted with its population named throughout. Quoting any one
     of them alone would misstate the finding.</p>
@@ -540,9 +541,9 @@
 
   <div class="limit">
     <span class="label">The 83 is an upper bound, not a result</span>
-    <p>Roughly 26 of the 83 flagged rows name the target itself, in a form the check's
-    comparison could not see. The genuine figure is approximately <strong>57 of 315</strong>.
-    The mechanism, the derivation and the consequences are set out in
+    <p>19 of the 83 flagged rows name the target itself, in a form the check's comparison
+    could not see. The genuine figure is <strong>64 of 315</strong>. The mechanism, the
+    derivation, and a correction to an earlier estimate that was too low, are set out in
     <em>The check's own failure mode</em>, below, after the example that exposed it.</p>
   </div>
 </section>
@@ -728,27 +729,46 @@
   </figure>
 
   <div class="col">
-    <h3>How the 57 was derived</h3>
+    <h3>The genuine figure, and an estimate that was wrong</h3>
 
-    <p>Each flagged row's recorded antigen, and each of the target's own reference names,
-    were reduced to lowercased alphanumeric words, discarding the connectives
-    <em>of</em> and <em>the</em> and the generic words <em>isoform</em> and <em>protein</em>.
-    A row was reclassified as a matching error where <strong>every word of one of the
-    target's own names appears among the words of the recorded antigen</strong> — that is,
-    where the recorded antigen is the target's name with extra words around it.</p>
+    <p>This section first carried an estimate of <strong>57</strong>, produced by a screening
+    test over the flagged set rather than by fixing the matcher. The matcher has since been
+    fixed, and the measured figure is <strong>64</strong>. The estimate is corrected here
+    rather than replaced, because how it was wrong is more informative than the number.</p>
 
-    <p>26 of the 83 rows meet that test. The remaining <strong>57 name a genuinely different
-    molecule</strong>: G-protein subunits, enterotoxin chains, the partner chain of an
+    <p>The screening test reduced each flagged antigen and each reference name to lowercased
+    words, <strong>discarding the connectives <em>of</em> and <em>the</em> and the generic
+    words <em>isoform</em> and <em>protein</em></strong>, then reclassified a row where every
+    remaining word of a reference name appeared in the recorded antigen. 26 of 83 rows met
+    that test, leaving 57.</p>
+
+    <p>The implementation discards nothing. Dropping words that look generic is precisely
+    what makes a tolerant matcher dangerous: drop <em>receptor</em> and the hepatocyte growth
+    factor <em>ligand</em> becomes a match for the hepatocyte growth factor
+    <em>receptor</em>, which is a different molecule, and an antibody against one is not
+    evidence about the other. The rule the fix was built to satisfy forbids the shortcut the
+    estimate took.</p>
+
+    <p>So <strong>seven rows the screening test excused stay flagged</strong>: four on ERBB2,
+    two on MUC1 recorded as <span class="mono">MUC1 Glycopeptide</span> and
+    <span class="mono">Synthetic MUC1 glycopepide</span>, and one on TREM2 recorded as
+    <span class="mono">TREM-2 stalk peptide</span>. In each, the word left over is not a
+    qualifier describing which form of the target is present. 19 rows were genuinely the
+    target under a label the comparison could not see; <strong>64 name a genuinely different
+    molecule</strong> — G-protein subunits, enterotoxin chains, the partner chain of an
     integrin heterodimer, crystallisation chaperones, unrelated antibody fragments.</p>
 
-    <p>This is a screening test over the flagged set, not an exhaustive manual review of 83
-    entries, and the figure is quoted as approximate for that reason. It is conservative in
-    one direction — it reclassifies only rows containing a complete reference name — and it
-    has a useful positive control in this pool. Two closely related receptors are both
-    present. Entries recording <span class="mono">erbB-2</span> are reclassified for the
-    target whose reference name is erbB-2, and <em>left flagged</em> for its neighbour
-    erbB-3, where erbB-2 genuinely is a different protein. A test that could not tell those
-    apart would be worthless here, and this one does.</p>
+    <div class="limit">
+      <span class="label">The direction the estimate was wrong in</span>
+      <p><strong>The estimate understated the problem.</strong> It credited the platform's
+      retrieval with seven fewer genuinely wrong-antigen binders than it has. A partner
+      assessing this platform should know that the first figure published erred in the
+      flattering direction, and that it was corrected by building the fix rather than by
+      being challenged.</p>
+      <p>The candidate-level figure moved in the same direction and was predicted exactly:
+      25 of 200 affected targets falls to <strong>21 of 200</strong>, which was the number
+      written down before the change was made.</p>
+    </div>
 
     <h3>The sixth incident of this kind, and the first in this direction</h3>
 
@@ -788,9 +808,9 @@
 
     <ul>
       <li><strong>The row-level headline figure is an upper bound.</strong> 83 of 315 is the
-      check's raw output. Roughly 57 of 315 is the rate at which retrieval returns an
-      antibody against a genuinely different molecule. The candidate-level figure of 25 of
-      200 is similarly an upper bound on affected candidates.</li>
+      check's raw output. 64 of 315 is the rate at which retrieval returns an antibody
+      against a genuinely different molecule. The candidate-level figure of 25 of 200 is
+      similarly an upper bound, and falls to 21 of 200.</li>
       <li><strong>The ranking correction is unaffected.</strong> Not by inference — this was
       checked directly. Every flagged row belonging to each of the five designs that reached
       the ranking was examined individually. Four of the five retrieved no binder at all.
@@ -802,14 +822,20 @@
   </div>
 
   <div class="limit">
-    <span class="label">Why this is in the document rather than fixed first</span>
-    <p>The matching error under-counts evidence on nine targets. It is safe in direction —
-    it can only make the platform more conservative — and it does not touch any current
-    recommendation. It is being specified as a separate change with its own acceptance
-    criteria, rather than folded into this one, because a correction that quietly acquires a
-    second correction stops being reviewable as either.</p>
-    <p>The figures in this document are the ones measured before that change. They will move
-    when it lands, and this section is what will let a reader tell the difference.</p>
+    <span class="label">This has since been fixed, and the fix changed the specification</span>
+    <p>The matching error was specified as a separate change with its own acceptance
+    criteria, rather than folded into the binder-count correction, because a correction that
+    quietly acquires a second correction stops being reviewable as either. It has since been
+    implemented, and the figures above are the ones measured after it.</p>
+    <p>Two of that specification's own proposals did not survive the data. It proposed
+    accepting a reordering of a target's own words, which had to be withdrawn: across the
+    full reference set, word order is what separates paralogues. <span class="mono">System N
+    amino acid transporter 1</span> and <span class="mono">N-system amino acid transporter
+    1</span> use identical words and are different proteins, as do two leucine-rich repeat
+    neuronal proteins and two sialic acid-binding lectins. It also proposed refusing matches
+    whose surplus words were drawn from a list of dangerous ones, which is not sufficient:
+    the words that separate two proteins are ordinary content words. The rule now names what
+    it accepts rather than what it refuses.</p>
   </div>
 </section>
 
