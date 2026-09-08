@@ -6,7 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
-from car_pipeline.stages import scoring
+from car_pipeline.stages import binder_check, scoring
 
 NO_DESIGN_REACHES_THE_END = "NO_DESIGN_REACHES_THE_END"
 RANKED = "RANKED"
@@ -64,6 +64,20 @@ GATE_DECISION = {
 # it: the decision column reads front membership, which Stage 11 does compute.
 POSITION_BASIS = "stage4 composite order, inherited; not a ranking Stage 11 computed"
 
+# What the binder objective counts, in the output and in the configuration
+# hash. It is a hashed input rather than a comment because the alternative was
+# demonstrated to leave the hash unchanged: nothing else in the payload
+# describes how an objective is computed, so a cached run under the previous
+# basis would have compared equal to a run under this one.
+BINDER_COUNT_BASIS = (
+    "binders whose recorded antigen does not name another protein; a binder "
+    "with no recorded antigen counts, absence not being evidence of a "
+    "different antigen")
+
+RETRIEVED_COUNT_BASIS = (
+    "every row the binder search returned, matched or not; carried as the "
+    "original evidence the corrected count is derived from")
+
 
 @dataclass
 class Ranked:
@@ -74,12 +88,26 @@ class Ranked:
     failed_at: str | None
     attractiveness: float | None = None
     safety_margin: float | None = None
+
+    # The audit chain, in order. binder_count is the objective and the front is
+    # computed from it; the other two are what it was derived from, kept so the
+    # first half of the chain stays reproducible from the record itself rather
+    # than only from the document that describes the correction.
+    retrieved_binder_count: int = 0
+    wrong_antigen_binder_count: int = 0
     binder_count: int = 0
+    binder_count_paths: dict = field(default_factory=dict)
 
     binder_supplied: bool = True
 
     cleanliness: int = 0
     on_front: bool = False
+
+    # The same front recomputed on the retrieved count, so the ranking change
+    # the correction produced is visible on the record beside the corrected
+    # result rather than reconstructed from a stored answer elsewhere.
+    on_front_under_retrieved_count: bool = False
+    decision_under_retrieved_count: str = ""
 
     position: int | None = None
     candidate_id: str | None = None
@@ -91,17 +119,37 @@ class Ranked:
     scorecard: object | None = None
     overall: float | None = None
 
-    @property
-    def objectives(self) -> tuple[float, float, float, float] | None:
-        """The objectives this candidate is compared on, or None if it did not survive."""
+    def _objectives(self, binders: float) -> tuple[float, float, float, float] | None:
+        """The four objectives, with the binder axis supplied by the caller."""
         if not self.survived:
             return None
         return (
             self.attractiveness or 0.0,
             self.safety_margin or 0.0,
-            float(self.binder_count),
+            binders,
             float(self.cleanliness),
         )
+
+    @property
+    def objectives(self) -> tuple[float, float, float, float] | None:
+        """The objectives this candidate is compared on, or None if it did not survive."""
+        return self._objectives(float(self.binder_count))
+
+    @property
+    def retrieved_objectives(self) -> tuple[float, float, float, float] | None:
+        """The same four under the superseded binder objective.
+
+        Recomputed rather than remembered. A stored answer would drift away
+        from the corrected result it is printed beside the first time anything
+        upstream of the ranking changed.
+        """
+        return self._objectives(float(self.retrieved_binder_count))
+
+    @property
+    def decision_changed(self) -> bool:
+        """Whether counting matches rather than hits moved this candidate."""
+        return bool(self.decision_under_retrieved_count
+                    and self.decision != self.decision_under_retrieved_count)
 
 
 def dominates(a: tuple, b: tuple) -> bool:
@@ -118,8 +166,15 @@ def pareto_front(points: list[tuple]) -> list[int]:
     return front
 
 
-def decision_for(entry: Ranked, scored: bool | None) -> str:
+def decision_for(entry: Ranked, scored: bool | None,
+                 *, on_front: bool | None = None) -> str:
     """What should happen to this candidate, from its gate status and the front.
+
+    `on_front` overrides the candidate own front membership, so the decision
+    under the superseded binder objective is produced by this function rather
+    than by a second copy of the same three branches. A reimplementation would
+    be free to drift from this one, and the whole point of carrying both
+    decisions is that they stay comparable.
 
     `scored` is tri-state on purpose. True means a score was emitted, False
     means the candidate cleared every gate but too little of it was measured to
@@ -131,7 +186,26 @@ def decision_for(entry: Ranked, scored: bool | None) -> str:
         return GATE_DECISION[entry.failed_at]
     if scored is False:
         return VALIDATE
-    return ADVANCE if entry.on_front else BACKUP
+    front = entry.on_front if on_front is None else on_front
+    return ADVANCE if front else BACKUP
+
+
+def _checked_binder_rows(binder, record) -> list[dict]:
+    """Every retrieved binder for one target, carrying its target-match verdict.
+
+    Both routes are checked, not only the structural one. A sequence-route
+    binder reads UNKNOWN because it carries no deposited antigen annotation to
+    match, and the counting rule admits it on that basis -- but it is admitted
+    by the rule reading its verdict, not by being left out of the check.
+    """
+    if binder is None:
+        return []
+    rows = [{"route": "structure", "identifier": c.identifier,
+             "antigen_name": c.antigen_name, "antigen_chain": c.antigen_chain}
+            for c in binder.structure]
+    rows += [{"route": "sequence", "identifier": c.identifier,
+              "antigen_name": None} for c in binder.sequence]
+    return binder_check.check(rows, record)
 
 
 def candidate_id(indication_key: str, position: int) -> str:
@@ -151,8 +225,16 @@ def rank(
     indication_key: str,
     stage3_rows: dict,
     budget_bp: int,
+    surface_records: dict,
 ) -> tuple[list[Ranked], dict[str, int], str]:
-    """Attribute every pool member to its first failed gate, then rank survivors."""
+    """Attribute every pool member to its first failed gate, then rank survivors.
+
+    `surface_records` supplies the reference record each binder recorded antigen
+    is matched against, keyed by gene. It is required rather than optional: a
+    missing record makes every binder read UNKNOWN, which the counting rule
+    admits, so a default would quietly restore the superseded behaviour of
+    counting every row the search returned.
+    """
     rows: list[Ranked] = []
     attrition: dict[str, int] = {g: 0 for g in GATES}
 
@@ -161,11 +243,16 @@ def rank(
         safety = gated.get(gene)
         binder = binders.get(gene)
         construct = constructs.get(gene)
+        counts = binder_check.objective_counts(
+            _checked_binder_rows(binder, surface_records.get(gene)))
         entry = Ranked(
             gene=gene, accession=row["accession"], pool_index=row["pool_index"],
             survived=False, failed_at=None,
             attractiveness=composites.get(gene),
-            binder_count=(len(binder.sequence) + len(binder.structure)) if binder else 0,
+            retrieved_binder_count=counts["retrieved"],
+            wrong_antigen_binder_count=counts["wrong_antigen"],
+            binder_count=counts["counted"],
+            binder_count_paths=counts["counted_by_path"],
             cleanliness=-min(
                 (l.flag_count for l in liabilities.get(gene, [])), default=0),
         )
@@ -197,6 +284,13 @@ def rank(
         for i in pareto_front(points):
             survivors[i].on_front = True
 
+        # The superseded objective, recomputed on this run own inputs. This is
+        # what makes the correction auditable from the output: a reader sees
+        # the front the platform would have reported beside the one it does
+        # report, both derived from the same evidence in the same run.
+        for i in pareto_front([r.retrieved_objectives for r in survivors]):
+            survivors[i].on_front_under_retrieved_count = True
+
         for position, entry in enumerate(survivors, 1):
             entry.position = position
             entry.candidate_id = candidate_id(indication_key, position)
@@ -224,8 +318,10 @@ def rank(
     for entry in rows:
         entry.gate_status = (PASSED_ALL_GATES if entry.survived
                              else GATE_STATUS[entry.failed_at])
-        entry.decision = decision_for(
-            entry, entry.scorecard.scored if entry.scorecard else None)
+        scored = entry.scorecard.scored if entry.scorecard else None
+        entry.decision = decision_for(entry, scored)
+        entry.decision_under_retrieved_count = decision_for(
+            entry, scored, on_front=entry.on_front_under_retrieved_count)
 
     return rows, attrition, status
 
@@ -236,6 +332,7 @@ def configuration_hash(stage9_hash: str, genes: list[str]) -> str:
                "recommended": list(RECOMMENDED),
                "decisions": list(DECISIONS),
                "gate_status": [GATE_STATUS[g] for g in GATES],
+               "binder_count_basis": BINDER_COUNT_BASIS,
                "scoring": scoring.configuration_hash()}
     blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]

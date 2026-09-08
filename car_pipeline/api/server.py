@@ -736,7 +736,9 @@ def constructs_view(project_id: str) -> dict:
             + "; ".join(f"{b['target_id']} {b['identifier']} records "
                         + ", ".join(b["recorded_antigens"])
                         for b in (flagged_shipping or flagged)[:2])
-            + ". A retrieved count is a count of database hits. The entry was "
+            + ". A retrieved count is a count of database hits, and the "
+              "ranking counts a binder only where the recorded antigen does "
+              "not name another protein. The entry was "
               "found by searching on the target's accession, so it contains "
               "the target; the antibody in it is annotated against another "
               "chain of the same complex. The count did not change, what it "

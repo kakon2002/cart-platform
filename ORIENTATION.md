@@ -183,6 +183,26 @@ Four layers, each blinded: the import graph is walked by parsing rather than
 importing, held-out values are scanned for in every reachable module, the output
 is fingerprinted, and the commit graph is the evidence of ordering.
 
+### What the benchmark found, and what it changed
+
+The target-match check the benchmark introduced was turned back on the platform's
+own pool. A binder is retrieved by searching a structural database on the target's
+accession, so a hit contains the target — but the antibody in that entry may be
+annotated against a different chain of the same complex. Across the pancreatic
+pool, **25 of 200 pool members carry at least one such binder**, and the pattern is
+systematic rather than scattered.
+
+The ranking objective now counts a binder unless its recorded antigen names
+another protein. **One shipping design moved from ADVANCE to BACKUP**, because the
+single binder keeping it on the Pareto front is annotated against a G-protein
+subunit rather than the receptor it was retrieved for.
+
+Both counts survive in the output. Every candidate carries what the search
+returned, what the check rejected, what the ranking used, and the front and
+decision recomputed under each — so the correction reads as a chain rather than
+as an answer with its history removed. Specified in
+`binder-count-correction.md`, criteria `W12` to `W18`.
+
 ---
 
 ## 8. Where the specifications live
@@ -289,10 +309,6 @@ like an impossible one.
 
 ### Needs a decision
 
-- **`binder_count` counts database hits, not target-matched binders.** 83 of 315
-  structure-route binders are annotated against a different protein. One shipping
-  design is affected, and counting matches rather than hits moves it from
-  ADVANCE to BACKUP. Specified in `decision-binder-count-objective.md`, open.
 - **The staining veto gates on presence rather than amount** (`R14`). A tolerance
   decision, priced, not taken.
 - **`architecture_mode` values `OR` and `AND-NOT`** have no implemented routing

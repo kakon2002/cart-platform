@@ -212,11 +212,13 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
 
     progress("ranking", "attribution and Pareto front")
     composites = {r.gene: r.composite for r in ranked if r.gene}
+    surface_by_gene = {r.gene: r for r in surface if r.gene}
     final, attrition, status = stage11.rank(
         decisions, binders, by_construct, by_gate, liabilities, composites,
         ceiling, indication_key=indication.key,
         stage3_rows={r.gene: r for r in ranked if r.gene},
-        budget_bp=stage6.BUDGET_BP)
+        budget_bp=stage6.BUDGET_BP,
+        surface_records=surface_by_gene)
 
     s5_hash = stage5.configuration_hash(s4_hash, [r.gene for r in records])
     s6_hash = stage6.configuration_hash(s5_hash, [c.gene for c in constructs])
@@ -235,7 +237,7 @@ def run(cancer_type: str, progress=lambda stage, note="": None) -> dict:
         "ceiling": ceiling,
         "ranked": ranked,
         "risk_inputs": risk_inputs,
-        "surface_by_gene": {r.gene: r for r in surface if r.gene},
+        "surface_by_gene": surface_by_gene,
         "pool": pool,
         "pairs": pairs,
         "decisions": decisions,

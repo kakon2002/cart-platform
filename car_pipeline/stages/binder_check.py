@@ -22,6 +22,22 @@ UNKNOWN = "UNKNOWN"
 
 VERDICTS = (PASS, FAIL, UNKNOWN)
 
+# Why a row reached its verdict. The verdict alone is not enough to audit the
+# counting rule below: three unrelated situations all read UNKNOWN, and a
+# reader needs to see which one admitted a binder to the count. Parsing the
+# reason prose for that would make the rule depend on wording.
+MATCHED = "matched"
+WRONG_ANTIGEN = "wrong_antigen"
+NO_ANNOTATION = "no_annotation"
+SEQUENCE_ROUTE = "sequence_route"
+NO_RECORD = "no_record"
+
+PATHS = (MATCHED, WRONG_ANTIGEN, NO_ANNOTATION, SEQUENCE_ROUTE, NO_RECORD)
+
+# The paths that admit a binder to the objective. One clause: count a binder
+# unless its recorded antigen names something else.
+COUNTED_PATHS = (MATCHED, NO_ANNOTATION, SEQUENCE_ROUTE, NO_RECORD)
+
 # Values the source uses for "nothing recorded". They are absence, not a name,
 # and they must not be matched against or treated as a mismatch.
 ABSENT = {"", "na", "n/a", "none", "null", "unknown", "-"}
@@ -116,6 +132,7 @@ def evaluate(antigen_name: str | None, names: set[str],
         return {
             **payload,
             "target_match": UNKNOWN,
+            "match_path": NO_ANNOTATION,
             "reason": (
                 "The entry records no antigen name, so there is nothing to "
                 "match against. This is absence of annotation, not evidence "
@@ -128,6 +145,7 @@ def evaluate(antigen_name: str | None, names: set[str],
         return {
             **payload,
             "target_match": PASS,
+            "match_path": MATCHED,
             "target_match_score": 1.0,
             "wrong_antigen_flag": False,
             "reason": (
@@ -143,6 +161,7 @@ def evaluate(antigen_name: str | None, names: set[str],
     return {
         **payload,
         "target_match": FAIL,
+        "match_path": WRONG_ANTIGEN,
         "target_match_score": 0.0,
         "wrong_antigen_flag": True,
         "reason": (
@@ -167,6 +186,7 @@ def check(rows: list[dict], record) -> list[dict]:
         if record is None:
             verdict = {
                 "target_match": UNKNOWN,
+                "match_path": NO_RECORD,
                 "target_match_score": None,
                 "wrong_antigen_flag": None,
                 "recorded_antigens": [],
@@ -182,6 +202,7 @@ def check(rows: list[dict], record) -> list[dict]:
         elif row.get("route") == "sequence":
             verdict = {
                 "target_match": UNKNOWN,
+                "match_path": SEQUENCE_ROUTE,
                 "target_match_score": None,
                 "wrong_antigen_flag": None,
                 "recorded_antigens": [],
@@ -206,7 +227,52 @@ def check(rows: list[dict], record) -> list[dict]:
     return out
 
 
+def counts_towards_objective(row: dict) -> bool:
+    """Whether one checked binder contributes to the ranking objective.
+
+    One clause: count it unless its recorded antigen names something else.
+
+    Written as a single negative test on purpose. The positive form -- count a
+    binder whose annotation names the target -- reads more natural and is a
+    different rule: it would drop every sequence-route binder, whose UNKNOWN is
+    about a check that does not apply rather than about doubt, and it would drop
+    entries with no annotation at all, treating absence as evidence of a
+    different antigen. Both are imputations against the binder.
+    """
+    return row.get("target_match") != FAIL
+
+
+def objective_counts(rows: list[dict]) -> dict:
+    """The three counts and the path breakdown, over checked binder rows.
+
+    The counts are arithmetically closed -- retrieved equals counted plus
+    wrong-antigen -- so a reader can see that no binder was dropped between the
+    number the search returned and the number the ranking used. The breakdown
+    says which path admitted each counted binder, because three different
+    situations read UNKNOWN and a count resting mostly on absent annotation is a
+    weaker claim than one resting on annotation that matched.
+    """
+    counted = [r for r in rows if counts_towards_objective(r)]
+    paths = {p: 0 for p in PATHS}
+    for row in rows:
+        path = row.get("match_path")
+        if path in paths:
+            paths[path] += 1
+    return {
+        "retrieved": len(rows),
+        "counted": len(counted),
+        "wrong_antigen": len(rows) - len(counted),
+        "paths": paths,
+        "counted_by_path": {p: paths[p] for p in COUNTED_PATHS},
+    }
+
+
 NOTES = [
+    "The ranking objective counts a binder unless its recorded antigen names "
+    "something else. A binder whose entry records no antigen still counts: "
+    "absent annotation is not evidence of a different antigen, and refusing to "
+    "count it would impute against the binder. The counted set is broken down "
+    "by path so a reader can see which of those admitted it.",
     "A target-match verdict is a claim about the annotation a depositor "
     "recorded, not about an interface anyone inspected. Deciding what an "
     "antibody contacts needs coordinates, and no coordinate file is connected.",

@@ -310,24 +310,30 @@ def measured_gaps(packages: list[dict]) -> list[Gap]:
             f"{gene} {c.get('identifier')} records "
             f"{', '.join(c.get('recorded_antigens') or []) or 'nothing'}"
             for gene, c in flagged[:2])
+        moved = [p["gene"] for p in packages
+                 if p["ranking"].get("decision_chain", {}).get("decision_changed")]
         out.append(Gap(
             5, "Target and binder evidence report", PARTIAL,
-            "a retrieved binder count that means target-specific binding",
+            "a binder count that means an inspected interface rather than a "
+            "matching annotation",
             f"{len(flagged)} of {len(structural)} structural binder(s) carried "
             f"by the shipping designs are annotated against a different "
             f"protein: {named}. The retrieval count did not change; what it "
-            "means did. Every structure-route count this platform has "
-            "reported was a count of database hits found by searching on the "
-            "target's accession, and an entry containing the target may carry "
-            "an antibody raised against another chain of the same complex.",
-            blocking_stage="none; the check exists and is applied here",
-            note="This reaches the ranking. binder_count is one of the four "
-                 "Pareto objectives and counts hits rather than matches, so a "
-                 "design can sit on the front on the strength of a binder "
-                 "annotated against something else. Whether the objective "
-                 "should count only matched binders is a decision that "
-                 "changes which designs advance, and it is surfaced here "
-                 "rather than taken quietly. Measured from this run.",
+            "means did. An entry found by searching on the target's accession "
+            "contains the target, but the antibody in it may be annotated "
+            "against another chain of the same complex.",
+            blocking_stage="none; the check exists and the ranking applies it",
+            note="This reached the ranking and has been corrected there. The "
+                 "binder objective now counts a binder unless its recorded "
+                 "antigen names another protein, so a design no longer sits "
+                 "on the front on the strength of a binder annotated against "
+                 "something else"
+                 + (f"; {', '.join(moved)} moved decision under the correction"
+                    if moved else "")
+                 + ". What remains is the weaker claim underneath: a match is "
+                 "agreement with a depositor's annotation, not an interface "
+                 "anyone inspected, and settling that needs the coordinates "
+                 "that are not connected. Measured from this run.",
         ))
 
     unscored = [p["gene"] for p in packages
@@ -529,10 +535,12 @@ def _binder_payload(record, construct, surface_record=None) -> dict:
         "sequence_route": [_candidate_payload(c) for c in record.sequence],
         "reasons": reasons + [
             "A structural candidate carries a target-match verdict read from "
-            "the entry's own antigen annotation. A retrieved count is a count "
-            "of database hits, and a hit found by searching on this target's "
-            "accession may carry an antibody raised against a different chain "
-            "of the same complex.",
+            "the entry's own antigen annotation. The retrieved count is a "
+            "count of database hits: a hit found by searching on this "
+            "target's accession may carry an antibody raised against a "
+            "different chain of the same complex, so the ranking counts a "
+            "binder only where the recorded antigen does not name another "
+            "protein. Both counts are carried in the ranking section.",
         ],
     }
 
@@ -623,13 +631,43 @@ def _ranking_payload(entry, position, total) -> dict:
             "attractiveness": entry.attractiveness,
             "safety_margin": entry.safety_margin,
             "binder_count": entry.binder_count,
+            "binder_count_basis": stage11.BINDER_COUNT_BASIS,
             "cleanliness": entry.cleanliness,
+        },
+        # The correction that moved this objective, as a chain rather than as a
+        # corrected number. A reader can reproduce the superseded result from
+        # the record itself instead of taking the description of it on trust.
+        "binder_evidence": {
+            "retrieved_binder_count": entry.retrieved_binder_count,
+            "retrieved_count_basis": stage11.RETRIEVED_COUNT_BASIS,
+            "wrong_antigen_binder_count": entry.wrong_antigen_binder_count,
+            "counted_binder_count": entry.binder_count,
+            "counted_by_path": entry.binder_count_paths,
+        },
+        "decision_chain": {
+            "on_front_under_retrieved_count":
+                entry.on_front_under_retrieved_count,
+            "decision_under_retrieved_count":
+                entry.decision_under_retrieved_count,
+            "on_pareto_front": entry.on_front,
+            "decision": entry.decision,
+            "decision_changed": entry.decision_changed,
         },
         "binder_supplied": entry.binder_supplied,
         "reasons": [
             "No weighted total across objectives is emitted. Candidates are "
             "compared on a Pareto front, so a design better on one objective "
             "and worse on another is not silently averaged into a rank.",
+            "The binder objective counts a binder unless its recorded antigen "
+            "names another protein. Both the count the search returned and the "
+            "count the ranking used are carried, with the front and the "
+            "decision recomputed under each, so the correction reads as "
+            "original evidence, validation finding, corrected evidence and "
+            "ranking change rather than as a single corrected number.",
+            "The superseded front is recomputed on this run's own inputs, not "
+            "read back from a stored answer. A remembered result would drift "
+            "away from the corrected one it is printed beside the first time "
+            "anything upstream of the ranking changed.",
             "Position is a display index carried from Stage 4's composite "
             "order. It is not a ranking Stage 11 computed, and nothing "
             "decisional reads it: the decision column reads front membership, "

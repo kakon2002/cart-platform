@@ -16,7 +16,7 @@ from car_pipeline.data.tcga import TCGASource, match_surface as tcga_match
 from car_pipeline.data.trials import TrialSource
 from car_pipeline.data.uniprot import load_surface
 from car_pipeline.stages import (
-    scoring, stage3, stage4, stage5, stage6, stage9, stage10, stage11,
+    binder_check, scoring, stage3, stage4, stage5, stage6, stage9, stage10, stage11,
     validation,
 )
 from car_pipeline.stages.stage1 import build_spec
@@ -75,10 +75,11 @@ def main() -> int:
         liabilities.setdefault(row.gene, []).append(row)
 
     stage3_by_gene = {r.gene: r for r in ranked3 if r.gene}
+    surface_by_gene = {r.gene: r for r in surface if r.gene}
     rows, attrition, status = stage11.rank(
         decisions, binders, constructs, gated, liabilities, composites,
         ceiling, indication_key=PDAC.key, stage3_rows=stage3_by_gene,
-        budget_bp=stage6.BUDGET_BP)
+        budget_bp=stage6.BUDGET_BP, surface_records=surface_by_gene)
 
     print()
     print("=" * 72)
@@ -316,7 +317,7 @@ def main() -> int:
         alt_rows, _a, _s2 = stage11.rank(
             decisions, binders, constructs, gated, liabilities, composites,
             ceiling, indication_key=PDAC.key, stage3_rows=stage3_by_gene,
-            budget_bp=stage6.BUDGET_BP)
+            budget_bp=stage6.BUDGET_BP, surface_records=surface_by_gene)
         front_after = {r.gene for r in alt_rows if r.on_front}
         order_after = [r.gene for r in sorted(
             (r for r in alt_rows if r.overall is not None), key=lambda r: -r.overall)]
@@ -358,6 +359,159 @@ def main() -> int:
               if hash_before != hash_after else
               f"the hash stayed {hash_before} when a weight changed, so a run "
               "under different weights compares equal to this one")
+
+    # ------------------------------------------------------------------
+    # W12-W18: counting target-matched binders rather than database hits.
+    # The criteria were fixed in specs/binder-count-correction.md before any
+    # of this was written, and four of them assert that something did NOT move.
+    # ------------------------------------------------------------------
+
+    survivors = [r for r in rows if r.survived]
+
+    # W12: the three counts are arithmetically closed, so no binder is lost or
+    # double-counted between what the search returned and what the ranking
+    # used. The pin matters: with no wrong-antigen binder anywhere in the pool
+    # the closure holds trivially and proves nothing.
+    w12_bad = [f"{r.gene}: {r.retrieved_binder_count} retrieved != "
+               f"{r.binder_count} counted + {r.wrong_antigen_binder_count} wrong"
+               for r in rows
+               if r.retrieved_binder_count
+               != r.binder_count + r.wrong_antigen_binder_count]
+    flagged = [r for r in rows if r.wrong_antigen_binder_count >= 1]
+    if not flagged:
+        w12_bad.append("no candidate carries a wrong-antigen binder, so the "
+                       "closure holds trivially and this criterion is vacuous")
+    criterion("W12", bool(w12_bad),
+              f"retrieved = counted + wrong-antigen on all {len(rows)} "
+              f"candidate(s), with {len(flagged)} carrying a wrong-antigen "
+              f"binder: "
+              + ", ".join(f"{r.gene} {r.retrieved_binder_count}="
+                          f"{r.binder_count}+{r.wrong_antigen_binder_count}"
+                          for r in flagged[:3])
+              if not w12_bad else "; ".join(w12_bad))
+
+    # W13: the basis string reaches the configuration hash. Without it the
+    # payload carries nothing describing how an objective is computed, and a
+    # cached run under the superseded basis compares equal to this one.
+    basis_before = stage11.BINDER_COUNT_BASIS
+    hash_basis_now = stage11.configuration_hash(stage9_hash, genes)
+    try:
+        stage11.BINDER_COUNT_BASIS = "every row the search returned"
+        hash_basis_alt = stage11.configuration_hash(stage9_hash, genes)
+    finally:
+        stage11.BINDER_COUNT_BASIS = basis_before
+    criterion("W13", hash_basis_now == hash_basis_alt,
+              f"changing the binder-count basis moves the Stage 11 hash "
+              f"{hash_basis_now} -> {hash_basis_alt}"
+              if hash_basis_now != hash_basis_alt else
+              f"the hash stayed {hash_basis_now} when the basis changed, so a "
+              "run counting hits compares equal to a run counting matches")
+
+    # W14: both decisions are carried and the correction actually reached the
+    # ranking. If nothing moved, the change had no effect and saying so is the
+    # result, not a pass.
+    moved_decision = [r for r in rows if r.decision_changed]
+    criterion("W14", not moved_decision,
+              "; ".join(f"{r.gene} {r.decision_under_retrieved_count} -> "
+                        f"{r.decision}" for r in moved_decision)
+              + " -- both decisions carried on the record"
+              if moved_decision else
+              "no candidate decision differs between the retrieved and the "
+              "counted objective, so the correction did not reach the ranking")
+
+    # W15/W16: rank the same inputs again with the counting rule swapped back
+    # to counting every hit, and require the gates and the Level B scores to be
+    # untouched. The swap is verified to have taken effect before either
+    # criterion is allowed to clear on an identity.
+    original_rule = binder_check.counts_towards_objective
+    try:
+        binder_check.counts_towards_objective = lambda row: True
+        hits_rows, hits_attrition, _hs = stage11.rank(
+            decisions, binders, constructs, gated, liabilities, composites,
+            ceiling, indication_key=PDAC.key, stage3_rows=stage3_by_gene,
+            budget_bp=stage6.BUDGET_BP, surface_records=surface_by_gene)
+    finally:
+        binder_check.counts_towards_objective = original_rule
+
+    hits_by_gene = {r.gene: r for r in hits_rows}
+    front_counted = sorted(r.gene for r in rows if r.on_front)
+    front_hits = sorted(r.gene for r in hits_rows if r.on_front)
+    swap_took_effect = front_counted != front_hits
+
+    w15_bad = []
+    if not swap_took_effect:
+        w15_bad.append(
+            f"the front is {front_counted} under both counting rules, so the "
+            "swap did not take effect and these criteria prove nothing")
+    if hits_attrition != attrition:
+        w15_bad.append(f"attrition moved {attrition} -> {hits_attrition}")
+    gate_moved = [f"{r.gene} {r.gate_status} -> {hits_by_gene[r.gene].gate_status}"
+                  for r in rows
+                  if r.gene in hits_by_gene
+                  and r.gate_status != hits_by_gene[r.gene].gate_status]
+    if gate_moved:
+        w15_bad.append("gate status moved: " + "; ".join(gate_moved))
+    criterion("W15", bool(w15_bad),
+              f"the gate did not move: attrition identical and all "
+              f"{len(rows)} gate statuses identical, while the front moved "
+              f"{front_hits} -> {front_counted}"
+              if not w15_bad else "; ".join(w15_bad))
+
+    w16_bad = []
+    if not swap_took_effect:
+        w16_bad.append("the counting swap did not take effect")
+    for r in survivors:
+        other = hits_by_gene.get(r.gene)
+        if other is None or r.scorecard is None or other.scorecard is None:
+            continue
+        for label, a, b in (
+                ("overall", r.overall, other.overall),
+                ("fraction", r.scorecard.fraction, other.scorecard.fraction),
+                ("applicable", r.scorecard.applicable, other.scorecard.applicable),
+                ("measured", r.scorecard.measured_weight,
+                 other.scorecard.measured_weight)):
+            if (a is None) != (b is None):
+                w16_bad.append(f"{r.gene} {label} {a} vs {b}")
+            elif a is not None and abs(a - b) > 1e-12:
+                w16_bad.append(f"{r.gene} {label} moved {a} -> {b}")
+    criterion("W16", bool(w16_bad),
+              f"Level B did not move: overall, scored fraction, applicable and "
+              f"measured weight identical across all {len(survivors)} "
+              f"survivor(s) under both counting rules"
+              if not w16_bad else "; ".join(w16_bad))
+
+    # W17: no estimated affinity is introduced anywhere. The correction is
+    # about which binders count, not about inventing a measurement for them.
+    numeric_affinity = []
+    for gene, record in binders.items():
+        for c in list(record.structure) + list(record.sequence):
+            value = getattr(c, "affinity", None)
+            if isinstance(value, (int, float)):
+                numeric_affinity.append(f"{gene} {c.identifier} affinity={value}")
+    criterion("W17", bool(numeric_affinity),
+              "no binder carries a numeric affinity; every one reads the "
+              "not-connected token, and fold error and correlation are not "
+              "computed from it"
+              if not numeric_affinity else
+              "estimated affinity present: " + "; ".join(numeric_affinity[:3]))
+
+    # W18: a design that counts a binder says which path counted it, so a count
+    # resting on absent annotation is not mistaken for one resting on a match.
+    w18_bad = []
+    for r in rows:
+        total = sum(r.binder_count_paths.values())
+        if total != r.binder_count:
+            w18_bad.append(f"{r.gene}: paths sum to {total}, "
+                           f"binder_count is {r.binder_count}")
+        if r.binder_count >= 1 and not r.binder_count_paths:
+            w18_bad.append(f"{r.gene} counts {r.binder_count} binder(s) with "
+                           "no path breakdown emitted")
+    counting = [r for r in rows if r.binder_count >= 1]
+    criterion("W18", bool(w18_bad),
+              f"the path breakdown sums to the counted total on all "
+              f"{len(rows)} candidate(s); {len(counting)} count at least one "
+              f"binder and each names the path"
+              if not w18_bad else "; ".join(w18_bad))
 
     print("=" * 72)
     print(f"  {len(checked) - len(tripped)}/{len(checked)} criteria clear")
