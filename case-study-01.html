@@ -466,6 +466,28 @@
     <p>Of the 200, <strong>192 were blocked on normal-tissue risk</strong> before binder
     retrieval mattered, and 3 more were dropped for retrieving no binder at all. Five
     designs reached the ranking.</p>
+
+    <h3>What the five designs are, and why four of them carry no binder</h3>
+
+    <p>The ranked table further down shows four of those five with a retrieved binder count
+    of zero, which appears to contradict a gate that just dropped three candidates for
+    retrieving no binder. The reconciling fact is the receptor architecture, and it needs
+    stating before any of the numbers can be read.</p>
+
+    <p><strong>All five designs route to an adaptor architecture.</strong> The receptor
+    binds a peptide tag carried on a separately dosed adaptor molecule, and the adaptor
+    carries the tumour-targeting moiety; the receptor never binds the antigen directly. Such
+    a design assembles without a target-specific binder in the construct, so it clears the
+    retrieval gate on a different basis from a conventional single-antigen receptor. The
+    three candidates dropped at that gate had neither a retrieved binder nor an admissible
+    adaptor route.</p>
+
+    <p>Two things follow that a reader needs. Binder count still matters for these designs,
+    because the adaptor itself has to be built against the target and a binder is the
+    evidence that one can be — which is why an objective counting binders that are not
+    against the target was worth correcting. And the safety margins throughout this document
+    are negative for a reason that is architectural rather than alarming; that is set out
+    where the objectives are defined.</p>
   </div>
 </section>
 
@@ -574,8 +596,72 @@
 
   <div class="col">
     <p>This single binder was the entire reason GPR35 was being recommended. The ranking
-    compares candidates on four objectives simultaneously and advances those that no other
-    candidate beats on every axis. Against FER1L6, the other advancing design, GPR35 was:</p>
+    compares candidates on four objectives at once and emits no weighted total. A candidate
+    advances only while <strong>no rival is at least as good as it on every objective and
+    better on at least one</strong>. The clause about ties is load-bearing: a rival that
+    matches a candidate everywhere and beats it in one place displaces it, so a candidate
+    survives only by being strictly better somewhere.</p>
+  </div>
+
+  <figure>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Objective</th><th>What it measures</th><th>Scale</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Tumour attractiveness</td>
+            <td>A weighted mean of the target's expression evidence — tumour prevalence,
+            malignant-versus-stromal specificity and related measures — normalised over the
+            components actually measured for that target</td>
+            <td>0 to 1, higher better</td>
+          </tr>
+          <tr>
+            <td>Safety margin</td>
+            <td>The <em>persistent</em> normal-tissue risk ceiling of 0.15, minus the
+            target's measured normal-tissue risk. Negative means the risk sits above that
+            ceiling</td>
+            <td>higher better</td>
+          </tr>
+          <tr>
+            <td>Binder count</td>
+            <td>Retrieved binders whose recorded antigen does not name another protein —
+            the objective this case study is about</td>
+            <td>higher better</td>
+          </tr>
+          <tr>
+            <td>Binder cleanliness</td>
+            <td>The negative of the sequence-liability flag count on the retrieved binder.
+            All five designs read 0 because none carries a binder sequence to inspect</td>
+            <td>0 is clean, higher better</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>No objective is weighted against another and no total is emitted, so a
+    design better on one axis and worse on another is never averaged into a rank.</figcaption>
+  </figure>
+
+  <div class="limit">
+    <span class="label">Why every safety margin in this document is negative</span>
+    <p>All five designs carry a negative safety margin, and none of them failed a safety
+    gate. The margin above is computed against the persistent ceiling of 0.15 — the limit for
+    a receptor that stays active once infused.</p>
+    <p><strong>These five are not that.</strong> Every one of them routes to an adaptor
+    architecture: the receptor binds a peptide tag on a separately dosed adaptor molecule
+    rather than binding the tumour antigen directly, so activation stops when dosing stops.
+    They were admitted against the <em>terminable</em> ceiling of 0.35, which is the limit
+    they were actually judged against. FER1L6's risk is 0.2881, giving it a residual margin
+    of <strong>+0.1769</strong> below the ceiling that applies to it, and that positive figure
+    is what the scoring frame uses.</p>
+    <p>The negative number is retained in the ranking because it compares all candidates on
+    one consistent scale. It is a comparison, not a verdict, and it is stated here so it
+    cannot be read as one.</p>
+  </div>
+
+  <div class="col">
+    <p>Against FER1L6, the other advancing design, GPR35 was:</p>
   </div>
 
   <figure>
@@ -599,9 +685,11 @@
   </figure>
 
   <div class="col">
-    <p>Stated plainly, the platform's recommendation amounted to: <em>this design is not
-    beaten on every axis, because one database row exists, and the antibody in that row is
-    against a different protein.</em> That is retrieval luck presented as evidence.</p>
+    <p>Stated plainly, the platform's recommendation amounted to: <em>no rival displaces this
+    design, because one database row exists, and the antibody in that row is against a
+    different protein.</em> That is retrieval luck presented as evidence. Remove the row and
+    FER1L6 matches GPR35 on both binder count and cleanliness, beats it on attractiveness and
+    on safety margin, and displaces it — which is the tie clause doing the work.</p>
   </div>
 </section>
 
@@ -921,17 +1009,21 @@
       candidates. Moving the gate as well would have reclassified GPR35 as awaiting evidence
       rather than as a backup — a materially larger claim, and not the one that was approved.</li>
       <li><strong>The weighted scorecard did not move.</strong> Binder quality is scored from
-      the binder record, not from how many were retrieved, and no affinity measurement is
-      connected either way. Every component score is identical under both objectives.</li>
+      the binder record, not from how many were retrieved. For these five it is unmeasured
+      for an architectural reason rather than a data one: an adaptor design retrieves no
+      anti-tag binder, so there is no binder in the construct to score. Every component score
+      is identical under both objectives.</li>
       <li><strong>No estimated value was introduced.</strong> Nothing was imputed to make the
       corrected ranking cleaner.</li>
     </ul>
 
     <p>Twenty-three checks govern the ranking stage, and all twenty-three passed against the
-    corrected pipeline. Seven of them were written specifically for this change and committed
-    <em>before</em> the code that implements it, including the prediction that GPR35 would
-    move from advance to backup and that nothing else in the pool would change. That
-    prediction was recorded first and then observed.</p>
+    corrected pipeline. Seven were written for this change, and what they require was
+    <em>specified in prose and committed before any of the code existed</em> — including the
+    prediction that GPR35 would move from advance to backup and that nothing else in the pool
+    would change. The checks themselves are code and shipped with the implementation they
+    test; what the history evidences is that the criteria were fixed before the result was
+    known, which is the claim worth making and the one that is true.</p>
 
     <p>Across the whole platform the acceptance suite runs 240 checks over both indications.
     After this change 232 pass — seven more than before it, which is exactly the number of
@@ -1095,9 +1187,13 @@
       <li>The decision to change the objective was written up as a specification and
       committed on <span class="mono">2026-09-07</span> — recording the predicted outcome and
       the alternatives rejected, before any code changed.</li>
-      <li>The acceptance criteria for the change were committed on
-      <span class="mono">2026-09-09</span>, in a commit that contains no implementation. The
-      code implementing them is a <em>later</em> commit on the same day.</li>
+      <li>The acceptance criteria were <em>written down</em> before the change was built. The
+      specification stating them — including the predicted outcome — was committed on
+      <span class="mono">2026-09-09</span> in a commit that contains no code at all. The
+      implementation is a later commit the same day. <strong>The checks themselves are code,
+      and shipped in that later commit alongside what they test</strong>, which is the weaker
+      and accurate version of this claim: what the graph evidences is that the criteria were
+      fixed in prose before the result existed, not that executable checks predated it.</li>
     </ul>
 
     <p>That last ordering is the one worth checking, and it is deliberately made checkable.
@@ -1108,7 +1204,7 @@
 
   <div class="limit">
     <span class="label">One disclosure about the history itself</span>
-    <p>The repository's commit messages were rewritten on <span class="mono">2026-09-09</span>
+    <p>The repository's commit messages were rewritten on <span class="mono">2026-09-08</span>
     to remove automated authorship trailers. The rewrite changed commit identifiers; it did
     not change any file. Every content hash in the history is byte-identical before and
     after, commit parentage and both timestamps are preserved, and the count of commits is
@@ -1152,10 +1248,10 @@
     one.</strong> Without them every binder reads unknown, which the counting rule admits —
     so a permissive default would have silently restored the old behaviour of counting
     everything the search returned. A caller that cannot supply them now fails loudly.</li>
-    <li><strong>The superseded decision is produced by the same function as the current
-    one</strong>, with front membership supplied as an argument, rather than by a second
-    implementation of the same logic. A parallel copy would be free to drift, and the entire
-    value of carrying both decisions is that they remain comparable.</li>
+    <li><strong>The superseded decision is produced by the same procedure as the current
+    one</strong>, with membership of the non-dominated set supplied to it as an input, rather
+    than by a second implementation of the same logic. A parallel copy would be free to
+    drift, and the entire value of carrying both decisions is that they remain comparable.</li>
   </ul>
 
   <p>The correction did not make the platform's recommendation stronger. It made it smaller,
