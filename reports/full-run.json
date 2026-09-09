@@ -1,7 +1,7 @@
 {
-  "clear": 232,
-  "total": 240,
-  "minutes": 23.6,
+  "clear": 240,
+  "total": 248,
+  "minutes": 22.8,
   "fresh": false,
   "report": "reports/full-run.md",
   "accepted": {
@@ -38,7 +38,7 @@
     "      - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.",
     "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.",
     "      - 5 innovative design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.",
-    "      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
+    "      - 64 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
     "    GET /result     -> RANKED",
     "      blocked on normal tissue risk      - 192     8 remain",
     "      no design recommended              -   0     8 remain",
@@ -53,7 +53,7 @@
     "      - Single-domain binders would fit; 0 of 288 retrieved candidates are single-domain.",
     "      - This is a constraint result, not a pipeline failure. The budget is Stage 1's and is doing what it exists for.",
     "      - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 4 single-antigen target(s) were recommended (ABCC11, ATP1A4, HCAR1, LCT) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.",
-    "      - 46 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CDH1 6VEL:HL records SULFATE ION, Ubiquitin-like protein SMT3,Cadherin-1, CALCIUM ION; CLDN4 7TDM:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
+    "      - 37 of 200 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 0 of those belong to a design that assembles: CLDN4 7TDM:HL records Heat-labile enterotoxin B chain; CLDN4 7TDN:HL records Heat-labile enterotoxin B chain. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.",
     "    GET /result     -> NO_DESIGN_REACHES_THE_END",
     "      blocked on normal tissue risk      - 196     4 remain",
     "      no design recommended              -   0     4 remain",
@@ -249,7 +249,7 @@
       "clear": 8,
       "total": 8,
       "ok": true,
-      "seconds": 0.6,
+      "seconds": 0.5,
       "exit": 0,
       "criteria": [
         {
@@ -300,7 +300,7 @@
       "clear": 26,
       "total": 27,
       "ok": false,
-      "seconds": 23.5,
+      "seconds": 21.8,
       "exit": 1,
       "criteria": [
         {
@@ -446,7 +446,7 @@
       "clear": 10,
       "total": 15,
       "ok": false,
-      "seconds": 9.8,
+      "seconds": 9.2,
       "exit": 2,
       "criteria": [
         {
@@ -532,7 +532,7 @@
       "clear": 11,
       "total": 12,
       "ok": false,
-      "seconds": 9.5,
+      "seconds": 8.0,
       "exit": 2,
       "criteria": [
         {
@@ -603,7 +603,7 @@
       "clear": 7,
       "total": 7,
       "ok": true,
-      "seconds": 204.8,
+      "seconds": 201.8,
       "exit": 0,
       "criteria": [
         {
@@ -649,7 +649,7 @@
       "clear": 8,
       "total": 9,
       "ok": false,
-      "seconds": 0.5,
+      "seconds": 0.4,
       "exit": 2,
       "criteria": [
         {
@@ -824,10 +824,10 @@
     {
       "number": "11",
       "name": "Final ranking",
-      "clear": 23,
-      "total": 23,
+      "clear": 31,
+      "total": 31,
       "ok": true,
-      "seconds": 4.3,
+      "seconds": 9.0,
       "exit": 0,
       "criteria": [
         {
@@ -908,17 +908,17 @@
         {
           "id": "W11",
           "tripped": false,
-          "detail": "changing one weight moves the Stage 11 hash 92bd0becdfd22fa5 -> 773aab11eaf8fc4e"
+          "detail": "changing one weight moves the Stage 11 hash d8fd368687bd8bb1 -> a2e081f50753da71"
         },
         {
           "id": "W12",
           "tripped": false,
-          "detail": "retrieved = counted + wrong-antigen on all 200 candidate(s), with 25 carrying a wrong-antigen binder: ITGB6 5=1+4, CLDN18 15=11+4, CDH1 4=3+1"
+          "detail": "retrieved = counted + wrong-antigen on all 200 candidate(s), with 21 carrying a wrong-antigen binder: ITGB6 5=1+4, ADGRF1 7=0+7, CLDN4 7=3+4"
         },
         {
           "id": "W13",
           "tripped": false,
-          "detail": "changing the binder-count basis moves the Stage 11 hash 92bd0becdfd22fa5 -> a3b7f96467536691"
+          "detail": "changing the binder-count basis moves the Stage 11 hash d8fd368687bd8bb1 -> 29bd8c92d0ca8a21"
         },
         {
           "id": "W14",
@@ -943,7 +943,47 @@
         {
           "id": "W18",
           "tripped": false,
-          "detail": "the path breakdown sums to the counted total on all 200 candidate(s); 49 count at least one binder and each names the path"
+          "detail": "the path breakdown sums to the counted total on all 200 candidate(s); 50 count at least one binder and each names the path"
+        },
+        {
+          "id": "M1",
+          "tripped": false,
+          "detail": "all 6 label shapes move FAIL -> PASS: isoform, fusion partner, fragment and construct labels; the word-order shape stays FAIL by decision"
+        },
+        {
+          "id": "M2",
+          "tripped": false,
+          "detail": "all 12 near-miss cases stay FAIL, the ligand of a receptor and two sibling receptors among them"
+        },
+        {
+          "id": "M3",
+          "tripped": false,
+          "detail": "1726 degenerate reference name(s) excluded from tolerant matching across the pool, e.g. 'EC 3.4.24.-' on CIROP; none reached the matcher"
+        },
+        {
+          "id": "M4",
+          "tripped": false,
+          "detail": "134075 sibling-name pair(s) across 2485 target(s), none cross-matching; the claudins and the mucins are among them"
+        },
+        {
+          "id": "M5",
+          "tripped": false,
+          "detail": "a relational word added to a target's own reference name refuses the match across all 3451 target(s) swept, and MET does not match hepatocyte growth factor beta chain, which is its ligand rather than the receptor"
+        },
+        {
+          "id": "M6",
+          "tripped": false,
+          "detail": "every one of the 221 row(s) matching under exact equality still matches; tolerance only adds"
+        },
+        {
+          "id": "M7",
+          "tripped": false,
+          "detail": "flagged rows 83 -> 64 (predicted 57), affected targets 25 -> 21 (predicted 21)"
+        },
+        {
+          "id": "M8",
+          "tripped": false,
+          "detail": "every decision that moved carries both: ['GPR35']"
         }
       ]
     },
@@ -953,7 +993,7 @@
       "clear": 9,
       "total": 9,
       "ok": true,
-      "seconds": 8.8,
+      "seconds": 8.1,
       "exit": 0,
       "criteria": [
         {
@@ -1009,7 +1049,7 @@
       "clear": 12,
       "total": 12,
       "ok": true,
-      "seconds": 11.7,
+      "seconds": 11.6,
       "exit": 0,
       "criteria": [
         {
@@ -1025,7 +1065,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job fdc5bb9936a1 rather than blocking"
+          "detail": "a run returns 202 with job 3a645eb29f34 rather than blocking"
         },
         {
           "id": "A4",
@@ -1070,7 +1110,7 @@
         {
           "id": "W12",
           "tripped": false,
-          "detail": "the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 92bd0becdfd22fa5"
+          "detail": "the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is d8fd368687bd8bb1"
         }
       ]
     },
@@ -1080,7 +1120,7 @@
       "clear": 12,
       "total": 12,
       "ok": true,
-      "seconds": 241.9,
+      "seconds": 231.8,
       "exit": 0,
       "criteria": [
         {
@@ -1096,7 +1136,7 @@
         {
           "id": "A3",
           "tripped": false,
-          "detail": "a run returns 202 with job 2c1eb37d19b8 rather than blocking"
+          "detail": "a run returns 202 with job 3d6671fc018d rather than blocking"
         },
         {
           "id": "A4",
@@ -1141,7 +1181,7 @@
         {
           "id": "W12",
           "tripped": false,
-          "detail": "the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is 820dde6d79efa8b1"
+          "detail": "the contract carries all 6 named fields for 0 candidate(s) and 200 excluded; next_best_experiments is null with a stated reason and audit_id is b0d46e1f1a262510"
         }
       ]
     },
@@ -1151,7 +1191,7 @@
       "clear": 11,
       "total": 11,
       "ok": true,
-      "seconds": 605.3,
+      "seconds": 565.6,
       "exit": 0,
       "criteria": [
         {
@@ -1217,7 +1257,7 @@
       "clear": 14,
       "total": 14,
       "ok": true,
-      "seconds": 282.6,
+      "seconds": 282.8,
       "exit": 0,
       "criteria": [
         {
@@ -1298,7 +1338,7 @@
       "clear": 19,
       "total": 19,
       "ok": true,
-      "seconds": 9.4,
+      "seconds": 9.2,
       "exit": 0,
       "criteria": [
         {
@@ -1364,7 +1404,7 @@
         {
           "id": "BM9",
           "tripped": false,
-          "detail": "221 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis"
+          "detail": "240 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis"
         },
         {
           "id": "BM9b",
@@ -1425,7 +1465,7 @@
         {
           "id": "V4",
           "tripped": false,
-          "detail": "no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (225/233 as last written)"
+          "detail": "no document pins a suite total, and the runbook points at reports/full-run.md, where the live figure is (232/240 as last written)"
         },
         {
           "id": "V5",

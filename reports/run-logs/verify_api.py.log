@@ -6,7 +6,7 @@ REJECTION CRITERIA
 ========================================================================
   clear    A1: project created (201), target_antigen None and discovery mode B
   clear    A2: a view before any run answers 409 RUN_NOT_COMPLETE with instructions, not an empty list
-  clear    A3: a run returns 202 with job fdc5bb9936a1 rather than blocking
+  clear    A3: a run returns 202 with job 3a645eb29f34 rather than blocking
 
   polling
     running   sources  loading cached sources
@@ -20,7 +20,7 @@ REJECTION CRITERIA
   clear    A10: an unknown project answers 404 NOT_FOUND and one that exists without a finished run answers 409 RUN_NOT_COMPLETE: a client can tell a bad id from a run in progress
   clear    A9: evidence trail for MSLN spans 7 stages: stage3, stage4, stage5, stage6, stage9, stage10, stage11
   clear    W10: 5 unhonoured field(s) refused by name and 5 honoured field(s) accepted; the document's own example is refused naming 'objective' and saying to remove ['objective']
-  clear    W12: the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is 92bd0becdfd22fa5
+  clear    W12: the contract carries all 6 named fields for 5 candidate(s) and 195 excluded; next_best_experiments is null with a stated reason and audit_id is d8fd368687bd8bb1
 ========================================================================
   12/12 criteria clear
 
@@ -34,7 +34,7 @@ WHAT THE API RETURNS FOR THIS INDICATION
       - The binder is emitted as deposited, including its crystallisation artifacts, because trimming them is a design decision this pipeline does not take silently. Each construct therefore carries MADYADA at residues 22-28, expression leader carried on the light-chain entity; and ASGADHHHHHH at residues 270-280, purification tag carried on the heavy-chain entity. As emitted these are not manufacturable: the first is a second leader sitting inside the mature protein, the second a His tag between the binder and the hinge. Removing them is a wet-lab step that has not been taken here.
       - No conservative backup exists in this pool. A conservative design is the conventional single-antigen receptor with a clinically-precedented binder, and no such design is buildable here: 3 single-antigen target(s) were recommended (MSLNL, NPSR1, ZPLD1) and none of them assembles, for want of a binder; no dual design assembles at all, because every dual recommendation names a partner that retrieves no binder. This is reported rather than filled by labelling something that does not qualify.
       - 5 innovative design(s) are available, all of them adaptor receptors, which is the architecture row the spec lists for serious normal-tissue expression.
-      - 83 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
+      - 64 of 315 structural binder(s) across this pool are annotated against a different protein than the target they were retrieved for, and 1 of those belong to a design that assembles: GPR35 8H8J:H1H2 records Guanine nucleotide-binding protein subunit alpha-13, Guanine nucleotide-binding protein G(I)/G(S)/G(T) subunit beta-1. A retrieved count is a count of database hits, and the ranking counts a binder only where the recorded antigen does not name another protein. The entry was found by searching on the target's accession, so it contains the target; the antibody in it is annotated against another chain of the same complex. The count did not change, what it means did.
 
     GET /result     -> RANKED
       blocked on normal tissue risk      - 192     8 remain

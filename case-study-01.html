@@ -834,8 +834,15 @@
     1</span> use identical words and are different proteins, as do two leucine-rich repeat
     neuronal proteins and two sialic acid-binding lectins. It also proposed refusing matches
     whose surplus words were drawn from a list of dangerous ones, which is not sufficient:
-    the words that separate two proteins are ordinary content words. The rule now names what
-    it accepts rather than what it refuses.</p>
+    one cadherin-family receptor matched its neighbour on a surplus of <em>multiple</em> and
+    <em>domains</em>. The words that separate two proteins are ordinary content words, so
+    nothing marks them dangerous in advance and the rule now names what it accepts rather
+    than what it refuses.</p>
+    <p><strong>Both errors were caught before the fix shipped, by a sweep of 134,075
+    sibling-name pairs across 2,485 targets</strong> — every pair in the reference set whose
+    names differ only by a trailing number — which requires that naming one never matches the
+    other. Five of the refusal cases now in the acceptance suite were found by that sweep
+    rather than written down in advance.</p>
   </div>
 </section>
 

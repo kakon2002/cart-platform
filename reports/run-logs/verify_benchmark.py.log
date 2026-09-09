@@ -17,7 +17,7 @@ REJECTION CRITERIA
   clear    BM7: 3 pinned entries record species NA and 7U8C, a genuine MSLN entry among them, still passes
 
   running the pipeline
-  clear    BM9: 221 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis
+  clear    BM9: 240 of 422 binder(s) carry verified structural evidence, and every one of them passed target match; no non-passing row carries an entry, resolution or basis
   clear    BM9b: blinded: a row naming a real deposited entry yields no entry, resolution or basis when its verdict is flipped to FAIL or to UNKNOWN
   clear    BM9c: interface geometry is null on every row; no coordinate file is connected, so which residues contact which is not reported
   clear    BM10: 0 binder(s) failed the gate and none is scored; no component among 190 carries a value while unmeasured
@@ -40,9 +40,9 @@ SOURCE COVERAGE, BEFORE ANY RESULT
 B3 ACROSS THE POOL
 ========================================================================
     422 retrieved binder(s): 315 structure route, 107 sequence route
-    verdicts        {'UNKNOWN': 118, 'FAIL': 83, 'PASS': 221}
-    structure route {'FAIL': 83, 'PASS': 221, 'UNKNOWN': 11}
-    wrong_antigen_flag raised on 83 of 315 structure-route rows
+    verdicts        {'UNKNOWN': 118, 'FAIL': 64, 'PASS': 240}
+    structure route {'FAIL': 64, 'PASS': 240, 'UNKNOWN': 11}
+    wrong_antigen_flag raised on 64 of 315 structure-route rows
 
   MSLN, the benchmark target
     19 row(s) {'PASS': 14, 'UNKNOWN': 5}

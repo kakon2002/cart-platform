@@ -56,4 +56,4 @@ WHAT A READER RECEIVES
     GDC TCGA                   TCGA-PAAD              tumour cohort
     DepMap                     24Q4 / Pancreas        dependency lineage
     Single-cell tumour atlas   GSE202051              single-cell tumour atlas
-    hash chain  a91c696f2e1318f7 -> 5d097e05887e5b28 -> 6418657ed85a4dc6 -> 859cfd24c21ddd81 -> 7b703a7cc4a2d0d6 -> 518e1ef6953ee5fb -> 92bd0becdfd22fa5
+    hash chain  a91c696f2e1318f7 -> 5d097e05887e5b28 -> 6418657ed85a4dc6 -> 859cfd24c21ddd81 -> 7b703a7cc4a2d0d6 -> 518e1ef6953ee5fb -> d8fd368687bd8bb1

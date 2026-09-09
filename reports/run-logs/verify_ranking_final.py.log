@@ -18,16 +18,24 @@ REJECTION CRITERIA
   clear    W5: every candidate above the 0.5 floor carries a number and every candidate below it carries null (5 scored of 5)
   clear    W6: confidence moved 1.0 -> 0.5 and the safety component held at 0.1769; risk moved the safety component to 0.5884 and the adjustment held at 1.0
   clear    W7: the front is ['FER1L6'] under both weight sets while 5 of 5 score(s) moved; the score order held at ['TMEM92', 'FER1L6', 'GPR35', 'BTNL8', 'TNFSF9'] -- order is free to change, membership is not
-  clear    W11: changing one weight moves the Stage 11 hash 92bd0becdfd22fa5 -> 773aab11eaf8fc4e
-  clear    W12: retrieved = counted + wrong-antigen on all 200 candidate(s), with 25 carrying a wrong-antigen binder: ITGB6 5=1+4, CLDN18 15=11+4, CDH1 4=3+1
-  clear    W13: changing the binder-count basis moves the Stage 11 hash 92bd0becdfd22fa5 -> a3b7f96467536691
+  clear    W11: changing one weight moves the Stage 11 hash d8fd368687bd8bb1 -> a2e081f50753da71
+  clear    W12: retrieved = counted + wrong-antigen on all 200 candidate(s), with 21 carrying a wrong-antigen binder: ITGB6 5=1+4, ADGRF1 7=0+7, CLDN4 7=3+4
+  clear    W13: changing the binder-count basis moves the Stage 11 hash d8fd368687bd8bb1 -> 29bd8c92d0ca8a21
   clear    W14: GPR35 ADVANCE -> BACKUP -- both decisions carried on the record
   clear    W15: the gate did not move: attrition identical and all 200 gate statuses identical, while the front moved ['FER1L6', 'GPR35'] -> ['FER1L6']
   clear    W16: Level B did not move: overall, scored fraction, applicable and measured weight identical across all 5 survivor(s) under both counting rules
   clear    W17: no binder carries a numeric affinity; every one reads the not-connected token, and fold error and correlation are not computed from it
-  clear    W18: the path breakdown sums to the counted total on all 200 candidate(s); 49 count at least one binder and each names the path
+  clear    W18: the path breakdown sums to the counted total on all 200 candidate(s); 50 count at least one binder and each names the path
+  clear    M1: all 6 label shapes move FAIL -> PASS: isoform, fusion partner, fragment and construct labels; the word-order shape stays FAIL by decision
+  clear    M2: all 12 near-miss cases stay FAIL, the ligand of a receptor and two sibling receptors among them
+  clear    M3: 1726 degenerate reference name(s) excluded from tolerant matching across the pool, e.g. 'EC 3.4.24.-' on CIROP; none reached the matcher
+  clear    M4: 134075 sibling-name pair(s) across 2485 target(s), none cross-matching; the claudins and the mucins are among them
+  clear    M5: a relational word added to a target's own reference name refuses the match across all 3451 target(s) swept, and MET does not match hepatocyte growth factor beta chain, which is its ligand rather than the receptor
+  clear    M6: every one of the 221 row(s) matching under exact equality still matches; tolerance only adds
+  clear    M7: flagged rows 83 -> 64 (predicted 57), affected targets 25 -> 21 (predicted 21)
+  clear    M8: every decision that moved carries both: ['GPR35']
 ========================================================================
-  23/23 criteria clear
+  31/31 criteria clear
 
 ========================================================================
 WHERE THE TWO HUNDRED WENT
@@ -42,4 +50,4 @@ WHERE THE TWO HUNDRED WENT
   Pareto front: 1 design(s), no weighted total
     FER1L6     attractiveness 0.5023  margin -0.1381  binders 0  cleanliness 0
 
-  configuration hash 92bd0becdfd22fa5
+  configuration hash d8fd368687bd8bb1
