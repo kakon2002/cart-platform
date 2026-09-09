@@ -306,13 +306,15 @@
 
   <p>The platform screens a surface proteome, gates candidates on normal-tissue risk,
   retrieves candidate binders, assembles constructs and ranks what survives. Binder
-  retrieval works by searching a structural database on the target's accession. A hit
-  means the deposited entry <em>contains</em> the target. It does not mean the antibody in
-  that entry was raised against it.</p>
+  retrieval works by querying the <strong>RCSB Protein Data Bank</strong> on the target's
+  <strong>UniProt</strong> accession, and reading antibody annotation for the entries it
+  returns from <strong>SAbDab</strong>, the structural antibody database. A hit means the
+  deposited entry <em>contains</em> the target. It does not mean the antibody in that entry
+  was raised against it.</p>
 
   <p>A validation check introduced for an independent benchmark was applied to the
   platform's own pool. It compares the antigen a depositor recorded against every name the
-  reference proteome record gives the target. Across the pancreatic pool it flagged
+  target's UniProt record gives it. Across the pancreatic pool it flagged
   <strong>83 of 315 structural binder rows</strong>, distributed across
   <strong>25 of 200 candidate targets</strong>.</p>
 
@@ -331,7 +333,7 @@
     <div class="fig flag">
       <div class="n">64<small> / 315</small></div>
       <div class="cap"><strong>Genuinely wrong antigen.</strong> Measured after the check's
-      own error was fixed. An earlier estimate of 57 was too low.</div>
+      own error was fixed. An earlier estimate of 57 rows was too low.</div>
     </div>
     <div class="fig flag">
       <div class="n">25<small> / 200</small></div>
@@ -350,12 +352,16 @@
     <p><strong>83 of 315</strong> counts <em>binder rows</em> and is the check's raw output.
     <strong>64 of 315</strong> is what survives once the rows the check itself misread are
     removed — see <em>The check's own failure mode</em> below, which gives the derivation and
-    corrects an earlier estimate of 57. <strong>25 of 200</strong> counts <em>candidates</em>,
+    corrects an earlier estimate of 57 rows. <strong>25 of 200 candidate targets</strong>
+    counts <em>targets</em>,
     and is the figure that bears on what the platform recommends, because recommendations are
     made about targets rather than about rows; the corrected candidate figure is
-    <strong>21 of 200</strong>.</p>
-    <p>A single target can hold many binders, so the row-level rate is necessarily the higher
-    of the two. Each figure is quoted with its population named throughout. Quoting any one
+    <strong>21 of 200 candidate targets</strong>.</p>
+    <p>The row-level rate is the higher of the two <em>in this pool</em>, because the
+    affected targets happen to carry several flagged binders each. That is a fact about
+    these data and not an arithmetic necessity: had each affected target carried exactly one
+    flagged binder, the row rate would have been the lower of the two. Each figure is
+    therefore quoted with its unit and its population named throughout, and quoting any one
     of them alone would misstate the finding.</p>
   </div>
 </section>
@@ -413,9 +419,20 @@
 
     <p>The pancreatic run screened a surface proteome and carried 200 candidate targets into
     binder retrieval. Retrieval runs two independent routes, reported separately and never
-    summed: a structural route that searches deposited structures on the target's accession,
-    and a sequence route that matches named therapeutic antibodies recorded against the
-    target.</p>
+    summed: a <strong>structural route</strong> that queries the RCSB Protein Data Bank on
+    the target's UniProt accession and reads antibody annotation for the returned entries
+    from <strong>SAbDab</strong>, and a <strong>sequence route</strong> that matches named
+    therapeutic antibodies recorded against the target in <strong>Thera-SAbDab</strong>.</p>
+
+    <p>Nine datasets are cached and version-pinned: the reviewed human proteome from
+    <strong>UniProt</strong> (20,431 entries), normal-tissue, pathology and subcellular
+    expression from the <strong>Human Protein Atlas</strong>, bulk normal-tissue medians from
+    <strong>GTEx</strong>, CRISPR gene-effect scores from <strong>DepMap</strong>, the
+    <strong>SAbDab</strong> structural summary together with <strong>Thera-SAbDab</strong>
+    therapeutics as one antibody dataset, gene span annotation, trial counts per antigen,
+    construct part sequences, and the anti-tag binder sequence every adaptor design is built
+    on. The <strong>RCSB Protein Data Bank</strong> is not among them: it is queried directly
+    at retrieval time, by exact UniProt accession cross-reference rather than by name.</p>
   </div>
 
   <figure>
@@ -436,18 +453,22 @@
           </tr>
           <tr>
             <td>Targets with any binder retrieved</td>
-            <td class="num">57</td>
-            <td>The remaining 143 returned nothing on either route</td>
+            <td class="num">57 targets</td>
+            <td>The remaining 143 returned nothing on either route. Unrelated to the
+            superseded row-count estimate of 57 discussed later — different unit,
+            different population</td>
           </tr>
           <tr>
             <td>Structural binder rows</td>
-            <td class="num">315</td>
-            <td>Deposited entries containing the target</td>
+            <td class="num">315 rows</td>
+            <td>Antibody instances in deposited entries containing the target. They come
+            from 204 distinct entries — one entry can contribute several, where it holds
+            more than one antibody chain pair</td>
           </tr>
           <tr>
             <td>Sequence-route binder rows</td>
-            <td class="num">107</td>
-            <td>Named therapeutics recorded against the target</td>
+            <td class="num">107 rows</td>
+            <td>Named therapeutic antibodies recorded against the target</td>
           </tr>
           <tr>
             <td>Designs reaching the end</td>
@@ -457,9 +478,12 @@
         </tbody>
       </table>
     </div>
-    <figcaption>Measured from the production run. The gap between 200 targets and 57 with
-    any binder is a statement about the antibody literature, not a platform failure — it is
-    reported as an outcome rather than suppressed.</figcaption>
+    <figcaption>Measured from the production pancreatic run. The gap between 200 candidate
+    targets and the 57 with any binder is a statement about the antibody literature, not a
+    platform failure — it is reported as an outcome rather than suppressed. Every figure in
+    this document carries its unit for a reason: <em>targets</em> and <em>rows</em> are
+    different populations, and two of the numbers here recur later with the other
+    unit.</figcaption>
   </figure>
 
   <div class="col">
@@ -556,9 +580,14 @@
 
     <p>The pattern is not an artefact of one indication. Run against the platform's second
     indication — invasive breast carcinoma, an entirely separate pool and screen — the same
-    check flags <strong>46 of 200 structural rows</strong>, a comparable proportion, with the
-    same two causes dominating. A retrieval step that counts entries containing the target
-    behaves this way wherever it is pointed.</p>
+    check flags <strong>23% of structural rows</strong> against 26% here, with the same two
+    causes dominating. A retrieval step that counts entries containing the target behaves
+    this way wherever it is pointed.</p>
+
+    <p class="mono" style="font-size:13px;color:var(--ink-soft)">Breast: 46 flagged of 200
+    structural rows. The 200 there is a count of <em>rows</em> and is unrelated to the 200
+    <em>candidate targets</em> in the pancreatic pool above — the totals coincide and the
+    populations do not.</p>
   </div>
 
   <div class="limit">
@@ -710,7 +739,7 @@
     <p class="sub">Claudin-18 &middot; 15 binders retrieved: 4 structural, 11 named therapeutics</p>
     <p>All four structural entries record the identical antigen:</p>
     <div class="antigen">Isoform A2 of Claudin-18</div>
-    <p>The check flags all four. The reference record for CLDN18 yields exactly two names —
+    <p>The check flags all four. The UniProt record for CLDN18 yields exactly two names —
     <span class="mono">Claudin-18</span> and <span class="mono">CLDN18</span> — and
     <span class="mono">Isoform A2 of Claudin-18</span> matches neither by exact comparison.</p>
     <p><strong>The verdict is wrong.</strong> Isoform A2 is claudin-18.2, the clinically
@@ -756,7 +785,7 @@
 
     <h3>The mechanism</h3>
 
-    <p>The check derives a set of names for the target from the reference proteome record —
+    <p>The check derives a set of names for the target from its UniProt record —
     the recommended name, each parenthesised synonym, the note on each mature chain, and the
     gene symbol — and compares each recorded antigen against that set by
     <strong>exact string equality, after lowercasing</strong>. Anything not in the set is a
@@ -819,7 +848,7 @@
   <div class="col">
     <h3>The genuine figure, and an estimate that was wrong</h3>
 
-    <p>This section first carried an estimate of <strong>57</strong>, produced by a screening
+    <p>This section first carried an estimate of <strong>57 rows</strong>, produced by a screening
     test over the flagged set rather than by fixing the matcher. The matcher has since been
     fixed, and the measured figure is <strong>64</strong>. The estimate is corrected here
     rather than replaced, because how it was wrong is more informative than the number.</p>
@@ -828,7 +857,7 @@
     words, <strong>discarding the connectives <em>of</em> and <em>the</em> and the generic
     words <em>isoform</em> and <em>protein</em></strong>, then reclassified a row where every
     remaining word of a reference name appeared in the recorded antigen. 26 of 83 rows met
-    that test, leaving 57.</p>
+    that test, leaving 57 rows.</p>
 
     <p>The implementation discards nothing. Dropping words that look generic is precisely
     what makes a tolerant matcher dangerous: drop <em>receptor</em> and the hepatocyte growth
@@ -875,7 +904,8 @@
       <li>Tissue names mapped to organs by substring, which put the adrenal gland at kidney
       criticality and folded the kidney into the brain — each mistake moving an organ between
       risk tiers and silently rewriting the safety gate for every protein screened.</li>
-      <li>A free-text name query against a sequence archive, which returned several hundred
+      <li>A free-text name query against the structure archive, in place of an exact
+      accession cross-reference, which returned several hundred
       entries whose top hits were a bacterial RNA chaperone, a sulfur transferase and a
       photosystem supercomplex — a valid response carrying a plausible integer that was
       entirely spurious.</li>
@@ -897,8 +927,8 @@
     <ul>
       <li><strong>The row-level headline figure is an upper bound.</strong> 83 of 315 is the
       check's raw output. 64 of 315 is the rate at which retrieval returns an antibody
-      against a genuinely different molecule. The candidate-level figure of 25 of 200 is
-      similarly an upper bound, and falls to 21 of 200.</li>
+      against a genuinely different molecule. The candidate-level figure of 25 of 200 candidate
+      targets is similarly an upper bound, and falls to 21 of 200.</li>
       <li><strong>The ranking correction is unaffected.</strong> Not by inference — this was
       checked directly. Every flagged row belonging to each of the five designs that reached
       the ranking was examined individually. Four of the five retrieved no binder at all.
@@ -1076,7 +1106,7 @@
 
   <div class="limit">
     <span class="label">What a matched verdict is worth</span>
-    <p>A match means the depositor's recorded antigen agrees with the reference record's
+    <p>A match means the depositor's recorded antigen agrees with the UniProt record's
     name for the target. It does not mean an interface has been inspected, a contact
     residue identified, or a binding event observed. Establishing any of that requires the
     deposited coordinates, which are not connected.</p>
@@ -1175,8 +1205,9 @@
 
     <h3>What the commit history evidences</h3>
 
-    <p>The ordering below is the claim, and it is verifiable from the repository rather than
-    asserted in prose:</p>
+    <p>The ordering below is the claim. <strong>Reading this document, you cannot check
+    it</strong> — the repository is private, and every statement in this section is therefore
+    something you are being asked to take on trust until it is put in front of you:</p>
 
     <ul>
       <li>The validation check and its first finding were committed together on
@@ -1196,10 +1227,26 @@
       fixed in prose before the result existed, not that executable checks predated it.</li>
     </ul>
 
-    <p>That last ordering is the one worth checking, and it is deliberately made checkable.
-    Criteria written after a result are not criteria; they are a description of what
-    happened. Separating them into an earlier commit is what makes the distinction visible
-    to someone who was not present.</p>
+    <p>That last ordering is the one worth checking. Criteria written after a result are not
+    criteria; they are a description of what happened. Separating them into an earlier commit
+    is what makes the distinction visible to someone who was not present — but only to
+    someone who can see the commits.</p>
+  </div>
+
+  <div class="limit">
+    <span class="label">What would make this section checkable, and how to ask for it</span>
+    <p>An audit trail a reader cannot reach is an assertion with extra steps, and this
+    document should not pretend otherwise. What is described above is real and is recorded in
+    a private repository. Under technical diligence it can be produced in three forms, each
+    stronger than the last:</p>
+    <p><strong>The commit log for the files named here</strong>, showing message, author date
+    and the files each commit touched — enough to check every ordering claim in this section
+    independently. <strong>Read access to the repository at a pinned revision</strong>, which
+    additionally lets the acceptance suite be run and its 248 checks reproduced. <strong>The
+    run itself, executed in front of you</strong> from the published data release, which
+    reproduces every figure in this document from source rather than from a report.</p>
+    <p>Until one of those happens, treat this section as a description of what we say the
+    process was, and the rest of the document as the part you can weigh on its own reasoning.</p>
   </div>
 
   <div class="limit">
